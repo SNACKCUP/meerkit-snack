@@ -1,17 +1,8 @@
 from io import BytesIO
 
-import pytest
-from fastapi.testclient import TestClient
 from openpyxl import load_workbook
 
-from app.main import app
-
 BASE = "/api/requirements"
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def test_upload_document(client):

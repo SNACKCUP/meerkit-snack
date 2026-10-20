@@ -7,11 +7,18 @@ class Settings(BaseSettings):
     app_env: str = "local"
     database_url: str
     jwt_secret_key: str
-    jwt_expire_minutes: int = 60
+    jwt_expire_minutes: int = 30  # 액세스 토큰 유효 시간(분)
+    refresh_token_expire_days: int = 14  # 리프레시 토큰(httpOnly 쿠키) 유효 기간(일)
+    cookie_secure: bool = False  # 배포(https)에서는 true
     cors_origins: str = "http://localhost:3000"  # 여러 개면 쉼표로 구분
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     openai_api_key: str = ""
+
+    # 로컬 테스트용 관리자 시드 계정 (uv run python -m app.users.seed)
+    seed_admin_email: str = "admin@meerkit.local"
+    seed_admin_password: str = ""
+    seed_admin_name: str = "관리자"
 
     @property
     def cors_origin_list(self) -> list[str]:
