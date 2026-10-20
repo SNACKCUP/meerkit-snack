@@ -1,0 +1,49 @@
+/* MeerKit 디자인 토큰. 로고에서 뽑은 색: 파랑(주색) / 미어캣 갈색 / 크림 / 네이비 글씨 */
+:root {
+  --mk-blue: #2c63fb;
+  --mk-tan: #da995e;
+  --mk-paw: #f0b377;
+  --mk-cream: #f9e2c5;
+  --mk-brown: #885439;
+  --mk-navy: #222436;
+
+  --mk-primary: var(--mk-blue);
+  --mk-primary-foreground: #ffffff;
+  --mk-background: #fbf6ec;
+  --mk-foreground: var(--mk-navy);
+  --mk-card: #fffdf8;
+  --mk-muted: #f3ebdc;
+  --mk-muted-foreground: #70695e;
+  --mk-accent: #f3ebdc;
+  --mk-accent-foreground: var(--mk-navy);
+  --mk-border: #e6dac4;
+  --mk-destructive: #dc3545;
+  --mk-radius: 0.625rem;
+}
+
+@theme inline {
+  --color-primary: var(--mk-primary);
+  --color-primary-foreground: var(--mk-primary-foreground);
+  --color-background: var(--mk-background);
+  --color-foreground: var(--mk-foreground);
+  --color-card: var(--mk-card);
+  --color-card-foreground: var(--mk-foreground);
+  --color-popover: var(--mk-card);
+  --color-popover-foreground: var(--mk-foreground);
+  --color-muted: var(--mk-muted);
+  --color-muted-foreground: var(--mk-muted-foreground);
+  --color-accent: var(--mk-accent);
+  --color-accent-foreground: var(--mk-accent-foreground);
+  --color-border: var(--mk-border);
+  --color-input: var(--mk-border);
+  --color-ring: var(--mk-primary);
+  --color-destructive: var(--mk-destructive);
+  --color-meerkat: var(--mk-tan);
+  --color-paw: var(--mk-paw);
+  --color-cream: var(--mk-cream);
+  --color-navy: var(--mk-navy);
+  --radius-lg: var(--mk-radius);
+  --radius-md: calc(var(--mk-radius) - 2px);
+  --radius-sm: calc(var(--mk-radius) - 4px);
+  --font-sans: "Pretendard", system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}

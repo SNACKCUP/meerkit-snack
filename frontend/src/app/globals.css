@@ -1,16 +1,11 @@
-* {
-  box-sizing: border-box;
-}
+@import "tailwindcss";
+@import "../meerkit/styles/tokens.css";
 
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
-  color: #1f2328;
-  background: #ffffff;
-}
-
-.home {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 64px 16px;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
 }
