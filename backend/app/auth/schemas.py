@@ -8,7 +8,7 @@ class SignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # 로그인은 형식 검사 없이 DB와 비교만 합니다
     password: str
 
 

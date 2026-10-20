@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { Providers } from "./providers";
+import { MeerkitProvider } from "@/meerkit";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
       <body>
-        <Providers>{children}</Providers>
+        <MeerkitProvider>{children}</MeerkitProvider>
       </body>
     </html>
   );
