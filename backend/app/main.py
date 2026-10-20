@@ -5,7 +5,7 @@ from app.core.config import settings
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="AI Starter Kit")
+    app = FastAPI(title="MeerKit")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

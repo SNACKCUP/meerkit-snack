@@ -1,6 +1,10 @@
-# AI Starter Kit
+# MeerKit (미어킷)
+
+> 더 빨리, 더 많이 시작하는 AI 서비스 스타터킷
 
 FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작하기 위한 재사용 가능한 스타터킷입니다.
+
+**이름의 의미**: 미어캣(meerkat)과 발음이 같은 MeerKit은 네덜란드어 *meer*(더 많이)와 *kit*를 합친 이름입니다. 무리 지어 서로를 지켜 주는 미어캣처럼, 공통 기반이 팀의 서비스 개발을 받쳐 준다는 뜻을 담았습니다.
 샘플 서비스로 **요구사항 정리 도우미**(고객 문서 업로드 → AI가 요구사항 분류·정제 → 관리자 확정 → 기능정의서 생성)가 들어 있습니다.
 
 ## 주요 구성
@@ -25,8 +29,8 @@ FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작�
 ### 1. 클론
 
 ```bash
-git clone https://github.com/sensibly00-glitch/ai-starter-kit.git
-cd ai-starter-kit
+git clone https://github.com/sensibly00-glitch/meerkit.git
+cd meerkit
 ```
 
 ### 2. DB 실행 (루트 폴더)
@@ -64,7 +68,7 @@ npm run dev
 ## 폴더 구조
 
 ```text
-ai-starter-kit/
+meerkit/
 ├── backend/
 │   ├── app/
 │   │   ├── core/        # 공통 기반: 설정, DB, 예외, 로깅, 보안
