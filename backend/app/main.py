@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api import api_router
 from app.core.config import settings
 
 
@@ -18,8 +19,7 @@ def create_app() -> FastAPI:
     def health():
         return {"status": "ok"}
 
-    # from app.api import api_router
-    # app.include_router(api_router, prefix="/api")
+    app.include_router(api_router, prefix="/api")
     return app
 
 
