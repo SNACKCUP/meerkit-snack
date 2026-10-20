@@ -7,14 +7,13 @@ MeerKit을 Fork 해서 내 서비스를 만들 때 따라 하는 순서입니다
 
 ```bash
 rm -rf backend/app/features/requirements backend/tests/features/requirements
-rm -rf frontend/src/features/requirements
+rm -rf frontend/src/features/requirements frontend/src/app/requirements
 ```
 
-그리고 아래 세 파일에서 `requirements` 관련 줄을 지웁니다.
+그리고 아래 두 파일에서 `requirements` 관련 줄을 지웁니다.
 
 - `backend/app/api.py`
 - `backend/alembic/env.py`
-- `frontend/src/app/router.tsx`
 
 샘플 테이블 마이그레이션이 이미 있다면, 새 마이그레이션으로 테이블을 지우거나 새 프로젝트라면 `alembic/versions/`를 비우고 다시 생성합니다.
 
@@ -143,26 +142,37 @@ frontend/src/features/meetings/
 ├── api.ts
 ├── types.ts
 ├── components/
-├── pages/
-└── routes.tsx
+└── screens/
+    └── MeetingListScreen.tsx
 ```
 
 `api.ts`는 공통 API 클라이언트를 씁니다.
 
 ```ts
-import { api } from "../../shared/api/client";
+import { api } from "@/shared/api/client";
 import type { Meeting, MeetingCreate } from "./types";
 
 export const createMeeting = (body: MeetingCreate) =>
   api.post<Meeting>("/meetings", body).then((r) => r.data);
 ```
 
-`frontend/src/app/router.tsx`에 `routes.tsx`를 등록합니다.
+Next.js는 `src/app/` 아래 폴더 경로가 곧 URL입니다. 화면 로직은 `features/`에 두고, `app/`에는 import만 하는 얇은 페이지를 만듭니다.
+
+```tsx
+// frontend/src/app/meetings/page.tsx  →  /meetings
+import { MeetingListScreen } from "@/features/meetings/screens/MeetingListScreen";
+
+export default function Page() {
+  return <MeetingListScreen />;
+}
+```
+
+화면에서 `useState`, `useQuery`, 클릭 이벤트 등을 쓰면 해당 파일 맨 위에 `"use client";`를 적습니다.
 
 ## 7. 체크리스트
 
 - [ ] 공통 기반(`core`, `auth`, `llm`, `shared`)에서 새 기능을 import 하지 않았다
-- [ ] 수정한 공통 파일은 `api.py`, `alembic/env.py`, `router.tsx` 세 곳뿐이다
+- [ ] 수정한 공통 위치는 `api.py`, `alembic/env.py`, `src/app/<기능>/` 세 곳뿐이다
 - [ ] 새 환경 변수가 있다면 `.env.example`과 README 환경 변수 표에 추가했다
 - [ ] 테스트가 실제 LLM API를 호출하지 않는다
 - [ ] `uv run pytest`, `uv run ruff check .`, `npm run lint`, `npm run build`가 통과한다

@@ -13,7 +13,7 @@ FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작�
 |---|---|
 | 백엔드 | FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, PyJWT, pwdlib |
 | AI | LangChain (모델은 `.env`에서 교체) |
-| 프론트엔드 | React + TypeScript (Vite), React Router, TanStack Query, axios |
+| 프론트엔드 | Next.js (App Router) + React + TypeScript, TanStack Query, axios |
 | 개발 환경 | uv (Python 패키지), npm, Docker Compose (DB) |
 | CI | GitHub Actions (백엔드/프론트 각각) |
 
@@ -62,8 +62,8 @@ npm install
 npm run dev
 ```
 
-- 화면: http://localhost:5173
-- 개발 중 `/api` 요청은 Vite 프록시가 백엔드(8000)로 전달하므로 CORS 설정 없이 동작합니다.
+- 화면: http://localhost:3000
+- 개발 중 `/api` 요청은 Next.js 프록시(`next.config.ts`의 rewrites)가 백엔드(8000)로 전달하므로 CORS 설정 없이 동작합니다.
 
 ## 폴더 구조
 
@@ -80,9 +80,8 @@ meerkit/
 │   └── tests/
 ├── frontend/
 │   └── src/
-│       ├── app/         # 라우터, Provider 조립
+│       ├── app/         # Next.js 라우트(폴더 = URL), 레이아웃, Provider
 │       ├── shared/      # 공통 기반: API 클라이언트, 인증, 공통 컴포넌트
-│       ├── pages/       # 로그인 등 공통 페이지
 │       └── features/    # 샘플 서비스 화면 (교체 영역)
 ├── docs/                # 설계 문서
 ├── docker-compose.yml   # 로컬 PostgreSQL
@@ -115,7 +114,8 @@ meerkit/
 | `CORS_ORIGINS` | backend | 허용할 프론트 주소, 여러 개면 쉼표로 구분 |
 | `LLM_PROVIDER`, `LLM_MODEL` | backend | 사용할 LLM 공급자와 모델 |
 | `OPENAI_API_KEY` | backend | OpenAI 키 |
-| `VITE_API_BASE_URL` | frontend | API 기본 경로 (개발 기본값 `/api`) |
+| `NEXT_PUBLIC_API_BASE_URL` | frontend | 브라우저가 호출할 API 기본 경로 (기본값 `/api`) |
+| `API_PROXY_TARGET` | frontend | `/api` 프록시가 전달할 백엔드 주소 (기본값 `http://localhost:8000`) |
 
 ## 문서
 

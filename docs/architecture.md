@@ -86,21 +86,24 @@ backend/
 
 ```text
 frontend/src/
-├── app/            # App.tsx, router.tsx, providers.tsx
+├── app/                 # Next.js App Router: 폴더 경로 = URL
+│   ├── layout.tsx       # 공통 레이아웃 (html, body, Providers)
+│   ├── providers.tsx    # TanStack Query 등 클라이언트 Provider
+│   ├── page.tsx         # /
+│   ├── login/page.tsx   # /login
+│   └── requirements/    # /requirements/... (기능 화면을 import만 하는 얇은 페이지)
 ├── shared/
 │   ├── api/        # axios 인스턴스, JWT 헤더, 401 처리
 │   ├── auth/       # AuthContext, useAuth, ProtectedRoute
 │   ├── components/ # Button, Input, Table, FileUpload, Layout
 │   ├── hooks/
 │   └── lib/
-├── pages/          # Login, Signup, NotFound
 └── features/
     └── requirements/
         ├── api.ts
         ├── types.ts
         ├── components/
-        ├── pages/
-        └── routes.tsx   # 이 기능의 라우트 묶음
+        └── screens/     # 화면 컴포넌트 (app/requirements/*/page.tsx 에서 import)
 ```
 
 ## 5. 공통 규칙
@@ -124,13 +127,13 @@ frontend/src/
 
 ## 6. 기능을 추가할 때 고치는 곳
 
-공통 기반을 건드리지 않고 아래 세 곳만 수정합니다.
+공통 기반을 건드리지 않고 아래 세 곳만 추가·수정합니다.
 
 | 파일 | 수정 내용 |
 |---|---|
 | `backend/app/api.py` | 새 기능 라우터 include 한 줄 |
 | `backend/alembic/env.py` | 새 기능 모델 import 한 줄 |
-| `frontend/src/app/router.tsx` | 새 기능 `routes.tsx` 등록 한 줄 |
+| `frontend/src/app/<기능>/` | 새 기능 URL 폴더와 `page.tsx` (기능 화면을 import만 함) |
 
 자세한 순서는 [how-to-add-feature.md](how-to-add-feature.md)를 보세요.
 
@@ -139,7 +142,7 @@ frontend/src/
 | 항목 | 선택 | 이유 |
 |---|---|---|
 | 패키지 관리 | uv | 빠르고 `uv.lock`으로 팀원 간 버전이 정확히 일치 |
-| 프론트 | Vite + React + TS | 가볍고 현재 React 생태계의 기본 선택 |
+| 프론트 | Next.js (App Router) + React + TS | 폴더 구조가 곧 URL이라 라우팅 설정이 없고, 배포 방식이 표준화됨 |
 | DB 접근 | SQLAlchemy 2.0 동기 | 비동기보다 디버깅이 쉬움 |
 | 비밀번호 해시 | pwdlib[argon2] | passlib 유지보수 중단, FastAPI 공식 문서 기준 |
 | 문서 파싱 | MarkItDown | txt/docx/pdf를 하나의 API로 처리 |
