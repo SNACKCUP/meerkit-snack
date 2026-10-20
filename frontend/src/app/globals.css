@@ -1,48 +1,16 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "../meerkit/styles/tokens.css";
-
-/* tokens.css 의 변수를 Tailwind utility 이름(bg-primary, rounded-md, bg-sand-50 ...)으로 연결 */
-@theme inline {
-  --font-sans: var(--mk-font-sans);
-
-  --color-sand-50: var(--mk-sand-50);
-  --color-sand-100: var(--mk-sand-100);
-  --color-sand-200: var(--mk-sand-200);
-  --color-sand-500: var(--mk-sand-500);
-  --color-sand-700: var(--mk-sand-700);
-  --color-sand-900: var(--mk-sand-900);
-
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+* {
+  box-sizing: border-box;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-  }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: #1f2328;
+  background: #ffffff;
+}
+
+.home {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 16px;
 }
