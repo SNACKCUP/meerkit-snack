@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     database_url: str
     jwt_secret_key: str
     jwt_expire_minutes: int = 60
-    cors_origins: str = "http://localhost:5173"  # 여러 개면 쉼표로 구분
+    cors_origins: str = "http://localhost:3000"  # 여러 개면 쉼표로 구분
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     openai_api_key: str = ""

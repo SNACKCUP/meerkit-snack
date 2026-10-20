@@ -1,0 +1,16 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  color: #1f2328;
+  background: #ffffff;
+}
+
+.home {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 16px;
+}
