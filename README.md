@@ -11,9 +11,9 @@ FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작�
 
 | 영역 | 기술 |
 |---|---|
-| 백엔드 | FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, PyJWT, pwdlib |
+| 백엔드 | FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL, PyJWT, pwdlib (회원가입·로그인·역할·멤버 관리 포함) |
 | AI | LangChain (모델은 `.env`에서 교체) |
-| 프론트엔드 | Next.js (App Router) + React + TypeScript, TanStack Query, axios |
+| 프론트엔드 | Next.js (App Router) + React + TypeScript, Tailwind CSS, shadcn/ui, Zustand, TanStack Query, axios |
 | 개발 환경 | uv (Python 패키지), npm, Docker Compose (DB) |
 | CI | GitHub Actions (백엔드/프론트 각각) |
 
@@ -47,6 +47,7 @@ cd backend
 cp .env.example .env       # OPENAI_API_KEY 등 필요한 값 채우기
 uv sync
 uv run alembic upgrade head
+uv run python -m app.users.seed   # 로컬 테스트용 관리자 계정 (admin@example.com)
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
@@ -62,7 +63,8 @@ npm install
 npm run dev
 ```
 
-- 화면: http://localhost:3000
+- 화면: http://localhost:3000 → 회원가입·로그인, `/me`(내 정보), `/admin/members`(관리자 전용 멤버 관리)
+- 관리자 계정: `backend/.env`의 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (**로컬 전용** 값)
 - 개발 중 `/api` 요청은 Next.js 프록시(`next.config.ts`의 rewrites)가 백엔드(8000)로 전달하므로 CORS 설정 없이 동작합니다.
 
 ## 폴더 구조
@@ -71,8 +73,10 @@ npm run dev
 meerkit/
 ├── backend/
 │   ├── app/
-│   │   ├── core/        # 공통 기반: 설정, DB, 예외, 로깅, 보안
-│   │   ├── auth/        # 공통 기반: 회원, 로그인, JWT
+│   │   ├── core/        # 공통 기반: 설정, DB, 보안(해시·JWT)
+│   │   ├── users/       # 공통 기반: 회원, 역할, 멤버 관리
+│   │   ├── auth/        # 공통 기반: 가입, 로그인, 토큰 갱신
+│   │   ├── permissions/ # 공통 기반: 역할 검사
 │   │   ├── llm/         # 공통 기반: LangChain 클라이언트, 프롬프트
 │   │   └── features/    # 샘플 서비스 (교체 영역)
 │   │       └── requirements/
@@ -80,15 +84,18 @@ meerkit/
 │   └── tests/
 ├── frontend/
 │   └── src/
-│       ├── app/         # Next.js 라우트(폴더 = URL), 레이아웃, Provider
-│       ├── shared/      # 공통 기반: API 클라이언트, 인증, 공통 컴포넌트
-│       └── features/    # 샘플 서비스 화면 (교체 영역)
+│       ├── meerkit/     # 공통 기반(킷 본체): API 클라이언트, 인증, 관리자, 초기 화면
+│       ├── app/         # Next.js 라우트(폴더 = URL)
+│       │   ├── (meerkit)/   # 킷 화면 연결 (/me, /admin/members)
+│       │   └── (service)/   # 서비스 화면 (교체 영역)
+│       └── components/ui/   # shadcn 컴포넌트
 ├── docs/                # 설계 문서
 ├── docker-compose.yml   # 로컬 PostgreSQL
+├── CLAUDE.md            # AI 작업 규칙
 └── .github/workflows/   # CI
 ```
 
-**핵심 규칙: 공통 기반은 `features/`를 import 하지 않습니다.** 그래서 샘플 서비스 폴더를 지워도 스타터킷은 그대로 동작합니다.
+**핵심 규칙: 공통 기반은 서비스 코드(백엔드 `features/`, 프론트 `app/(service)/`)를 import 하지 않습니다.** 그래서 샘플 서비스 폴더를 지워도 스타터킷은 그대로 동작합니다.
 자세한 내용은 [docs/architecture.md](docs/architecture.md)를 보세요.
 
 ## 자주 쓰는 명령
@@ -109,12 +116,16 @@ meerkit/
 | 변수 | 위치 | 설명 |
 |---|---|---|
 | `DATABASE_URL` | backend | PostgreSQL 접속 주소 |
-| `JWT_SECRET_KEY` | backend | JWT 서명 키 (운영에서는 반드시 변경) |
-| `JWT_EXPIRE_MINUTES` | backend | 토큰 만료 시간(분) |
+| `JWT_SECRET_KEY` | backend | JWT 서명 키, 32자 이상 (운영에서는 반드시 변경) |
+| `JWT_EXPIRE_MINUTES` | backend | 액세스 토큰 유효 시간(분, 기본 30) |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | backend | 리프레시 토큰(httpOnly 쿠키) 유효 기간(일, 기본 14) |
+| `COOKIE_SECURE` | backend | 배포(https)에서는 `true` |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` | backend | 로컬 테스트용 관리자 계정 (**로컬 전용**) |
 | `CORS_ORIGINS` | backend | 허용할 프론트 주소, 여러 개면 쉼표로 구분 |
 | `LLM_PROVIDER`, `LLM_MODEL` | backend | 사용할 LLM 공급자와 모델 |
 | `OPENAI_API_KEY` | backend | OpenAI 키 |
 | `NEXT_PUBLIC_API_BASE_URL` | frontend | 브라우저가 호출할 API 기본 경로 (기본값 `/api`) |
+| `NEXT_PUBLIC_DOCS_URL` | frontend | 초기 화면의 "사용 설명서" 링크 |
 | `API_PROXY_TARGET` | frontend | `/api` 프록시가 전달할 백엔드 주소 (기본값 `http://localhost:8000`) |
 
 ## 문서
@@ -123,6 +134,7 @@ meerkit/
 - [새 기능 추가하기](docs/how-to-add-feature.md): 이 킷을 Fork 해서 내 서비스를 만드는 순서
 - [향후 확장](docs/future-extensions.md): 이번 범위에서 제외한 항목
 - [협업 규칙](CONTRIBUTING.md): 브랜치, 커밋, PR 규칙
+- [AI 작업 규칙](CLAUDE.md): Claude Code 등 AI 도구가 따르는 위치·의존·범위 규칙
 
 ## 문제 해결
 

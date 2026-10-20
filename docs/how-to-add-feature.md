@@ -7,7 +7,7 @@ MeerKit을 Fork 해서 내 서비스를 만들 때 따라 하는 순서입니다
 
 ```bash
 rm -rf backend/app/features/requirements backend/tests/features/requirements
-rm -rf frontend/src/features/requirements frontend/src/app/requirements
+rm -rf "frontend/src/app/(service)/requirements"
 ```
 
 그리고 아래 두 파일에서 `requirements` 관련 줄을 지웁니다.
@@ -39,7 +39,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.auth.deps import get_current_user
 from app.features.meetings import service
 from app.features.meetings.schemas import MeetingCreate, MeetingRead
 
@@ -135,44 +135,55 @@ backend/tests/features/meetings/test_router.py
 uv run pytest tests/features/meetings
 ```
 
-## 6. 프론트엔드 기능 폴더
+## 6. 프론트엔드 화면
+
+서비스 화면은 `src/app/(service)/` 아래에 만듭니다. `(service)`는 URL에 나타나지 않습니다.
 
 ```text
-frontend/src/features/meetings/
-├── api.ts
-├── types.ts
-├── components/
-└── screens/
-    └── MeetingListScreen.tsx
+frontend/src/app/(service)/meetings/
+├── page.tsx           →  /meetings
+├── [id]/page.tsx      →  /meetings/123
+└── _components/       # 이 화면에서만 쓰는 부품 (밑줄 폴더는 URL이 되지 않음)
+    ├── api.ts
+    ├── types.ts
+    └── MeetingList.tsx
 ```
 
-`api.ts`는 공통 API 클라이언트를 씁니다.
+킷 기능은 **`@/meerkit`(공개 API)에서만** import 합니다. 킷 내부 파일(`@/meerkit/api/...`)을 직접 import 하면 ESLint가 막습니다.
 
 ```ts
-import { api } from "@/shared/api/client";
+// _components/api.ts
+import { api } from "@/meerkit";
 import type { Meeting, MeetingCreate } from "./types";
 
 export const createMeeting = (body: MeetingCreate) =>
   api.post<Meeting>("/meetings", body).then((r) => r.data);
 ```
 
-Next.js는 `src/app/` 아래 폴더 경로가 곧 URL입니다. 화면 로직은 `features/`에 두고, `app/`에는 import만 하는 얇은 페이지를 만듭니다.
+로그인이 필요한 화면은 가드로 감쌉니다. 화면에서 `useState`, `useQuery`, 클릭 이벤트 등을 쓰면 해당 파일 맨 위에 `"use client";`를 적습니다.
 
 ```tsx
-// frontend/src/app/meetings/page.tsx  →  /meetings
-import { MeetingListScreen } from "@/features/meetings/screens/MeetingListScreen";
+// page.tsx
+import { RequireAuth } from "@/meerkit";
+import { MeetingList } from "./_components/MeetingList";
 
 export default function Page() {
-  return <MeetingListScreen />;
+  return (
+    <RequireAuth>
+      <MeetingList />
+    </RequireAuth>
+  );
 }
 ```
 
-화면에서 `useState`, `useQuery`, 클릭 이벤트 등을 쓰면 해당 파일 맨 위에 `"use client";`를 적습니다.
+관리자만 쓰는 화면은 `<RequireRole role="ADMIN">`, 백엔드 API는 `Depends(require_admin)`(`app.permissions.deps`)를 씁니다.
+
+UI 부품은 `@/components/ui`(shadcn)를, 스타일은 Tailwind utility를 씁니다.
 
 ## 7. 체크리스트
 
-- [ ] 공통 기반(`core`, `auth`, `llm`, `shared`)에서 새 기능을 import 하지 않았다
-- [ ] 수정한 공통 위치는 `api.py`, `alembic/env.py`, `src/app/<기능>/` 세 곳뿐이다
+- [ ] 공통 기반(`core`, `users`, `auth`, `permissions`, `llm`, `src/meerkit`)에서 새 기능을 import 하지 않았다
+- [ ] 수정한 공통 위치는 `api.py`, `alembic/env.py`, `src/app/(service)/<기능>/` 세 곳뿐이다
 - [ ] 새 환경 변수가 있다면 `.env.example`과 README 환경 변수 표에 추가했다
 - [ ] 테스트가 실제 LLM API를 호출하지 않는다
 - [ ] `uv run pytest`, `uv run ruff check .`, `npm run lint`, `npm run build`가 통과한다
