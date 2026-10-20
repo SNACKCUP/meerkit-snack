@@ -24,7 +24,7 @@ jobs:
           --health-cmd pg_isready --health-interval 5s --health-retries 10
     env:
       DATABASE_URL: postgresql+psycopg://starter:starter@localhost:5432/starter_test
-      JWT_SECRET_KEY: ci-secret
+      JWT_SECRET_KEY: ci-only-secret-key-at-least-32-bytes-long
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6

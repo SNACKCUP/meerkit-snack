@@ -19,9 +19,11 @@
 | 앱 컨테이너화 | backend/frontend Dockerfile과 전체 서비스 Docker Compose |
 | 배포 | 클라우드 배포 파이프라인 (CD), 환경별 설정 분리 (dev/staging/prod) |
 | 인증 | 리프레시 토큰, 소셜 로그인, 비밀번호 재설정 |
-| 권한 | 역할 기반 권한(RBAC) 세분화 |
+| 권한 | 화면·기능 단위 권한: `permissions`, `role_permissions` 테이블을 추가하고 역할 대신 권한 코드(`REQUIREMENT_CONFIRM` 등)로 검사. 지금의 users/roles/user_roles는 그대로 둠 |
 | 비동기 작업 | 긴 LLM 작업을 백그라운드 큐(Celery, RQ 등)로 처리하고 진행 상태 표시 |
-| LLM 운영 | 응답 캐싱, 토큰 사용량·비용 기록, 프롬프트 버전 관리, 트레이싱 |
+| LLM 운영 | 응답 캐싱, 프롬프트 버전 관리, 트레이싱 |
+| 사용자 AI 키·사용량 | 사용자가 AI 공급자와 API 키를 등록(개인/공용 구분, 암호화 저장), 호출마다 토큰 사용량·비용 기록(`usage_logs`), 잔여량 10% 알림. OpenAI·Claude는 잔액 API가 없어 "충전 금액 - 사용 금액" 추정 + 잔액 부족 오류 감지, OpenRouter는 실제 잔액 조회 |
+| 설치 도구 | `npm run setup`(한 번에 환경 구성), `create-meerkit`(새 프로젝트 생성), 사용 설명서 사이트 |
 | 파일 저장소 | 로컬 디스크 대신 S3 같은 오브젝트 스토리지 |
 | 관측성 | 구조화 로그 수집, 에러 추적(Sentry 등), 메트릭 |
 | 테스트 | 프론트엔드 단위 테스트, E2E 테스트 (Playwright) |

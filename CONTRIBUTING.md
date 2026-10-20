@@ -43,6 +43,7 @@ git checkout -b feat/upload-api
 - `backend/app/api.py`
 - `backend/alembic/env.py`
 - `frontend/src/app/layout.tsx` (공통 레이아웃)
+- `frontend/src/meerkit/index.ts` (킷 공개 API)
 - `backend/pyproject.toml`, `frontend/package.json` (의존성 추가)
 
 마이그레이션 파일(`alembic/versions/`)은 한 번에 한 사람만 생성합니다.

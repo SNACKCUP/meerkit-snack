@@ -17,6 +17,7 @@ dependencies = [
     "psycopg[binary]>=3.3.6",
     "pwdlib[argon2]>=0.3.1",
     "pydantic-settings>=2.16.0",
+    "pydantic[email]>=2.14.1",
     "pyjwt>=2.15.1",
     "python-multipart>=0.0.32",
     "sqlalchemy>=2.1.5",
@@ -40,3 +41,17 @@ dev = [
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI의 Depends(), Cookie() 등을 함수 기본값에 쓰는 것은 FastAPI의 정식 사용법입니다
+extend-immutable-calls = [
+    "fastapi.Body",
+    "fastapi.Cookie",
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Query",
+    "fastapi.Security",
+]
