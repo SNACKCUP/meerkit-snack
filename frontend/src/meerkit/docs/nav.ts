@@ -1,0 +1,75 @@
+export interface DocMeta {
+  slug: string;
+  title: string;
+  description: string;
+}
+
+export interface DocGroup {
+  label: string;
+  items: DocMeta[];
+}
+
+// 사이드바 순서이자 이전/다음 페이지 순서.
+export const docGroups: DocGroup[] = [
+  {
+    label: "Getting Started",
+    items: [
+      { slug: "introduction", title: "Introduction", description: "Meerkit이 무엇이고 무엇을 제공하는지 소개합니다." },
+      { slug: "installation", title: "Installation", description: "명령어 한 줄로 프로젝트를 만들고 로컬에서 실행합니다." },
+      { slug: "project-structure", title: "Project Structure", description: "폴더 구조와 어디에 무엇을 두는지 설명합니다." },
+      { slug: "theming", title: "Theming", description: "Tailwind와 shadcn 위에 얹은 Meerkit 스타일을 설정하고, 쓰지 않을 때 정리하는 방법입니다." },
+      { slug: "deployment", title: "Deployment", description: "Meerkit으로 만든 내 서비스를 운영 환경에 배포할 때 설정하고 확인할 것입니다." },
+    ],
+  },
+  {
+    label: "Core Concepts",
+    items: [
+      { slug: "authentication", title: "Authentication", description: "회원가입, 로그인, 토큰 흐름과 보안 규칙을 설명합니다." },
+      { slug: "roles", title: "Roles & Permissions", description: "역할 4종과 CRUD 권한, 가드 사용법을 설명합니다." },
+      { slug: "data-model", title: "Data Model", description: "users, roles 테이블과 필드를 정리합니다." },
+      { slug: "api-reference", title: "API Reference", description: "백엔드 엔드포인트와 요청·응답 예시입니다." },
+      { slug: "login-lockout", title: "Login Lockout", description: "n번 연속 실패하면 m분 동안 로그인을 잠그고, 새로고침해도 유지하는 방법입니다." },
+      { slug: "security", title: "Security", description: "킷이 맡는 보안과 내 서비스가 직접 챙겨야 할 보안 체크리스트입니다." },
+    ],
+  },
+  {
+    label: "Guides",
+    items: [
+      { slug: "guide-protect-page", title: "Protect a page", description: "내 서비스 화면을 로그인과 역할로 보호하는 순서를 따라 합니다." },
+      { slug: "guide-add-role", title: "Add a role", description: "기본 4종 외에 새 역할을 추가하는 순서입니다." },
+      { slug: "guide-call-api", title: "Call your own API", description: "내 백엔드 API를 토큰이 자동으로 붙는 클라이언트로 호출합니다." },
+    ],
+  },
+  {
+    label: "Components",
+    items: [
+      { slug: "login-form", title: "Login Form", description: "아이디와 비밀번호로 로그인하는 폼입니다." },
+      { slug: "signup-form", title: "Signup Form", description: "아이디, 이름, 이메일, 비밀번호를 받는 가입 폼입니다." },
+      { slug: "email-verification", title: "Email Verification", description: "이메일 인증번호 받기·확인 버튼. 서비스에 따라 켜고 끌 수 있습니다." },
+      { slug: "address-field", title: "Address Field", description: "주소 검색 버튼으로 우편번호와 주소를 함께 입력하는 두 가지 주소 입력 방식입니다." },
+      { slug: "file-dropzone", title: "File Dropzone", description: "끌어다 놓거나 눌러서 첨부파일을 고르는 영역입니다." },
+      { slug: "terms-agreement", title: "Terms Agreement", description: "가입 시 약관 동의를 받는 체크박스 영역과, 체크박스·라디오 컴포넌트입니다." },
+      { slug: "password-reset", title: "Password Reset", description: "이메일 링크로 비밀번호를 다시 정하는 비밀번호 찾기·재설정 화면입니다." },
+      { slug: "profile", title: "Profile & Password", description: "내 정보 수정과 비밀번호 변경 화면입니다." },
+      { slug: "auth-dialog", title: "Auth Dialog", description: "로그인과 가입을 하나로 묶은 모달입니다." },
+      { slug: "user-avatar", title: "User Avatar", description: "프로필 이미지 또는 이니셜로 사용자를 나타내는 아바타입니다." },
+      { slug: "user-menu", title: "User Menu", description: "로그인한 사용자가 자기 계정을 다루는 아바타 드롭다운 메뉴입니다." },
+      { slug: "member-table", title: "Member Table", description: "관리자용 유저 목록 테이블입니다." },
+      { slug: "member-directory", title: "Member Directory", description: "검색, 필터, 페이지네이션을 갖춘 관리자 멤버 목록입니다." },
+      { slug: "role-manager", title: "Role Manager", description: "관리자가 사용자에게 권한(역할)을 부여하거나 바꾸는 확인 창입니다." },
+      { slug: "role-select", title: "Role Select", description: "유저의 역할을 바꾸는 선택 상자입니다." },
+      { slug: "route-guards", title: "Route Guards", description: "로그인과 역할로 화면을 보호합니다." },
+    ],
+  },
+  {
+    label: "Reference",
+    items: [
+      { slug: "hooks", title: "Hooks & State", description: "useAuth, 쿼리, 뮤테이션, 스토어 목록입니다." },
+      { slug: "faq", title: "FAQ", description: "자주 묻는 질문과 문제 해결입니다." },
+    ],
+  },
+];
+
+export const allDocs: DocMeta[] = docGroups.flatMap((g) => g.items);
+
+export const docHref = (slug: string) => (slug === "introduction" ? "/docs" : `/docs/${slug}`);

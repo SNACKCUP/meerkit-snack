@@ -1,0 +1,36 @@
+import userConfig from "../../meerkit.config";
+
+const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL ?? "https://github.com/sensibly00-glitch/meerkit";
+
+export const meerkitConfig = {
+  apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api",
+  // 웰컴 페이지 Docs 버튼이 여는 주소. 문서를 따로 배포했다면 그 주소를 넣고, 없으면 같은 앱의 /docs를 쓴다.
+  docsUrl: process.env.NEXT_PUBLIC_DOCS_URL ?? "/docs",
+  githubUrl,
+  // 이 앱에서 /docs 라우트를 열어 둘지. 운영에서는 false로 닫는 것을 권장한다.
+  showDocsPage: process.env.NEXT_PUBLIC_SHOW_DOCS_PAGE !== "false",
+  // 문서 사이트로만 배포할 때. 홈은 /docs로 이동하고 앱 화면(/me, /admin)은 닫힌다.
+  docsOnly: process.env.NEXT_PUBLIC_DOCS_ONLY === "true",
+  theme: userConfig.theme ?? "meerkit",
+  motion: userConfig.motion ?? true,
+  signup: {
+    passwordConfirm: userConfig.signup?.passwordConfirm ?? false,
+    optionalFields: userConfig.signup?.optionalFields ?? [],
+    terms: userConfig.signup?.terms ?? [],
+    addressType: userConfig.signup?.addressType ?? "basic",
+    emailVerification: userConfig.signup?.emailVerification ?? false,
+  },
+  login: {
+    maxAttempts: userConfig.login?.maxAttempts ?? 5,
+    lockMinutes: userConfig.login?.lockMinutes ?? 5,
+  },
+  routes: {
+    home: "/",
+    me: "/me",
+    adminMembers: "/admin/members",
+    resetPassword: "/reset-password",
+    terms: "/terms",
+    privacy: "/privacy",
+    docs: "/docs",
+  },
+} as const;
