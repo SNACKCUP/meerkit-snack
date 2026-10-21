@@ -1,33 +1,43 @@
 "use client";
 
+import { useCallback, useState } from "react";
+
+import { ADMIN_ROLE } from "../roles";
 import { RequireRole } from "../auth/guards/RequireRole";
-import { MemberTable } from "./components/MemberTable";
-import { useMembers, useUpdateActive, useUpdateRole } from "./queries";
+import { useAuth } from "../auth/hooks";
+import type { MemberQuery } from "../types";
+import { MemberDirectory } from "./components/MemberDirectory";
+import { defaultMemberQuery } from "./members-filter";
+import { useMembers, useRemoveMember, useUpdateRole } from "./queries";
 
 function Members() {
-  const { data, isLoading, isError } = useMembers();
+  const [query, setQuery] = useState<MemberQuery>(defaultMemberQuery);
+  const onQueryChange = useCallback((patch: Partial<MemberQuery>) => setQuery((q) => ({ ...q, ...patch })), []);
+  const { data, isFetching, isError } = useMembers(query);
   const updateRole = useUpdateRole();
-  const updateActive = useUpdateActive();
+  const removeMember = useRemoveMember();
+  const { user } = useAuth();
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">멤버 관리</h1>
-      {isLoading && <p className="text-sm text-muted-foreground">불러오는 중…</p>}
-      {isError && <p className="text-sm text-destructive">목록을 불러오지 못했습니다.</p>}
-      {data && (
-        <MemberTable
-          members={data}
-          onRoleChange={(id, role) => updateRole.mutate({ id, role })}
-          onActiveChange={(id, active) => updateActive.mutate({ id, active })}
-        />
-      )}
+    <main className="mk-rise mx-auto max-w-5xl px-4 py-8">
+      <h1 className="mb-6 text-3xl font-semibold tracking-tight">멤버 <span className="text-brand">관리</span></h1>
+      {isError && <p className="mb-4 text-sm text-destructive">목록을 불러오지 못했습니다.</p>}
+      <MemberDirectory
+        query={query}
+        onQueryChange={onQueryChange}
+        data={data}
+        loading={isFetching}
+        onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}
+        onRemove={(id) => removeMember.mutate(id)}
+        currentUserId={user?.id}
+      />
     </main>
   );
 }
 
 export function AdminMembersPage() {
   return (
-    <RequireRole role="admin">
+    <RequireRole role={ADMIN_ROLE}>
       <Members />
     </RequireRole>
   );

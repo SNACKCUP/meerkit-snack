@@ -1,23 +1,21 @@
 "use client";
 
-import type { Role } from "../../types";
+import { NativeSelect } from "@/components/ui/native-select";
+
+import { ROLES } from "../../roles";
 
 interface RoleSelectProps {
-  value: Role;
-  onChange: (role: Role) => void;
+  value: number;
+  onChange: (roleId: number) => void;
   disabled?: boolean;
 }
 
 export function RoleSelect({ value, onChange, disabled }: RoleSelectProps) {
   return (
-    <select
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value as Role)}
-      className="h-8 rounded-md border border-input bg-background px-2 text-sm"
-    >
-      <option value="user">user</option>
-      <option value="admin">admin</option>
-    </select>
+    <NativeSelect value={value} disabled={disabled} onChange={(e) => onChange(Number(e.target.value))} className="h-8">
+      {ROLES.map((r) => (
+        <option key={r.id} value={r.id}>{r.name}</option>
+      ))}
+    </NativeSelect>
   );
 }

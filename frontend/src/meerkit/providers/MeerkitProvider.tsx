@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 
 import { AuthDialog } from "../auth/components/AuthDialog";
+import { useLockoutStore } from "../auth/lockout";
 import { useAuthStore } from "../auth/store";
 import { meerkitConfig } from "../config";
 
@@ -26,6 +27,10 @@ function useRestoreSession() {
 export function MeerkitProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
   useRestoreSession();
+  // 로그인 실패 횟수·잠금 시각을 sessionStorage에서 복원한다 (새로고침해도 유지)
+  useEffect(() => {
+    useLockoutStore.persist.rehydrate();
+  }, []);
   return (
     <QueryClientProvider client={queryClient}>
       {children}
