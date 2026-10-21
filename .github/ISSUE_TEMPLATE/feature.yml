@@ -1,0 +1,66 @@
+name: 기능
+description: 새 API, 새 화면, 킷 기능을 추가할 때
+title: "[feat] "
+labels: ["feat"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영역
+      options:
+        - 킷 백엔드 (core / users / auth / permissions / llm)
+        - 킷 프론트 (src/meerkit)
+        - 서비스 백엔드 (app/features)
+        - 서비스 프론트 (app/(service))
+        - CI/CD · 배포
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: 단계
+      options:
+        - 1단계 (10/21~10/23)
+        - 2단계 (10/26~10/29)
+        - 3단계 (10/30~11/03)
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 왜 필요한가
+      description: 사용자가 무엇을 할 수 있게 되는지 한두 줄로
+      placeholder: 관리자가 업로드한 문서의 요구사항 목록을 확인할 수 있다.
+    validations:
+      required: true
+  - type: textarea
+    id: todo
+    attributes:
+      label: 할 일
+      description: 체크리스트로 적으면 진행률이 이슈 목록에 보입니다
+      value: |
+        - [ ] 
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 조건
+      description: 무엇을 확인하면 끝났다고 할지
+      placeholder: |
+        - GET /api/requirements 가 200과 목록을 돌려준다
+        - pytest, npm run build 통과
+    validations:
+      required: true
+  - type: textarea
+    id: ref
+    attributes:
+      label: 참고 (API 계약, 화면 시안, 관련 이슈)
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 범위 확인
+      options:
+        - label: 사용량 기록·권한 테이블 같은 "향후 확장" 항목이 아닙니다 (docs/future-extensions.md)
+          required: true

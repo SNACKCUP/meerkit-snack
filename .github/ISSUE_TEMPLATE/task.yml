@@ -1,0 +1,32 @@
+name: 작업
+description: 문서, 설정, CI, 리팩터링, 테스트, 학습 정리
+title: "[task] "
+labels: ["task"]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: 종류
+      description: 커밋 종류와 같습니다
+      options:
+        - docs (문서)
+        - chore (설정, 의존성, CI)
+        - refactor (동작 변화 없는 정리)
+        - test (테스트)
+        - study (함께 공부할 주제)
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 할 일
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: 완료 조건
+    validations:
+      required: true
