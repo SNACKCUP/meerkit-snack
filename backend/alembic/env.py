@@ -2,11 +2,10 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
+import app.users.models  # noqa: F401
 from alembic import context
 from app.core.config import settings
 from app.core.database import Base
-
-# import app.auth.models  ← auth 모델을 만든 뒤 주석 해제
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

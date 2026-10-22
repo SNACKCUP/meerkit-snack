@@ -33,9 +33,9 @@
 | 도메인 / 상황               | 참조 하네스 경로                            | 주요 확인 사항                              |
 | :-------------------------- | :------------------------------------------ | :------------------------------------------ |
 | **Next.js / 런타임 빌드**   | `.claude/harness/errors/next-app-router.md` | 클라이언트/서버 컴포넌트 경계, SSR 환경변수 |
-| **Supabase / 데이터베이스** | `.claude/harness/errors/supabase-rls.md`    | RLS 무한 루프 방지, 마이그레이션 외래키     |
-| **스타일링 / CSS**          | `.claude/harness/rules/tailwind-v4.md`      | Tailwind v4 `@utility` 문법, CSS 변수 토큰  |
-| **DB 마이그레이션/배포**    | `.claude/harness/workflows/db-migration.md` | 롤백 계획 및 무중단 스키마 변경             |
+| **DB 접근 / 권한** (Supabase 미사용) | `.claude/harness/errors/supabase-rls.md` | 서버가 권한 판단, 해시·쿠키 규칙, 프론트와 어긋난 스키마 표 |
+| **스타일링 / CSS**          | `.claude/harness/rules/tailwind-v4.md`      | CSS 변수 토큰, 빌드로 CSS 검증, 움직임 끄기  |
+| **DB 마이그레이션/배포**    | `.claude/harness/workflows/db-migration.md` | Alembic 순서, 롤백 계획, 무중단 스키마 변경 |
 
 ---
 
@@ -68,3 +68,82 @@
 1. **임의 파일 증식 금지:** 승인 없이 `.claude/harness/` 외부에 가이드 md 파일을 생성하지 마십시오. 모든 에러/규칙 문서는 `.claude/harness/errors/`, `.claude/harness/rules/`, `.claude/harness/workflows/` 내에만 위치합니다.
 2. **트러블슈팅 행 추출 의무:** 에러가 해결되고 사용자가 승인하면, `docs/troubleshooting.xlsx`에 바로 붙여넣을 수 있도록 아래 표 형식으로 마크다운 데이터를 즉시 제공합니다:
    - `| ID | 일자 | 도메인 | 심각도 | 이슈 요약 | 증상 및 에러 로그 | 근본 원인 | 실패했던 시도 | 최종 해결책 | 하네스 반영 파일 |`
+
+> 저장소 공통 규칙(위치, 의존 방향, 범위, 상태, 스타일, 보안, 확인 명령)은 아래 "MeerKit AI 작업 규칙"에 있습니다. 모든 작업에 공통으로 적용됩니다.
+
+---
+
+# MeerKit AI 작업 규칙
+
+Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르는 규칙입니다. 사람도 같은 규칙을 따릅니다.
+구조 설명은 [docs/architecture.md](docs/architecture.md), 기능 추가 순서는 [docs/how-to-add-feature.md](docs/how-to-add-feature.md)에 있습니다.
+
+## 1. 위치 규칙
+
+- 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `src/app/`에는 킷을 연결하는 얇은 파일만 둔다.
+- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `llm`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
+
+| 만들 것             | 위치                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------- |
+| 킷의 화면 컴포넌트  | `frontend/src/meerkit/<기능>/components/`                                                |
+| 킷의 서버 호출 함수 | `frontend/src/meerkit/api/`                                                              |
+| 킷의 라우트 연결    | `frontend/src/app/(meerkit)/`                                                            |
+| 서비스 화면         | `frontend/src/app/(service)/<기능>/` (부품은 `_components/`)                             |
+| 백엔드 새 API       | 해당 모듈의 `router.py`, `service.py`, `repository.py`, `schemas.py`                     |
+| DB 모델 변경        | `models.py` 수정 후 Alembic 마이그레이션 생성 (`uv run alembic revision --autogenerate`) |
+
+킷에 새 기능을 공개할 때는 `frontend/src/meerkit/index.ts`에 export를 추가한다.
+
+## 2. 의존 방향
+
+- 킷은 서비스 코드(`backend/app/features/`, `frontend/src/app/(service)/`)를 import 하지 않는다.
+  - 백엔드: `backend/tests/test_import_rules.py`가 검사한다.
+  - 프론트: ESLint `no-restricted-imports`가 검사한다 (`frontend/eslint.config.mjs`).
+- `src/app/`은 킷을 `@/meerkit`(공개 API)으로만 import 한다.
+- 프론트는 `components → hooks → api → client` 방향으로만 import 한다.
+- 백엔드는 `router → service → repository` 방향으로만 import 한다. SQL은 repository에만 둔다.
+
+## 3. 범위 제한 (이번 10일 범위)
+
+- 사용량 관련 코드(`usage_logs`, 이용 이력, 한도, `/history`, `/admin/usage`)는 만들지 않는다. → [향후 확장](docs/future-extensions.md)
+- `llm/`은 사용량 기록과 연결하지 않는다.
+- 권한은 역할(`USER`, `ADMIN`)로만 검사한다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
+
+## 4. 상태 규칙 (프론트)
+
+- 서버에서 오는 데이터는 TanStack Query로, 토큰·모달 상태는 Zustand로 다룬다.
+- 내 정보를 Zustand에 복사하지 않는다 (`useMe()`만 사용).
+- 토큰 스토어에 `persist`를 쓰지 않는다. 액세스 토큰은 메모리, 리프레시 토큰은 httpOnly 쿠키.
+
+## 5. 스타일 규칙
+
+- Tailwind utility와 `frontend/src/meerkit/styles/tokens.css`의 토큰만 사용한다. CSS 모듈과 인라인 스타일은 쓰지 않는다.
+- UI 부품은 shadcn(`frontend/src/components/ui`)을 먼저 쓴다.
+- 로그인·가입 폼의 모양은 `LoginForm.tsx`, `SignupForm.tsx`에서만 정의한다.
+
+## 6. setup 스크립트 규칙 (만들 때)
+
+- 단계별 로그를 남기고, 실패 시 원인·해결·재실행 명령·로그 파일 위치를 출력한다.
+- 재실행해도 안전하게 만든다 (이미 된 단계는 건너뜀).
+- 비밀번호, 키를 로그에 출력하지 않는다.
+
+## 7. 보안 규칙
+
+- 비밀번호는 argon2 해시로 저장하고 응답에 포함하지 않는다.
+- 로컬 테스트용 기본 비밀번호(`SEED_ADMIN_PASSWORD`)는 `.env.example`과 문서에 "로컬 전용"이라고 표시한다.
+- `.env`는 커밋하지 않는다.
+
+## 8. 확인 명령
+
+```bash
+# backend (DB가 켜져 있어야 함: docker compose up -d db)
+uv run ruff check .
+uv run alembic upgrade head
+uv run pytest
+
+# frontend
+npm run lint
+npm run build
+```
+
+Alembic이 자동 생성한 마이그레이션 파일은 `uv run ruff check --fix .`로 형식을 맞춘 뒤 커밋한다.

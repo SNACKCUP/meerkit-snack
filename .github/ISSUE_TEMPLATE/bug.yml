@@ -1,0 +1,62 @@
+name: 버그
+description: 기대와 다르게 동작하거나 CI가 깨졌을 때
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영역
+      options:
+        - 킷 백엔드
+        - 킷 프론트
+        - 서비스 백엔드
+        - 서비스 프론트
+        - CI/CD · 배포
+        - 로컬 환경 (Docker, DB, setup)
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: 어디서 났나
+      options:
+        - 로컬
+        - CI (GitHub Actions)
+        - 배포 환경
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 순서
+      placeholder: |
+        1. admin@example.com 으로 로그인
+        2. 요구사항 화면에서 새로고침
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 결과
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과
+      description: 에러 응답이면 code 와 request_id 도 적어 주세요
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그 / 에러 메시지
+      render: shell
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: 확인
+      options:
+        - label: 로그에서 비밀번호, 토큰, API 키를 지웠습니다
+          required: true
