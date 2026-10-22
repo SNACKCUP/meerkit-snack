@@ -2,6 +2,7 @@
 
 import { Check, Copy, ExternalLink, Info, TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import * as React from "react";
 import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -80,7 +81,7 @@ export function CodeBlock({ code, title }: { code: string; title?: string }) {
         <span className="font-mono text-xs text-white/50">{title ?? ""}</span>
         <CopyButton text={text} />
       </div>
-      <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-6"><code>{text}</code></pre>
+      <pre className="mk-scroll overflow-x-auto p-4 font-mono text-[13px] leading-6"><code>{text}</code></pre>
     </div>
   );
 }
@@ -114,7 +115,7 @@ export function PkgTabs({ command }: { command: string }) {
         </div>
         <CopyButton text={text} />
       </div>
-      <pre className="overflow-x-auto p-4 font-mono text-[13px] leading-6"><code>{text}</code></pre>
+      <pre className="mk-scroll overflow-x-auto p-4 font-mono text-[13px] leading-6"><code>{text}</code></pre>
     </div>
   );
 }
@@ -140,18 +141,30 @@ export function PreviewWide({ children, code }: { children: React.ReactNode; cod
   );
 }
 
+// 짧은 값(라벨, 단계, 코드 한 단어)은 줄바꿈하지 않고, 나머지 칸도 최소 너비를 둬서 한 글자씩 꺾이지 않게 한다.
+// 긴 설명은 그대로 줄바꿈된다.
+function isShort(cell: React.ReactNode): boolean {
+  if (typeof cell === "number") return true;
+  if (typeof cell === "string") return cell.length <= 14;
+  if (React.isValidElement<{ children?: React.ReactNode }>(cell)) {
+    const child = cell.props.children;
+    return typeof child === "string" ? child.length <= 14 : false;
+  }
+  return false;
+}
+
 export function DocTable({ head, rows }: { head: string[]; rows: React.ReactNode[][] }) {
   return (
     <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
       <Table>
         <TableHeader>
-          <TableRow>{head.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow>
+          <TableRow>{head.map((h) => <TableHead key={h} className="min-w-[5.5rem]">{h}</TableHead>)}</TableRow>
         </TableHeader>
         <TableBody>
           {rows.map((row, i) => (
             <TableRow key={i}>
               {row.map((cell, j) => (
-                <TableCell key={j} className="whitespace-normal align-top">{cell}</TableCell>
+                <TableCell key={j} className={cn("min-w-[5.5rem] align-top", isShort(cell) ? "whitespace-nowrap" : "whitespace-normal")}>{cell}</TableCell>
               ))}
             </TableRow>
           ))}
@@ -189,7 +202,7 @@ export function LinkCards({ items }: { items: { href: string; title: string; des
 
 export function Tree({ children }: { children: string }) {
   return (
-    <pre className="overflow-x-auto rounded-2xl border bg-card p-4 font-mono text-[13px] leading-6 text-foreground/80 shadow-soft">{children.replace(/^\n|\n$/g, "")}</pre>
+    <pre className="mk-scroll overflow-x-auto rounded-2xl border bg-card p-4 font-mono text-[13px] leading-6 text-foreground/80 shadow-soft">{children.replace(/^\n|\n$/g, "")}</pre>
   );
 }
 

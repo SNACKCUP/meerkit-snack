@@ -1,5 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 
+import { setSessionHint } from "../auth/session-hint";
 import { useAuthStore } from "../auth/store";
 import { meerkitConfig } from "../config";
 
@@ -28,6 +29,7 @@ async function refreshAccessToken(): Promise<string | null> {
     return data.access_token;
   } catch {
     useAuthStore.getState().setAccessToken(null);
+    setSessionHint(false);
     return null;
   }
 }

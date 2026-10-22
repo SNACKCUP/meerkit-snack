@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 
 import type { AddressType, SignupOptionalField, TermsItem } from "../../define-config";
 import type { SignupInput } from "../../types";
-import type { AddressSearchResult } from "./address-search";
+import type { AddressSearchProvider, AddressSearchResult } from "./address-search";
 import { EmailVerificationField } from "./EmailVerificationField";
+import { generateNickname } from "../nickname";
 import { OptionalFields, collectOptional, emptyOptionalValues, validateOptional, type OptionalValues } from "./OptionalFields";
 import { TermsAgreement } from "./TermsAgreement";
 
@@ -33,8 +34,14 @@ interface SignupFormProps {
   terms?: TermsItem[];
   /** 주면 이메일 옆에 인증번호 받기·확인 버튼이 생기고, 인증해야 가입할 수 있다 */
   emailVerification?: EmailVerificationHandlers;
-  /** 주소 검색 방법을 바꾸고 싶을 때 (기본: 카카오 우편번호 팝업) */
+  /** 닉네임 동작: [자동 생성] 버튼 표시, 폼을 열 때 미리 채우기 */
+  nickname?: { generator?: boolean; autoFill?: boolean };
+  /** 주소 검색 방식. "popup"(카카오 우편번호 팝업, 기본) 또는 "dialog"(우리 검색 창) */
+  addressSearch?: "popup" | "dialog";
+  /** popup 방식의 검색 방법을 바꾸고 싶을 때 */
   onSearchAddress?: () => Promise<AddressSearchResult | null>;
+  /** dialog 방식의 검색 방법을 바꾸고 싶을 때 (기본: 서비스 서버의 /address/search) */
+  addressSearchProvider?: AddressSearchProvider;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,10 +55,17 @@ export function SignupForm({
   addressType = "basic",
   terms = [],
   emailVerification,
+  nickname,
+  addressSearch,
   onSearchAddress,
+  addressSearchProvider,
 }: SignupFormProps) {
   const [form, setForm] = useState({ user_id: "", email: "", name: "", password: "", password_confirm: "" });
-  const [optional, setOptional] = useState<OptionalValues>(emptyOptionalValues);
+  const [optional, setOptional] = useState<OptionalValues>(() => ({
+    ...emptyOptionalValues,
+    // 설정에서 켜 두면 닉네임을 미리 채운다 (사용자가 고칠 수 있다)
+    nickname: nickname?.autoFill && optionalFields.includes("nickname") ? generateNickname() : "",
+  }));
   const [agreed, setAgreed] = useState<string[]>([]);
   const [emailToken, setEmailToken] = useState<string | null>(null);
   const [invalid, setInvalid] = useState<string | null>(null);
@@ -130,7 +144,10 @@ export function SignupForm({
         values={optional}
         onChange={(patch) => setOptional((p) => ({ ...p, ...patch }))}
         addressType={addressType}
+        nicknameGenerator={nickname?.generator ?? true}
+        addressSearch={addressSearch}
         onSearchAddress={onSearchAddress}
+        addressSearchProvider={addressSearchProvider}
       />
       <TermsAgreement terms={terms} value={agreed} onChange={(v) => { setAgreed(v); setTermsInvalid(false); }} invalid={termsInvalid} />
       {message && <p role="alert" className="text-sm text-destructive">{message}</p>}

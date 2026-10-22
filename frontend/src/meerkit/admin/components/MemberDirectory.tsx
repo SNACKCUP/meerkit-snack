@@ -8,6 +8,7 @@ import { Pagination } from "@/components/ui/pagination";
 
 import type { MemberQuery, Page, User } from "../../types";
 import { SIZE_OPTIONS, defaultMemberQuery } from "../members-filter";
+import { LoadingOverlay, LoadingState } from "../../loading";
 import { MemberFilters } from "./MemberFilters";
 import { MemberTable } from "./MemberTable";
 
@@ -39,7 +40,7 @@ export function MemberDirectory({ query, onQueryChange, data, loading, onRoleCha
 
       <div className="overflow-hidden rounded-2xl border bg-card shadow-soft">
         {loading && !data ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">불러오는 중…</p>
+          <LoadingState minHeight={240} />
         ) : total === 0 ? (
           <div className="grid justify-items-center gap-3 px-6 py-14 text-center">
             <SearchX className="size-7 text-muted-foreground" />
@@ -47,9 +48,9 @@ export function MemberDirectory({ query, onQueryChange, data, loading, onRoleCha
             <Button variant="outline" size="sm" onClick={() => onQueryChange({ ...defaultMemberQuery, size: query.size })}>필터 초기화</Button>
           </div>
         ) : (
-          <div className={loading ? "opacity-60 transition-opacity" : "transition-opacity"}>
+          <LoadingOverlay loading={!!loading}>
             <MemberTable members={data!.items} onRoleChange={onRoleChange} onRemove={onRemove} roleEditor={roleEditor} currentUserId={currentUserId} />
-          </div>
+          </LoadingOverlay>
         )}
       </div>
 

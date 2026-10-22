@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="mk-scroll w-full overflow-x-auto">
       <table className={cn("w-full text-[13px]", className)} {...props} />
     </div>
   );

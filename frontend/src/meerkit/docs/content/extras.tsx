@@ -9,10 +9,13 @@ import { FileDropzone } from "@/components/ui/file-dropzone";
 import { MemberTable } from "../../admin/components/MemberTable";
 import { RoleAssignDialog } from "../../admin/components/RoleAssignDialog";
 import { AddressField, type AddressValue } from "../../auth/components/AddressField";
+import { NicknameForm } from "../../auth/components/NicknameForm";
+import { NicknameInput } from "../../auth/components/NicknameInput";
+import { generateNickname } from "../../auth/nickname";
 import { EmailVerificationField } from "../../auth/components/EmailVerificationField";
 import type { User } from "../../types";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, Tree, UL } from "../ui";
-import { demoAddressSearch, demoEmailHandlers, mockUsers, roleOf } from "./mock";
+import { demoAddressProvider, demoEmailHandlers, mockUsers, roleOf } from "./mock";
 
 /* ─────────────────────────── Role Manager ─────────────────────────── */
 
@@ -146,15 +149,20 @@ const emptyAddress: AddressValue = { postcode: "", address: "", address_detail: 
 export function AddressFieldDoc() {
   const [basic, setBasic] = useState<AddressValue>(emptyAddress);
   const [post, setPost] = useState<AddressValue>(emptyAddress);
+  const [dialogValue, setDialogValue] = useState<AddressValue>(emptyAddress);
 
   return (
     <>
-      <DocLinks items={[links.component("input", "Input"), links.component("button", "Button")]} />
+      <DocLinks items={[links.component("input", "Input"), links.component("dialog", "Dialog"), links.component("button", "Button")]} />
       <P>
-        <strong>주소 검색 버튼을 눌러 고르면 우편번호와 주소가 함께 채워지고</strong>, 상세 주소만 직접 입력하는 컴포넌트입니다. 서비스에 맞게 <strong>두 가지 입력 방식</strong>을 고를 수 있습니다.
+        <strong>[주소 검색] 버튼으로 검색해서 주소를 고르면 우편번호와 주소가 함께 채워지고</strong>, 상세 주소만 직접 입력하는 컴포넌트입니다.
+        서비스에 맞게 <strong>입력 방식 2가지</strong>와 <strong>검색 방식 2가지</strong>를 고를 수 있습니다.
       </P>
+      <Callout>
+        우편번호·주소 칸은 <strong>직접 입력하지 못하고 검색 결과로만 채워집니다.</strong> 입력칸을 눌러도 검색이 실행되지 않으며, 검색은 항상 <Ic>주소 검색</Ic> 버튼으로 시작합니다.
+      </Callout>
 
-      <H2>Types</H2>
+      <H2>Input types</H2>
       <DocTable
         head={["타입", "구성", "이럴 때"]}
         rows={[
@@ -164,35 +172,95 @@ export function AddressFieldDoc() {
       />
 
       <H2>Type A — basic</H2>
-      <P>주소 입력칸 옆의 <Ic>주소 검색</Ic>을 누르거나 주소칸을 눌러 검색합니다. 아래에 상세 주소칸이 이어집니다.</P>
-      <Preview code={`<AddressField\n  variant="basic"\n  value={value}\n  onChange={setValue}\n/>`}>
+      <P>주소 입력칸 옆의 <Ic>주소 검색</Ic>을 눌러 검색합니다. 아래에 상세 주소칸이 이어집니다.</P>
+      <Preview code={`<AddressField\n  variant="basic"\n  searchMode="dialog"\n  value={value}\n  onChange={setValue}\n/>`}>
         <div className="grid gap-3">
-          <AddressField variant="basic" idPrefix="doc-a" value={basic} onChange={setBasic} onSearch={demoAddressSearch} />
-          <p className="text-xs text-muted-foreground">값: <code className="font-mono">{JSON.stringify(basic)}</code></p>
+          <AddressField variant="basic" searchMode="dialog" searchProvider={demoAddressProvider} idPrefix="doc-a" value={basic} onChange={setBasic} />
+          <p className="text-xs text-muted-foreground">현재 값: <code className="font-mono">{JSON.stringify(basic)}</code></p>
         </div>
       </Preview>
 
       <H2>Type B — postcode</H2>
-      <P>우편번호칸과 검색 버튼이 위에, 그 아래 주소칸, 상세 주소칸 순서입니다. 검색하면 우편번호와 주소가 <strong>한 번에</strong> 들어갑니다.</P>
-      <Preview code={`<AddressField\n  variant="postcode"\n  value={value}\n  onChange={setValue}\n/>`}>
+      <P>우편번호칸과 검색 버튼이 위에, 그 아래 주소칸, 상세 주소칸 순서입니다. 검색 결과를 고르면 우편번호와 주소가 <strong>한 번에</strong> 들어갑니다.</P>
+      <Preview code={`<AddressField\n  variant="postcode"\n  searchMode="dialog"\n  value={value}\n  onChange={setValue}\n/>`}>
         <div className="grid gap-3">
-          <AddressField variant="postcode" idPrefix="doc-b" value={post} onChange={setPost} onSearch={demoAddressSearch} />
-          <p className="text-xs text-muted-foreground">값: <code className="font-mono">{JSON.stringify(post)}</code></p>
+          <AddressField variant="postcode" searchMode="dialog" searchProvider={demoAddressProvider} idPrefix="doc-b" value={post} onChange={setPost} />
+          <p className="text-xs text-muted-foreground">현재 값: <code className="font-mono">{JSON.stringify(post)}</code></p>
         </div>
       </Preview>
-      <Callout>미리보기는 실제 팝업 대신 고정된 샘플 주소(06236, 테헤란로 152)를 돌려줍니다. 실제 화면에서는 카카오(다음) 우편번호 팝업이 열립니다.</Callout>
+      <Callout>
+        미리보기는 <Ic>테헤란로</Ic>, <Ic>봉은사로</Ic> 같은 도로명이나 <Ic>미어캣타워</Ic> 같은 건물명으로 검색하면 샘플 주소 150건 중에서 찾아 줍니다. 아래 &quot;검색 창&quot; 섹션에서 직접 해 보세요.
+      </Callout>
 
-      <H2>How users enter an address</H2>
+      <H2>Search modes</H2>
+      <P>주소를 어디서 어떻게 검색할지 두 가지 중에 고릅니다. <Ic>signup.addressSearch</Ic> 설정 또는 <Ic>searchMode</Ic> prop으로 정합니다.</P>
+      <DocTable
+        head={["searchMode", "무엇이 열리나", "서버", "결과가 많을 때"]}
+        rows={[
+          [<Ic key="1">&quot;popup&quot; (기본)</Ic>, "카카오(다음) 우편번호 팝업", "필요 없음", "팝업이 알아서 목록을 나눠 보여 줍니다."],
+          [<Ic key="2">&quot;dialog&quot;</Ic>, "우리 검색 창 (검색어 입력 → 결과 목록)", "필요함 (GET /address/search)", "10건씩 보여 주고 [더 보기]로 이어서 불러옵니다."],
+        ]}
+      />
+      <CodeBlock title="meerkit.config.ts" code={`export default defineMeerkitConfig({\n  signup: {\n    optionalFields: ["address"],\n    addressType: "postcode",   // 입력 방식\n    addressSearch: "dialog",   // 검색 방식: "popup" | "dialog"\n  },\n});`} />
+
+      <H2>Search dialog</H2>
+      <P>
+        <Ic>dialog</Ic> 방식은 검색어를 입력하면 <strong>결과 목록</strong>이 나옵니다. 아래에서 직접 검색해 보세요.
+        (<Ic>서울</Ic>처럼 넓게 검색하면 150건이 나와 <Ic>더 보기</Ic>를 쓸 수 있고, <Ic>오류</Ic>를 검색하면 오류 화면을, 없는 단어를 검색하면 결과 없음 화면을 볼 수 있습니다.)
+      </P>
+      <Preview code={`<AddressField\n  variant="postcode"\n  searchMode="dialog"\n  searchProvider={mySearch}   // 생략하면 서비스 서버의 GET /address/search\n  value={value}\n  onChange={setValue}\n/>`}>
+        <div className="grid gap-3">
+          <AddressField variant="postcode" searchMode="dialog" searchProvider={demoAddressProvider} idPrefix="doc-d" value={dialogValue} onChange={setDialogValue} />
+        </div>
+      </Preview>
+
+      <H3>화면 동작</H3>
+      <DocTable
+        head={["상황", "화면"]}
+        rows={[
+          ["처음 열었을 때", "\"주소를 검색해 보세요\" 안내와 검색 예시"],
+          ["검색 중", "\"검색 중…\" 표시 (버튼 잠김)"],
+          ["결과 있음", "\"검색 결과 N건\"과 목록. 각 줄에 도로명 주소, 우편번호, 지번 주소(건물명)"],
+          ["결과가 많음", "10건씩 보여 주고 [더 보기]로 이어 붙임. \"N건 표시 중\"으로 진행 상황 표시. 30건이 넘으면 번지나 건물명을 더해 보라는 안내"],
+          ["모두 불러옴", "\"모든 결과를 불러왔습니다.\""],
+          ["결과 없음", "\"…와 맞는 주소가 없습니다\"와 다시 검색 안내"],
+          ["서버 오류", "오류 문구와 [다시 시도] 버튼. 더 보기에서 실패하면 이미 불러온 목록은 그대로 두고 오류만 표시"],
+          ["주소를 고름", "우편번호와 주소가 입력칸에 채워지고 창이 닫힘. 이어서 상세 주소 입력"],
+        ]}
+      />
+
+      <H2>Many results</H2>
+      <P>검색 결과가 수백 건이면 한 번에 모두 보여 줄 수 없으니, <strong>한 쪽씩 불러오고 검색어를 좁히게 안내</strong>하는 방식을 씁니다.</P>
       <UL>
-        <li><strong>검색 버튼</strong>(또는 읽기 전용 주소칸)을 누르면 주소 검색 팝업이 열립니다.</li>
-        <li>팝업에서 주소를 고르면 <strong>우편번호와 주소가 자동으로 채워집니다.</strong> 이 칸들은 직접 고치지 못하게 읽기 전용이라 잘못된 우편번호가 들어가지 않습니다.</li>
-        <li>이어서 <strong>상세 주소</strong>(동·호수 등)를 직접 입력합니다.</li>
-        <li>검색 스크립트를 불러오지 못하면 <strong>직접 입력으로 자동 전환</strong>되고 안내 문구가 나옵니다. 네트워크 문제로 가입이 막히지 않게 하기 위해서입니다.</li>
+        <li>한 번에 <strong>10건</strong>만 요청하고, [더 보기]를 누르면 다음 쪽을 이어서 붙입니다. 화면이 길어지지 않도록 목록 영역은 높이가 제한되고 안에서 스크롤됩니다.</li>
+        <li>입력한 글자마다 요청하지 않고, <strong>검색 버튼이나 Enter를 눌렀을 때만</strong> 요청합니다.</li>
+        <li>결과가 아주 많으면 &quot;번지나 건물명을 더하면 더 빨리 찾을 수 있어요&quot; 안내를 보여 줍니다. 카카오 로컬 API처럼 <strong>가져올 수 있는 개수·쪽수에 상한이 있는 서비스</strong>에서는 전부 볼 수 없으므로 검색어를 좁히는 것이 가장 좋은 해결책입니다.</li>
+        <li><Ic>popup</Ic> 방식(카카오 우편번호 팝업)은 이 모든 것을 팝업이 알아서 처리하므로 서버 작업이 필요 없습니다.</li>
       </UL>
+
+      <H2>Kakao address API (server)</H2>
+      <P>
+        <Ic>dialog</Ic> 방식은 서비스 서버의 <Ic>GET /address/search</Ic>를 호출합니다. 서버가 <strong>카카오 로컬 API(주소 검색)</strong>를 대신 불러서 아래 모양으로 돌려주면 됩니다.
+        카카오 REST API 키가 브라우저에 노출되지 않도록 반드시 서버를 거치세요.
+      </P>
+      <CodeBlock title="GET /address/search" code={`GET /address/search?q=테헤란로&page=1&size=10\n\n// response 200\n{\n  "items": [\n    {\n      "postcode": "06236",\n      "address": "서울특별시 강남구 테헤란로 152",\n      "jibun_address": "서울특별시 강남구 역삼동 737",\n      "building_name": "강남파이낸스센터"\n    }\n  ],\n  "total": 87,\n  "is_end": false\n}`} />
+      <CodeBlock title="server example (FastAPI)" code={`import httpx\nfrom fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get("/address/search")\nasync def search_address(q: str, page: int = 1, size: int = 10):\n    async with httpx.AsyncClient() as client:\n        res = await client.get(\n            "https://dapi.kakao.com/v2/local/search/address.json",\n            params={"query": q, "page": page, "size": size},\n            headers={"Authorization": f"KakaoAK {settings.kakao_rest_api_key}"},\n        )\n    data = res.json()\n    items = []\n    for d in data["documents"]:\n        road = d.get("road_address") or {}\n        jibun = d.get("address") or {}\n        items.append({\n            "postcode": road.get("zone_no", ""),\n            "address": road.get("address_name") or d["address_name"],\n            "jibun_address": jibun.get("address_name"),\n            "building_name": road.get("building_name") or None,\n        })\n    meta = data["meta"]\n    return {"items": items, "total": meta["pageable_count"], "is_end": meta["is_end"]}`} />
+      <UL>
+        <li>우편번호(<Ic>zone_no</Ic>)는 도로명 주소가 있을 때만 옵니다. 지번 주소만 있는 결과는 <Ic>postcode</Ic>가 빈 문자열이 될 수 있습니다.</li>
+        <li>카카오 API의 사용 한도와 약관, <Ic>size</Ic>·<Ic>page</Ic>의 허용 범위는 카카오 개발자 문서에서 확인하세요.</li>
+        <li>다른 주소 API(행정안전부 도로명주소 등)를 써도 같은 응답 모양으로 맞추면 화면은 바꿀 필요가 없습니다.</li>
+      </UL>
+      <Callout>백엔드는 아직 구현 전이라 이 엔드포인트는 <strong>설계 기준(예정)</strong>입니다. 서버 없이 쓰려면 <Ic>popup</Ic> 방식을 쓰세요.</Callout>
+
+      <H2>Popup mode</H2>
+      <P>
+        기본값입니다. <Ic>주소 검색</Ic>을 누르면 카카오(다음) 우편번호 팝업이 열리고, 주소를 고르면 우편번호와 주소가 함께 채워집니다. 서버나 API 키가 필요 없습니다.
+        스크립트를 불러오지 못하면 <strong>직접 입력으로 자동 전환</strong>되어 가입이 막히지 않습니다.
+      </P>
+      <Callout>이 문서의 미리보기는 실제 카카오 팝업 대신 위의 검색 창을 사용합니다. 팝업 방식은 배포한 서비스에서 동작합니다.</Callout>
 
       <H2>Use it in signup &amp; profile</H2>
       <P>가입·내 정보 수정 폼에서는 설정만 바꾸면 됩니다.</P>
-      <CodeBlock title="meerkit.config.ts" code={`export default defineMeerkitConfig({\n  signup: {\n    optionalFields: ["address"],\n    addressType: "postcode", // "basic" | "postcode"\n  },\n});`} />
       <DocTable
         head={["addressType", "서버로 가는 필드"]}
         rows={[
@@ -203,9 +271,10 @@ export function AddressFieldDoc() {
       <CodeBlock title="POST /auth/signup" code={`{\n  "user_id": "newbie",\n  "postcode": "06236",\n  "address": "서울특별시 강남구 테헤란로 152",\n  "address_detail": "12층 1201호",\n  ...\n}`} />
       <Callout tone="warn">주소를 받으려면 백엔드 <Ic>users</Ic> 테이블에 <Ic>postcode</Ic>(basic은 불필요), <Ic>address</Ic>, <Ic>address_detail</Ic> 컬럼이 있어야 합니다 (Data Model 참고).</Callout>
 
-      <H2>Use a different search service</H2>
-      <P>기본 검색은 카카오(다음) 우편번호입니다. 다른 서비스(도로명주소 API 등)를 쓰려면 같은 모양의 함수를 <Ic>onSearch</Ic>로 넘기세요. 반환값은 <Ic>{"{ postcode, address }"}</Ic>이고, 사용자가 그냥 닫으면 <Ic>null</Ic>을 돌려주면 됩니다.</P>
-      <CodeBlock title="tsx" code={`async function mySearch() {\n  const picked = await openMyAddressPopup();   // 내 서비스의 검색 UI\n  return picked ? { postcode: picked.zip, address: picked.road } : null;\n}\n\n<AddressField variant="postcode" value={v} onChange={setV} onSearch={mySearch} />`} />
+      <H2>Custom search</H2>
+      <P>두 방식 모두 직접 만든 검색으로 바꿀 수 있습니다.</P>
+      <CodeBlock title="tsx — dialog: 내 검색 함수" code={`const mySearch: AddressSearchProvider = async (query, page, size) => {\n  const res = await fetch(\`/my-api/address?q=\${query}&page=\${page}&size=\${size}\`);\n  const data = await res.json();\n  return { items: data.list, total: data.count, isEnd: data.last };\n};\n\n<AddressField searchMode="dialog" searchProvider={mySearch} ... />`} />
+      <CodeBlock title="tsx — popup: 내 팝업" code={`async function mySearch() {\n  const picked = await openMyAddressPopup();\n  return picked ? { postcode: picked.zip, address: picked.road } : null; // 닫으면 null\n}\n\n<AddressField searchMode="popup" onSearch={mySearch} ... />`} />
 
       <H2>Props</H2>
       <PropsTable
@@ -213,15 +282,18 @@ export function AddressFieldDoc() {
           ["value", "{ postcode, address, address_detail }", "현재 값. 세 칸 모두 문자열입니다.", true],
           ["onChange", "(value) => void", "검색하거나 상세 주소를 입력하면 바뀐 전체 값을 전달합니다.", true],
           ["variant", '"basic" | "postcode"', "입력 방식. 기본 basic."],
-          ["onSearch", "() => Promise<{ postcode, address } | null>", "주소 검색 방법. 없으면 카카오 우편번호 팝업."],
+          ["searchMode", '"popup" | "dialog"', "검색 방식. 기본 popup."],
+          ["searchProvider", "(query, page, size) => Promise<{ items, total, isEnd }>", "dialog 방식의 검색 방법. 없으면 서비스 서버의 /address/search."],
+          ["onSearch", "() => Promise<{ postcode, address } | null>", "popup 방식의 검색 방법. 없으면 카카오 우편번호 팝업."],
           ["idPrefix", "string", "입력창 id 접두사. 한 화면에 둘 이상 둘 때 겹치지 않게 지정합니다."],
           ["disabled", "boolean", "모두 잠급니다."],
         ]}
       />
       <H2>Accessibility</H2>
       <UL>
-        <li>각 입력에 <Ic>aria-label</Ic>(우편번호, 주소, 상세 주소)이 있고, 검색 실패 안내는 <Ic>role=&quot;status&quot;</Ic>로 읽힙니다.</li>
-        <li>상세 주소는 <Ic>autoComplete=&quot;address-line2&quot;</Ic>를 지정했습니다.</li>
+        <li>각 입력에 <Ic>aria-label</Ic>(우편번호, 주소, 상세 주소)이 있고, 검색창 입력에도 <Ic>aria-label</Ic>이 있습니다. 검색 중 상태는 <Ic>role=&quot;status&quot;</Ic>, 오류는 <Ic>role=&quot;alert&quot;</Ic>로 읽힙니다.</li>
+        <li>검색 창은 Radix Dialog 기반이라 포커스가 갇히고 <Ic>Esc</Ic>로 닫을 수 있으며, 열리면 검색어 입력칸에 바로 포커스가 갑니다.</li>
+        <li>검색 결과의 각 줄은 버튼이라 키보드(<Ic>Tab</Ic>, <Ic>Enter</Ic>)로 고를 수 있습니다.</li>
       </UL>
     </>
   );
@@ -243,10 +315,7 @@ export function EmailVerificationDoc() {
         아무 이메일이나 넣고 <Ic>인증번호 받기</Ic>를 누른 뒤, 인증번호에 <Ic>123456</Ic>을 입력해 보세요. 다른 번호를 넣으면 오류가 나옵니다.
       </P>
       <Preview code={`<EmailVerificationField\n  value={email}\n  onChange={setEmail}\n  verified={token !== null}\n  onVerifiedChange={setToken}\n  sendCode={(email) => api.post("/auth/email/send-code", { email })}\n  verifyCode={async (email, code) => (await verify(email, code)).token}\n/>`}>
-        <div className="grid gap-3">
-          <EmailVerificationField value={email} onChange={setEmail} verified={token !== null} onVerifiedChange={setToken} {...demoEmailHandlers} />
-          <p className="text-xs text-muted-foreground">증표: <code className="font-mono">{token ?? "없음"}</code></p>
-        </div>
+        <EmailVerificationField value={email} onChange={setEmail} verified={token !== null} onVerifiedChange={setToken} {...demoEmailHandlers} />
       </Preview>
 
       <H2>Turn it on</H2>
@@ -408,6 +477,135 @@ export function FileDropzoneDoc() {
       </UL>
       <Badge variant="secondary">Tip</Badge>
       <P>첨부가 필요한 폼(문의, 게시글 등)에서는 이 컴포넌트를 폼 안에 넣고, 제출할 때 <Ic>files</Ic>를 <Ic>FormData</Ic>에 담아 보내면 됩니다.</P>
+    </>
+  );
+}
+
+
+/* ─────────────────────────── Nickname ─────────────────────────── */
+
+export function NicknameDoc() {
+  const [input, setInput] = useState("");
+  const [nickname, setNickname] = useState<string | null>("미어캣왕");
+  const [pending, setPending] = useState(false);
+  const [samples, setSamples] = useState<string[]>([]);
+
+  // 서버 응답을 흉내 낸다. "중복"을 입력하면 서버가 거절하는 상황을 볼 수 있다.
+  function save(next: string) {
+    setPending(true);
+    return new Promise<void>((resolve, reject) => {
+      setTimeout(() => {
+        setPending(false);
+        if (next === "중복") return reject(new Error("이미 사용 중인 닉네임입니다."));
+        setNickname(next || null);
+        resolve();
+      }, 600);
+    });
+  }
+
+  return (
+    <>
+      <P>
+        이름과 별개로 다른 사용자에게 보여 주는 <strong>닉네임</strong>을 입력받고 바꾸는 컴포넌트입니다. 가입 폼에서는 <strong>[자동 생성] 버튼</strong>으로 이름을 받아 쓰거나 처음부터 채워 둘 수 있고,
+        마이페이지에서는 한 줄 편집기로 바꿀 수 있습니다. 닉네임은 선택 기능이라 기본은 꺼져 있습니다.
+      </P>
+
+      <H2>Turn it on</H2>
+      <CodeBlock title="meerkit.config.ts" code={`export default defineMeerkitConfig({\n  signup: {\n    optionalFields: ["nickname"],           // 켜기\n    nickname: {\n      generator: true,   // [자동 생성] 버튼 (기본 true)\n      autoFill: false,   // 가입 폼을 열 때 닉네임을 미리 채워 둠 (기본 false)\n    },\n  },\n});`} />
+      <DocTable
+        head={["설정", "기본값", "동작"]}
+        rows={[
+          [<Ic key="1">optionalFields: [&quot;nickname&quot;]</Ic>, "꺼짐", "가입 폼과 마이페이지에 닉네임이 나타납니다."],
+          [<Ic key="2">nickname.generator</Ic>, "true", "입력칸 옆에 [자동 생성] 버튼을 보여 줍니다."],
+          [<Ic key="3">nickname.autoFill</Ic>, "false", "가입 폼을 열 때 자동 생성한 닉네임을 미리 넣어 둡니다. 사용자는 그대로 쓰거나 고칠 수 있습니다."],
+        ]}
+      />
+
+      <H2>Input with generator</H2>
+      <P>[자동 생성]을 누를 때마다 새로운 닉네임이 입력칸에 들어갑니다. 직접 입력해도 됩니다.</P>
+      <Preview code={`<NicknameInput\n  id="nickname"\n  value={value}\n  onChange={setValue}\n  generator\n/>`}>
+        <div className="grid gap-3">
+          <NicknameInput id="doc-nickname-input" value={input} onChange={setInput} placeholder="2~12자" />
+          <div>
+            <Button size="sm" variant="ghost" onClick={() => setSamples(Array.from({ length: 5 }, generateNickname))}>예시 5개 보기</Button>
+            {samples.length > 0 && (
+              <ul className="mk-swap mt-2 flex flex-wrap gap-1.5">
+                {samples.map((n) => <li key={n}><Badge variant="secondary">{n}</Badge></li>)}
+              </ul>
+            )}
+          </div>
+        </div>
+      </Preview>
+
+      <H3>생성 규칙</H3>
+      <UL>
+        <li><strong>형용사 + 동물 + 숫자 3자리</strong>를 이어 붙입니다. 예: <Ic>용감한미어캣482</Ic>, <Ic>포근한수달731</Ic>.</li>
+        <li>길이는 항상 <strong>2~12자</strong> 안에 들어오도록 단어를 골라 두었습니다.</li>
+        <li>단어 목록은 <Ic>auth/nickname.ts</Ic>에 있어서 서비스 분위기에 맞게 바꿀 수 있습니다.</li>
+        <li><strong>중복은 서버가 판단합니다.</strong> 숫자가 붙어 겹칠 가능성이 낮지만, 같은 닉네임이 이미 있으면 서버가 거절하고 화면이 그 메시지를 보여 줍니다. 다시 [자동 생성]을 누르면 됩니다.</li>
+      </UL>
+
+      <H2>On signup</H2>
+      <UL>
+        <li>가입 폼의 닉네임 칸에 [자동 생성] 버튼이 붙습니다. 비워 두어도 되는 <strong>선택 항목</strong>입니다.</li>
+        <li><Ic>autoFill: true</Ic>이면 폼을 열 때 닉네임이 이미 채워져 있어, 사용자는 따로 고민하지 않고 가입할 수 있습니다.</li>
+        <li>값이 있으면 2~12자인지 검사하고, 맞지 않으면 <Ic>닉네임은 2~12자로 입력해 주세요.</Ic>를 보여 줍니다.</li>
+      </UL>
+
+      <H2>On my page</H2>
+      <P>마이페이지(<Ic>/me</Ic>)의 요약 카드 안에 있는 한 줄 편집기입니다. <Ic>변경</Ic>을 누르면 입력칸으로 바뀝니다.</P>
+      <Preview code={`<NicknameForm\n  user={user}\n  onSubmit={(nickname) => updateNickname.mutateAsync(nickname)}\n  pending={updateNickname.isPending}\n  error={message}\n/>`}>
+        <NicknameForm user={{ nickname }} onSubmit={save} pending={pending} />
+      </Preview>
+      <DocTable
+        head={["동작", "화면"]}
+        rows={[
+          ["[변경] 클릭", "현재 닉네임이 들어 있는 입력칸과 [자동 생성], [저장], [취소]로 바뀝니다."],
+          ["값을 바꾸지 않음", "[저장]이 잠겨 있습니다."],
+          ["2~12자가 아님", "닉네임은 2~12자로 입력해 주세요."],
+          ["비우고 저장", "닉네임이 지워지고 이름이 다시 표시됩니다."],
+          ["서버가 거절 (중복 등)", "편집 창이 닫히지 않고 입력한 값을 그대로 둔 채 서버의 detail 메시지를 입력칸 아래에 표시합니다. (미리보기에서 \"중복\"을 입력해 보세요)"],
+          ["저장 성공", "\"닉네임을 저장했습니다.\" 토스트와 함께 화면의 이름이 즉시 바뀝니다."],
+        ]}
+      />
+
+      <H2>Where it shows</H2>
+      <P>닉네임이 있으면 이름 대신 닉네임이 보이고, 없으면 이름이 보입니다.</P>
+      <UL>
+        <li>사용자 메뉴의 버튼과 머리말, 마이페이지 제목, 관리자 멤버 표의 이름 칸</li>
+        <li>아바타의 이니셜(프로필 이미지가 없을 때)</li>
+        <li>내 서비스에서도 <Ic>displayName(user)</Ic>를 쓰면 같은 규칙으로 표시됩니다.</li>
+      </UL>
+      <CodeBlock title="tsx" code={`import { displayName } from "@/meerkit/auth/components/UserAvatar";\n\n<p>{displayName(user)}</p>   // 닉네임이 있으면 닉네임, 없으면 이름`} />
+
+      <H2>API</H2>
+      <CodeBlock title="PATCH /users/me" code={`// request (바꿀 항목만)\n{ "nickname": "용감한미어캣482" }\n\n// response 200 → 갱신된 User\n// 409 { "detail": "이미 사용 중인 닉네임입니다." }`} />
+      <Callout tone="warn">
+        서버는 닉네임의 <strong>길이(2~12자)와 중복을 반드시 다시 검사</strong>하고, 서비스 정책에 따라 사용할 수 없는 단어(욕설 등)를 막으세요. 가입 때 보낸 닉네임도 같은 규칙으로 확인해야 합니다.
+      </Callout>
+
+      <H2>Props</H2>
+      <H3>NicknameInput</H3>
+      <PropsTable
+        rows={[
+          ["id", "string", "입력창 id. 라벨의 htmlFor와 연결합니다.", true],
+          ["value", "string", "현재 값.", true],
+          ["onChange", "(value: string) => void", "직접 입력하거나 자동 생성하면 새 값을 전달합니다.", true],
+          ["generator", "boolean", "[자동 생성] 버튼 표시. 기본 true."],
+          ["placeholder", "string", "안내 문구."],
+          ["disabled", "boolean", "잠금."],
+        ]}
+      />
+      <H3>NicknameForm</H3>
+      <PropsTable
+        rows={[
+          ["user", "{ nickname?: string | null }", "현재 닉네임을 가진 사용자.", true],
+          ["onSubmit", "(nickname: string) => void | Promise", "[저장]을 누르면 새 닉네임을 전달합니다. 빈 문자열이면 지우기입니다. Promise를 돌려주면 성공했을 때만 편집 창이 닫히고, 실패하면 열어 둔 채 오류를 보여 줍니다.", true],
+          ["pending", "boolean", "요청 중이면 버튼을 잠급니다."],
+          ["error", "string | null", "서버 오류 메시지."],
+          ["generator", "boolean", "[자동 생성] 버튼 표시. 기본 true."],
+        ]}
+      />
     </>
   );
 }

@@ -5,12 +5,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { docContent } from "./content";
 import { DocsShell } from "./DocsShell";
-import { allDocs, docHref } from "./nav";
+import { AUDIENCES, allDocs, docHref } from "./nav";
 
 interface TocItem {
   id: string;
@@ -32,6 +33,14 @@ function Toc({ slug, articleRef }: { slug: string; articleRef: React.RefObject<H
   useEffect(() => {
     const root = articleRef.current;
     const els = Array.from(root?.querySelectorAll<HTMLElement>("h2[id], h3[id]") ?? []);
+    // 같은 제목이 두 번 나오면(예: 섹션 "Pagination"과 props의 "Pagination") id가 겹쳐 목차의 두 항목이
+    // 함께 활성화되고 앵커도 첫 번째로만 간다. 두 번째부터 -2, -3을 붙여 각각 고유하게 만든다.
+    const seen = new Map<string, number>();
+    for (const el of els) {
+      const count = (seen.get(el.id) ?? 0) + 1;
+      seen.set(el.id, count);
+      if (count > 1) el.id = `${el.id}-${count}`;
+    }
     // 렌더가 끝난 뒤 목차를 만든다 (이펙트 안에서 동기 setState 금지)
     const frame = requestAnimationFrame(() => {
       setHeads(els.map((el) => ({ id: el.id, text: el.textContent ?? "", depth: el.tagName === "H3" ? 3 : 2 })));
@@ -100,13 +109,19 @@ export function DocsView({ slug }: { slug: string }) {
       <main key={slug} className="mk-rise min-w-0 px-5 py-10 lg:px-12">
         <article ref={articleRef} className="mx-auto max-w-[720px]">
           <h1 className="text-4xl font-semibold tracking-tight">{doc.title}</h1>
+          {doc.audience && (
+            <p className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant={doc.audience === "admin" ? "default" : doc.audience === "user" ? "brand" : "secondary"}>{AUDIENCES[doc.audience].badge} 컴포넌트</Badge>
+              {AUDIENCES[doc.audience].hint}
+            </p>
+          )}
           <p className="mt-3 text-base leading-7 text-muted-foreground">{doc.description}</p>
           <div className="mt-8 grid gap-4">
             <Content />
           </div>
         </article>
 
-        <div className="mx-auto mt-16 flex max-w-[720px] justify-between gap-3">
+        <div className="mx-auto mt-[120px] flex max-w-[720px] justify-between gap-3">
           {prev ? (
             <Button asChild variant="outline" size="sm"><Link href={docHref(prev.slug)}><ArrowLeft /> {prev.title}</Link></Button>
           ) : <span />}

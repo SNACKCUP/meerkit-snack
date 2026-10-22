@@ -18,7 +18,20 @@ export const meerkitConfig = {
     optionalFields: userConfig.signup?.optionalFields ?? [],
     terms: userConfig.signup?.terms ?? [],
     addressType: userConfig.signup?.addressType ?? "basic",
+    addressSearch: userConfig.signup?.addressSearch ?? "popup",
+    nickname: {
+      generator: userConfig.signup?.nickname?.generator ?? true,
+      autoFill: userConfig.signup?.nickname?.autoFill ?? false,
+    },
     emailVerification: userConfig.signup?.emailVerification ?? false,
+  },
+  loading: {
+    variant: userConfig.loading?.variant ?? "ring",
+  },
+  ai: {
+    voice: {
+      colors: userConfig.ai?.voice?.colors && userConfig.ai.voice.colors.length >= 2 ? userConfig.ai.voice.colors : ["#60a5fa", "#a78bfa", "#f472b6", "#2dd4bf"],
+    },
   },
   login: {
     maxAttempts: userConfig.login?.maxAttempts ?? 5,

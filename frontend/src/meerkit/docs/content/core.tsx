@@ -90,6 +90,7 @@ POST /auth/signup
         head={["기능", "설명", "페이지"]}
         rows={[
           ["로그인 잠금", "n번 연속 실패하면 m분 잠금. 새로고침해도 유지", "Login Lockout"],
+          ["이메일 인증 (선택)", "가입 시 인증번호로 이메일 확인", "Email Verification"],
           ["비밀번호 재설정", "이메일 링크로 새 비밀번호 설정", "Password Reset"],
           ["내 정보·비밀번호 변경", "로그인한 사용자가 직접 수정", "Profile & Password"],
           ["약관 동의", "가입 시 필수·선택 약관 동의", "Terms Agreement"],
@@ -97,7 +98,6 @@ POST /auth/signup
       />
       <H2>Not included yet</H2>
       <UL>
-        <li>이메일 인증 (Signup Form 페이지에 설계 제안)</li>
         <li>소셜 로그인, 2단계 인증</li>
         <li>모든 기기에서 로그아웃</li>
         <li>감사 로그</li>
@@ -135,7 +135,7 @@ export function Roles() {
         ]}
       />
       <Callout>
-        이 표는 회의에서 정리한 권장안입니다. 실제 권한 범위는 팀이 확정해야 하며, 특히 OWNER는 본인 소유 데이터만 관리하도록 제한하는 것이 안전합니다.
+        실제 권한 범위는 서비스의 정책에 맞게 정하세요. 특히 OWNER는 본인 소유 데이터만 관리하도록 제한하는 것이 안전합니다.
       </Callout>
       <H2>Change roles in one place</H2>
       <P>프론트의 역할 정의는 <Ic>src/meerkit/roles.ts</Ic> 한 파일입니다. 역할 이름이나 설명이 바뀌면 여기만 고치세요.</P>
@@ -275,6 +275,10 @@ export function DataModel() {
           [<Ic key="4">used_at</Ic>, "TIMESTAMPTZ", "사용된 시각 (단일 사용)"],
         ]}
       />
+      <H2>AI usage (planned)</H2>
+      <P>
+        멤버 AI 사용량 화면(Member AI Usage, Member AI Usage History)은 현재 <strong>프론트 UI만 작업된 상태</strong>입니다. 사용량을 기록·집계하는 테이블과 API는 <strong>추후 적용 예정</strong>입니다.
+      </P>
       <H2>Future extensions</H2>
       <UL>
         <li><Ic>permissions</Ic>, <Ic>role_permissions</Ic>: 세부 기능별 권한이 필요할 때 추가합니다.</li>
@@ -289,7 +293,6 @@ export function ApiReference() {
   return (
     <>
       <P>프론트는 <Ic>/api</Ic> 아래로 호출하고, Next.js 프록시가 백엔드(<Ic>localhost:8000</Ic>)로 전달합니다. 아래 경로는 <Ic>/api</Ic>를 뺀 값입니다.</P>
-      <Callout>이 목록은 팀 회의의 설계안입니다. 실제 URL 규칙에 맞춰 조정할 수 있으며, 바뀌면 <Ic>src/meerkit/api/</Ic>만 고치면 됩니다.</Callout>
       <H2>Conventions</H2>
       <DocTable
         head={["항목", "규칙"]}
@@ -357,6 +360,7 @@ export function ApiReference() {
       <CodeBlock title="PATCH /users/me" code={`// request (바꿀 항목만 또는 전체)\n{ "name": "김관리자", "email": "master@example.com" }\n\n// response 200 → 갱신된 User`} />
       <CodeBlock title="PATCH /users/me/password" code={`{ "current_password": "...", "new_password": "..." }\n// 204 | 400 { "detail": "현재 비밀번호가 올바르지 않습니다." }`} />
       <H2>Client functions</H2>
+      <P>서비스의 API 주소 규칙이 다르다면 <Ic>src/meerkit/api/</Ic>의 함수만 고치면 됩니다. 화면 코드는 바꾸지 않아도 됩니다.</P>
       <CodeBlock title="src/meerkit/api/users.ts" code={`export const usersApi = {\n  list: () => api.get<User[]>("/users").then((r) => r.data),\n  updateRole: (id: number, role_id: number) =>\n    api.patch<User>(\`/users/\${id}/role\`, { role_id }).then((r) => r.data),\n  remove: (id: number) => api.delete(\`/users/\${id}\`),\n};`} />
     </>
   );

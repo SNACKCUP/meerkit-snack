@@ -1,7 +1,18 @@
+/** 컴포넌트를 누가 쓰는지: 사용자 화면 / 관리자 화면 / 둘 다 쓰는 공통 */
+export type Audience = "user" | "admin" | "common";
+
+export const AUDIENCES: Record<Audience, { section: string; badge: string; hint: string }> = {
+  user: { section: "사용자 화면", badge: "사용자용", hint: "서비스를 쓰는 일반 사용자가 보는 화면에 쓰입니다." },
+  admin: { section: "관리자 화면", badge: "관리자용", hint: "관리자(MASTER)만 쓰는 화면에 쓰입니다." },
+  common: { section: "공통", badge: "공통", hint: "사용자 화면과 관리자 화면 모두에서 쓰입니다." },
+};
+
 export interface DocMeta {
   slug: string;
   title: string;
   description: string;
+  /** 컴포넌트 페이지에만 있다. 사이드바의 2단 구분과 페이지 머리말에 쓰인다 */
+  audience?: Audience;
 }
 
 export interface DocGroup {
@@ -43,22 +54,34 @@ export const docGroups: DocGroup[] = [
   {
     label: "Components",
     items: [
-      { slug: "login-form", title: "Login Form", description: "아이디와 비밀번호로 로그인하는 폼입니다." },
-      { slug: "signup-form", title: "Signup Form", description: "아이디, 이름, 이메일, 비밀번호를 받는 가입 폼입니다." },
-      { slug: "email-verification", title: "Email Verification", description: "이메일 인증번호 받기·확인 버튼. 서비스에 따라 켜고 끌 수 있습니다." },
-      { slug: "address-field", title: "Address Field", description: "주소 검색 버튼으로 우편번호와 주소를 함께 입력하는 두 가지 주소 입력 방식입니다." },
-      { slug: "file-dropzone", title: "File Dropzone", description: "끌어다 놓거나 눌러서 첨부파일을 고르는 영역입니다." },
-      { slug: "terms-agreement", title: "Terms Agreement", description: "가입 시 약관 동의를 받는 체크박스 영역과, 체크박스·라디오 컴포넌트입니다." },
-      { slug: "password-reset", title: "Password Reset", description: "이메일 링크로 비밀번호를 다시 정하는 비밀번호 찾기·재설정 화면입니다." },
-      { slug: "profile", title: "Profile & Password", description: "내 정보 수정과 비밀번호 변경 화면입니다." },
-      { slug: "auth-dialog", title: "Auth Dialog", description: "로그인과 가입을 하나로 묶은 모달입니다." },
-      { slug: "user-avatar", title: "User Avatar", description: "프로필 이미지 또는 이니셜로 사용자를 나타내는 아바타입니다." },
-      { slug: "user-menu", title: "User Menu", description: "로그인한 사용자가 자기 계정을 다루는 아바타 드롭다운 메뉴입니다." },
-      { slug: "member-table", title: "Member Table", description: "관리자용 유저 목록 테이블입니다." },
-      { slug: "member-directory", title: "Member Directory", description: "검색, 필터, 페이지네이션을 갖춘 관리자 멤버 목록입니다." },
-      { slug: "role-manager", title: "Role Manager", description: "관리자가 사용자에게 권한(역할)을 부여하거나 바꾸는 확인 창입니다." },
-      { slug: "role-select", title: "Role Select", description: "유저의 역할을 바꾸는 선택 상자입니다." },
-      { slug: "route-guards", title: "Route Guards", description: "로그인과 역할로 화면을 보호합니다." },
+      { slug: "login-form", title: "Login Form", description: "아이디와 비밀번호로 로그인하는 폼입니다.", audience: "user" },
+      { slug: "signup-form", title: "Signup Form", description: "아이디, 이름, 이메일, 비밀번호를 받는 가입 폼입니다.", audience: "user" },
+      { slug: "email-verification", title: "Email Verification", description: "이메일 인증번호 받기·확인 버튼. 서비스에 따라 켜고 끌 수 있습니다.", audience: "user" },
+      { slug: "terms-agreement", title: "Terms Agreement", description: "가입 시 약관 동의를 받는 체크박스 영역과, 체크박스·라디오 컴포넌트입니다.", audience: "user" },
+      { slug: "password-reset", title: "Password Reset", description: "이메일 링크로 비밀번호를 다시 정하는 비밀번호 찾기·재설정 화면입니다.", audience: "user" },
+      { slug: "profile", title: "Profile & Password", description: "내 정보 수정과 비밀번호 변경 화면입니다.", audience: "user" },
+      { slug: "nickname", title: "Nickname", description: "닉네임 입력, 자동 생성 버튼, 마이페이지에서의 닉네임 변경입니다.", audience: "user" },
+      { slug: "auth-dialog", title: "Auth Dialog", description: "로그인과 가입을 하나로 묶은 모달입니다.", audience: "user" },
+      { slug: "user-avatar", title: "User Avatar", description: "프로필 이미지 또는 이니셜로 사용자를 나타내는 아바타입니다.", audience: "user" },
+      { slug: "user-menu", title: "User Menu", description: "로그인한 사용자가 자기 계정을 다루는 아바타 드롭다운 메뉴입니다.", audience: "user" },
+      { slug: "member-table", title: "Member Table", description: "관리자용 유저 목록 테이블입니다.", audience: "admin" },
+      { slug: "member-directory", title: "Member Directory", description: "검색, 필터, 페이지네이션을 갖춘 관리자 멤버 목록입니다.", audience: "admin" },
+      { slug: "member-ai-usage", title: "Member AI Usage", description: "멤버의 AI 사용량을 원형(Radial) 차트로 보여 줍니다. 프론트 UI만 제공하며 사용량 집계는 추후 적용 예정입니다.", audience: "admin" },
+      { slug: "member-ai-usage-history", title: "Member AI Usage History", description: "멤버의 AI 사용량을 일·주·월별 막대(Bar) 차트로 보여 줍니다. 프론트 UI만 제공하며 사용량 집계는 추후 적용 예정입니다.", audience: "admin" },
+      { slug: "role-manager", title: "Role Manager", description: "관리자가 사용자에게 권한(역할)을 부여하거나 바꾸는 확인 창입니다.", audience: "admin" },
+      { slug: "role-select", title: "Role Select", description: "유저의 역할을 바꾸는 선택 상자입니다.", audience: "admin" },
+      { slug: "address-field", title: "Address Field", description: "주소 검색 버튼으로 우편번호와 주소를 함께 입력하는 두 가지 주소 입력 방식입니다.", audience: "common" },
+      { slug: "file-dropzone", title: "File Dropzone", description: "끌어다 놓거나 눌러서 첨부파일을 고르는 영역입니다.", audience: "common" },
+      { slug: "loading", title: "Loading", description: "9가지 스타일의 로더와, 불러오는 중 화면에 공통으로 끼우는 모듈입니다.", audience: "common" },
+      { slug: "route-guards", title: "Route Guards", description: "로그인과 역할로 화면을 보호합니다.", audience: "common" },
+    ],
+  },
+  {
+    label: "AI Components",
+    items: [
+      { slug: "ai-prompt-input", title: "AI Prompt Input", description: "AI에게 질문하거나 코멘트를 남기는 입력 폼. 글 입력, 파일 첨부, 에이전트 선택, 보내기·중지를 한 덩어리로 묶었습니다." },
+      { slug: "thinking-indicator", title: "Thinking Indicator", description: "AI가 답을 준비하는 동안 보여 주는 \"생각 중\" 애니메이션입니다." },
+      { slug: "voice", title: "Voice", description: "마이크로 말하면 입력창에 글로 들어가고, 목소리 크기에 따라 컬러 파동이 일렁입니다." },
     ],
   },
   {

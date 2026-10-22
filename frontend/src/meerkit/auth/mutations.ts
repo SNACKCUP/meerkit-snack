@@ -9,6 +9,7 @@ import type { ChangePasswordInput, EmailCodeInput, ForgotPasswordInput, LoginInp
 import { useAuthDialog } from "./dialog-store";
 import { useLockoutStore } from "./lockout";
 import { meKey } from "./queries";
+import { setSessionHint } from "./session-hint";
 import { useAuthStore } from "./store";
 
 export function useLogin() {
@@ -20,6 +21,7 @@ export function useLogin() {
     onSuccess: ({ access_token }) => {
       reset();
       setAccessToken(access_token);
+      setSessionHint(true);
       closeDialog();
     },
     onError: (error) => {
@@ -53,6 +55,7 @@ export function useLogout() {
     mutationFn: authApi.logout,
     onSettled: () => {
       setAccessToken(null);
+      setSessionHint(false);
       queryClient.removeQueries({ queryKey: meKey });
     },
   });
@@ -81,6 +84,17 @@ export function useUpdateProfile() {
     onSuccess: (user) => {
       queryClient.setQueryData(meKey, user);
       toast.success("내 정보를 저장했습니다.");
+    },
+  });
+}
+
+export function useUpdateNickname() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (nickname: string) => usersApi.updateMe({ nickname }),
+    onSuccess: (user) => {
+      queryClient.setQueryData(meKey, user);
+      toast.success("닉네임을 저장했습니다.");
     },
   });
 }

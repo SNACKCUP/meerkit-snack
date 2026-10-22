@@ -5,8 +5,12 @@ import { GuideAddRole, GuideCallApi, GuideProtectPage, Security } from "./guides
 import { ApiReference, Authentication, DataModel, Roles } from "./core";
 import { Deployment, Installation, Introduction, ProjectStructure, Theming } from "./getting-started";
 import { LoginLockoutDoc, MemberDirectoryDoc, PasswordResetDoc, ProfileDoc, TermsAgreementDoc } from "./flows";
-import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, RoleManagerDoc } from "./extras";
+import { VoiceDoc } from "./voice";
+import { LoadingDoc } from "./loading";
+import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, NicknameDoc, RoleManagerDoc } from "./extras";
+import { AiPromptInputDoc, ThinkingIndicatorDoc } from "./ai";
 import { Faq, Hooks } from "./reference";
+import { MemberAiUsageDoc, MemberAiUsageHistoryDoc } from "./usage";
 
 // nav.ts의 slug와 같은 키로 본문을 연결한다.
 export const docContent: Record<string, ComponentType> = {
@@ -29,17 +33,24 @@ export const docContent: Record<string, ComponentType> = {
   "email-verification": EmailVerificationDoc,
   "address-field": AddressFieldDoc,
   "file-dropzone": FileDropzoneDoc,
+  loading: LoadingDoc,
+  voice: VoiceDoc,
   "terms-agreement": TermsAgreementDoc,
   "password-reset": PasswordResetDoc,
   profile: ProfileDoc,
+  nickname: NicknameDoc,
   "auth-dialog": AuthDialogDoc,
   "user-avatar": UserAvatarDoc,
   "user-menu": UserMenuDoc,
   "member-table": MemberTableDoc,
   "member-directory": MemberDirectoryDoc,
+  "member-ai-usage": MemberAiUsageDoc,
+  "member-ai-usage-history": MemberAiUsageHistoryDoc,
   "role-manager": RoleManagerDoc,
   "role-select": RoleSelectDoc,
   "route-guards": RouteGuardsDoc,
+  "ai-prompt-input": AiPromptInputDoc,
+  "thinking-indicator": ThinkingIndicatorDoc,
   hooks: Hooks,
   faq: Faq,
 };
