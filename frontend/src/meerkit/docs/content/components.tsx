@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 
 import type { AddressType, SignupOptionalField } from "../../define-config";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
-import { demoAddressSearch, demoEmailHandlers, mockUsers, roleOf } from "./mock";
+import { demoAddressProvider, demoEmailHandlers, mockUsers, roleOf } from "./mock";
 
 const noop = () => {};
 
@@ -147,7 +147,9 @@ export function SignupFormDoc() {
           addressType={addressType}
           terms={withTerms ? signupTerms : []}
           emailVerification={withEmail ? demoEmailHandlers : undefined}
-          onSearchAddress={demoAddressSearch}
+          addressSearch="dialog"
+          addressSearchProvider={demoAddressProvider}
+          nickname={{ generator: true }}
         />
       </Preview>
 
@@ -206,13 +208,14 @@ export function SignupFormDoc() {
       </P>
       <H2>Address</H2>
       <P>
-        주소는 <strong>검색 버튼으로 고르면 우편번호와 주소가 함께 채워지는</strong> 전용 입력입니다. <Ic>addressType</Ic>으로 두 가지 방식을 고릅니다: <strong>A(basic)</strong> 주소 + 상세 주소, <strong>B(postcode)</strong> 우편번호 + 주소 + 상세 주소.
+        주소는 <strong>검색 버튼으로 고르면 우편번호와 주소가 함께 채워지는</strong> 전용 입력입니다. 검색은 카카오 우편번호 팝업(기본) 또는 결과 목록이 있는 검색 창 중에서 고릅니다. <Ic>addressType</Ic>으로 두 가지 방식을 고릅니다: <strong>A(basic)</strong> 주소 + 상세 주소, <strong>B(postcode)</strong> 우편번호 + 주소 + 상세 주소.
         자세한 내용은 Address Field 페이지를 보세요.
       </P>
       <H2>Nickname</H2>
       <P>
-        <Ic>optionalFields</Ic>에 <Ic>&quot;nickname&quot;</Ic>을 켜면 가입 때 닉네임(2~12자)을 받습니다. 닉네임이 있는 사용자는 메뉴와 아바타에 이름 대신 닉네임이 보이며, 가입 후에는 내 정보의 프로필 수정에서 바꿀 수 있습니다.
-        닉네임 <strong>중복 검사는 서버</strong>가 합니다.
+        <Ic>optionalFields</Ic>에 <Ic>&quot;nickname&quot;</Ic>을 켜면 가입 때 닉네임(2~12자)을 받습니다. 입력칸 옆의 <strong>[자동 생성]</strong> 버튼으로 &quot;용감한미어캣482&quot; 같은 이름을 받아 쓸 수 있고,
+        <Ic>nickname.autoFill</Ic>을 켜면 폼을 열 때 미리 채워 둡니다. 닉네임이 있는 사용자는 메뉴와 아바타에 이름 대신 닉네임이 보이며, 마이페이지에서 바꿀 수 있습니다.
+        닉네임 <strong>중복 검사는 서버</strong>가 합니다. 자세한 내용은 Nickname 페이지를 보세요.
       </P>
       <H2>Add your own field</H2>
       <P>샘플에 없는 항목은 폼 상태, 입력, 타입, 백엔드 스키마를 함께 바꿉니다.</P>

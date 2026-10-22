@@ -2,13 +2,14 @@
 
 import { useAuth } from "../hooks";
 import { useAuthDialog } from "../dialog-store";
+import { LoadingState } from "../../loading";
 import { Button } from "@/components/ui/button";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const openDialog = useAuthDialog((s) => s.openDialog);
 
-  if (isLoading) return <p className="p-6 text-sm text-muted-foreground">불러오는 중…</p>;
+  if (isLoading) return <LoadingState fullPage />;
   if (!isAuthenticated) {
     return (
       <div className="flex flex-col items-center gap-3 p-10">

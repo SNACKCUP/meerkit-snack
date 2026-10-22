@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 
 import type { AddressType, SignupOptionalField } from "../../define-config";
 import type { UpdateProfileInput, User } from "../../types";
-import type { AddressSearchResult } from "./address-search";
+import type { AddressSearchProvider, AddressSearchResult } from "./address-search";
 import { OptionalFields, collectOptional, optionalValuesFromUser, validateOptional, type OptionalValues } from "./OptionalFields";
 
 interface ProfileFormProps {
@@ -19,13 +19,15 @@ interface ProfileFormProps {
   /** 함께 수정할 선택 항목. 가입 폼에서 켠 것과 같은 목록을 쓴다 */
   optionalFields?: SignupOptionalField[];
   addressType?: AddressType;
+  addressSearch?: "popup" | "dialog";
   onSearchAddress?: () => Promise<AddressSearchResult | null>;
+  addressSearchProvider?: AddressSearchProvider;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // 아이디는 바꿀 수 없다. 이름, 이메일, 켜 둔 선택 항목(닉네임, 주소 등)만 수정한다.
-export function ProfileForm({ user, onSubmit, pending, error, optionalFields = [], addressType = "basic", onSearchAddress }: ProfileFormProps) {
+export function ProfileForm({ user, onSubmit, pending, error, optionalFields = [], addressType = "basic", addressSearch, onSearchAddress, addressSearchProvider }: ProfileFormProps) {
   const [form, setForm] = useState({ name: user.name, email: user.email });
   const [optional, setOptional] = useState<OptionalValues>(() => optionalValuesFromUser(user));
   const [invalid, setInvalid] = useState<string | null>(null);
@@ -68,7 +70,9 @@ export function ProfileForm({ user, onSubmit, pending, error, optionalFields = [
         values={optional}
         onChange={(patch) => setOptional((p) => ({ ...p, ...patch }))}
         addressType={addressType}
+        addressSearch={addressSearch}
         onSearchAddress={onSearchAddress}
+        addressSearchProvider={addressSearchProvider}
         markOptional={false}
       />
       {(invalid ?? error) && <p role="alert" className="text-sm text-destructive">{invalid ?? error}</p>}

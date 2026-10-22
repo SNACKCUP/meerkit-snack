@@ -5,6 +5,29 @@ export interface AddressSearchResult {
   address: string;
 }
 
+/** 검색 결과 한 줄 */
+export interface AddressItem {
+  postcode: string;
+  /** 입력칸에 들어갈 주소 (도로명 우선) */
+  address: string;
+  /** 목록에서 보조로 보여 줄 지번 주소 */
+  jibun_address?: string;
+  /** 건물명 등 */
+  building_name?: string;
+}
+
+/** 검색 결과 한 쪽 */
+export interface AddressSearchPage {
+  items: AddressItem[];
+  /** 조건에 맞는 전체 개수 */
+  total: number;
+  /** true면 더 불러올 결과가 없다 */
+  isEnd: boolean;
+}
+
+/** 주소 검색 방법. 서버(카카오 로컬 API 등)를 호출해 한 쪽씩 돌려준다 */
+export type AddressSearchProvider = (query: string, page: number, size: number) => Promise<AddressSearchPage>;
+
 interface DaumPostcodeData {
   zonecode: string;
   roadAddress: string;

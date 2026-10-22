@@ -47,8 +47,46 @@ export const demoEmailHandlers = {
   },
 };
 
-// 미리보기용 주소 검색. 실제 팝업 대신 고정된 주소를 돌려준다.
-export const demoAddressSearch = async () => {
-  await delay(500);
-  return { postcode: "06236", address: "서울특별시 강남구 테헤란로 152" };
+// 주소 검색 창 미리보기용 데이터 150건. 결과가 많을 때 "더 보기"가 어떻게 동작하는지 체험할 수 있다.
+const ROADS = ["테헤란로", "봉은사로", "선릉로", "강남대로", "역삼로", "논현로"];
+const BUILDINGS = ["", "", "미어캣타워", "", "", "스타터빌딩", "", "", "그린오피스", ""];
+const addressData = ROADS.flatMap((road, r) =>
+  Array.from({ length: 25 }, (_, i) => {
+    const n = i + 1;
+    const building = BUILDINGS[(r + n) % BUILDINGS.length];
+    return {
+      postcode: String(6000 + r * 40 + n).padStart(5, "0"),
+      address: `서울특별시 강남구 ${road} ${n}`,
+      jibun_address: `서울특별시 강남구 역삼동 ${700 + r * 30 + n}-${n}`,
+      building_name: building || undefined,
+    };
+  }),
+);
+
+export const demoAddressProvider = async (query: string, page: number, size: number) => {
+  await delay(450);
+  // 오류 화면을 보여 주기 위한 데모용 입력
+  if (query.trim() === "오류") throw new Error("서버에 연결할 수 없습니다.");
+  const tokens = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const matched = addressData.filter((a) => {
+    const hay = `${a.address} ${a.jibun_address} ${a.building_name ?? ""}`.toLowerCase();
+    return tokens.every((t) => hay.includes(t));
+  });
+  const start = (page - 1) * size;
+  return { items: matched.slice(start, start + size), total: matched.length, isEnd: start + size >= matched.length };
+};
+
+// ── 멤버 AI 사용량 미리보기용 목 데이터 (현재는 프론트 UI만 있고 실제 집계는 추후 적용) ──
+export const mockUsage = {
+  ok: { used: 3200, limit: 10000, unit: "토큰", resetAt: new Date(Date.now() + 9 * 86_400_000).toISOString() },
+  warn: { used: 8100, limit: 10000, unit: "토큰", resetAt: new Date(Date.now() + 4 * 86_400_000).toISOString() },
+  danger: { used: 9650, limit: 10000, unit: "토큰", resetAt: new Date(Date.now() + 2 * 86_400_000).toISOString() },
+  unlimited: { used: 42300, limit: null, unit: "토큰" },
+};
+
+const dayValues = [120, 340, 210, 480, 390, 150, 90, 520, 610, 430, 380, 260, 700, 560];
+export const mockUsageHistory = {
+  day: dayValues.map((value, i) => ({ label: `10/${String(i + 7).padStart(2, "0")}`, value })),
+  week: [1800, 2400, 1950, 3100, 2750, 3300, 2900, 3650].map((value, i) => ({ label: `${i + 1}주`, value })),
+  month: [6200, 7800, 9100, 8400, 10300, 11800].map((value, i) => ({ label: `${i + 5}월`, value })),
 };

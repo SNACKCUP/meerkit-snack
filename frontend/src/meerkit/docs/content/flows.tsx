@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,7 @@ import { TermsAgreement } from "../../auth/components/TermsAgreement";
 import type { TermsItem } from "../../define-config";
 import type { MemberQuery } from "../../types";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, Tree, UL } from "../ui";
-import { demoAddressSearch, mockMembers, mockUsers } from "./mock";
+import { demoAddressProvider, mockMembers, mockUsers } from "./mock";
 
 const noop = () => {};
 
@@ -154,7 +153,6 @@ export function TermsAgreementDoc() {
   const [agreed, setAgreed] = useState<string[]>([]);
   const [checked, setChecked] = useState<boolean | "indeterminate">(true);
   const [gender, setGender] = useState("none");
-  const ok = demoTerms.filter((t) => t.required).every((t) => agreed.includes(t.id));
 
   return (
     <>
@@ -166,12 +164,7 @@ export function TermsAgreementDoc() {
 
       <H2>Preview</H2>
       <Preview code={`<TermsAgreement\n  terms={terms}\n  value={agreed}\n  onChange={setAgreed}\n/>`}>
-        <div className="grid gap-3">
-          <TermsAgreement terms={demoTerms} value={agreed} onChange={setAgreed} />
-          <p className="text-xs text-muted-foreground">
-            필수 약관 동의 상태: <Badge variant={ok ? "brand" : "secondary"}>{ok ? "가입 가능" : "필수 약관 미동의"}</Badge>
-          </p>
-        </div>
+        <TermsAgreement terms={demoTerms} value={agreed} onChange={setAgreed} />
       </Preview>
 
       <H2>Behavior</H2>
@@ -344,6 +337,24 @@ export function PasswordResetDoc() {
       </UL>
       <Callout tone="warn">메일을 실제로 보내는 부분은 서비스가 준비해야 합니다. 로컬에서는 메일 캐처(예: Mailpit)를 docker-compose에 두고 확인하는 방식을 권장합니다.</Callout>
 
+      <H2>Change the text</H2>
+      <P>화면의 문구(제목, 안내, 버튼, 메시지)는 컴포넌트 파일 안에 그대로 적혀 있어서 <strong>해당 파일을 열어 글자만 바꾸면</strong> 됩니다. 어디에 무엇이 있는지 정리했습니다.</P>
+      <DocTable
+        head={["바꾸고 싶은 문구", "파일", "찾는 방법"]}
+        rows={[
+          ["모달 제목과 설명 (\"비밀번호 찾기\", \"가입한 이메일로 재설정 링크를…\")", <Ic key="1">auth/components/AuthDialog.tsx</Ic>, <><Ic>copy.forgot</Ic>의 <Ic>title</Ic>, <Ic>desc</Ic></>],
+          ["이메일 입력 라벨·안내, [재설정 링크 받기] 버튼, \"메일을 확인해 주세요\" 안내", <Ic key="2">auth/components/ForgotPasswordForm.tsx</Ic>, "화면에 보이는 한글을 그대로 검색"],
+          ["로그인 화면의 \"비밀번호를 잊으셨나요?\" 링크", <Ic key="3">auth/components/LoginForm.tsx</Ic>, <><Ic>onForgotPassword</Ic> 근처의 버튼 글자</>],
+          ["재설정 화면의 제목·설명 (\"비밀번호 재설정\", \"새로 사용할 비밀번호를…\"), 잘못된 링크 안내", <Ic key="4">auth/ResetPasswordPage.tsx</Ic>, <><Ic>h1</Ic>과 안내 문단</>],
+          ["새 비밀번호 입력 라벨, 8자·불일치 오류, \"변경했습니다\" 완료 안내", <Ic key="5">auth/components/ResetPasswordForm.tsx</Ic>, "오류 문구와 완료 화면의 글자"],
+          ["서버가 돌려주는 오류 문구 (링크 만료 등)", "서버", <>응답의 <Ic>detail</Ic> 값을 그대로 보여 줍니다</>],
+          ["받는 사람이 보는 메일의 제목·본문", "서버 (메일 템플릿)", "메일은 서버가 만들어 보냅니다"],
+        ]}
+      />
+      <CodeBlock title="auth/components/AuthDialog.tsx" code={`const copy = {\n  login: { title: "로그인", desc: "아이디와 비밀번호를 입력하세요." },\n  signup: { title: "회원가입", desc: "정보를 입력해 계정을 만드세요." },\n  forgot: { title: "비밀번호 찾기", desc: "가입한 이메일로 재설정 링크를 보내 드립니다." }, // ← 여기를 고칩니다\n} as const;`} />
+      <CodeBlock title="auth/components/ForgotPasswordForm.tsx" code={`<p className="text-sm font-semibold">메일을 확인해 주세요</p>      // 안내 제목\n...\n<Button type="submit">{pending ? "보내는 중…" : "재설정 링크 받기"}</Button>  // 버튼 글자`} />
+      <Callout>킷 폴더 안의 파일을 직접 고치면 킷을 업데이트할 때 충돌할 수 있습니다. 문구를 많이 바꿔야 한다면 해당 컴포넌트를 복사해 서비스 폴더(<Ic>app/(service)/</Ic>)에 두고 쓰는 것을 권장합니다.</Callout>
+
       <H2>Customization</H2>
       <UL>
         <li>메일 링크 주소는 <Ic>meerkitConfig.routes.resetPassword</Ic>(<Ic>/reset-password</Ic>)입니다. 서버가 메일 본문에 이 주소를 만들 때 같은 값을 쓰세요.</li>
@@ -400,11 +411,12 @@ export function ProfileDoc() {
 
       <H2>Profile form</H2>
       <Preview code={`<ProfileForm\n  user={user}\n  onSubmit={update.mutate}\n  pending={update.isPending}\n  optionalFields={["nickname", "phone", "address"]}\n  addressType="postcode"\n/>`}>
-        <ProfileForm user={user} onSubmit={noop} optionalFields={["nickname", "phone", "address"]} addressType="postcode" onSearchAddress={demoAddressSearch} />
+        <ProfileForm user={user} onSubmit={noop} optionalFields={["nickname", "phone", "address"]} addressType="postcode" addressSearch="dialog" addressSearchProvider={demoAddressProvider} />
       </Preview>
       <H3>Nickname</H3>
       <UL>
-        <li>닉네임을 켜 두면 여기서 <strong>입력하고 바꿀</strong> 수 있습니다 (2~12자). 비우고 저장하면 닉네임이 지워지고 이름이 다시 보입니다.</li>
+        <li>닉네임을 켜 두면 마이페이지 요약 카드에서 <strong>[변경] 한 번으로 바꿀</strong> 수 있습니다 (<Ic>NicknameForm</Ic>, Nickname 페이지 참고). 이 프로필 폼에서는 중복을 피하려고 닉네임을 따로 보여 주지 않습니다.</li>
+        <li>폼 컴포넌트 단독으로 쓸 때(<Ic>optionalFields</Ic>에 nickname을 넣었을 때)는 이 폼 안에서도 입력하고 바꿀 수 있습니다 (2~12자). 비우고 저장하면 닉네임이 지워지고 이름이 다시 보입니다.</li>
         <li>닉네임이 있으면 사용자 메뉴, 아바타의 이니셜, 내 정보 제목에 이름 대신 닉네임이 쓰입니다.</li>
         <li>중복 닉네임은 서버가 거절하고, 그 메시지가 폼 아래에 나옵니다.</li>
       </UL>
@@ -557,7 +569,7 @@ MemberFilters (입력)  ──►  query { q, roleId, status, page, size }
       </UL>
 
       <H2>Props</H2>
-      <H3>MemberDirectory</H3>
+      <H3>MemberDirectory props</H3>
       <PropsTable
         rows={[
           ["query", "MemberQuery", "현재 조건 { q, roleId, status, page, size }.", true],
@@ -568,7 +580,7 @@ MemberFilters (입력)  ──►  query { q, roleId, status, page, size }
           ["onRemove", "(id) => void", "탈퇴 처리를 눌렀을 때.", true],
         ]}
       />
-      <H3>Pagination</H3>
+      <H3>Pagination props</H3>
       <PropsTable
         rows={[
           ["page", "number", "현재 페이지 (1부터).", true],

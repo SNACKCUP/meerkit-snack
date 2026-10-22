@@ -83,7 +83,7 @@ PostgreSQL ── users, roles
         <li>프로필 이미지 업로드 (이미지 주소를 받아 표시만 합니다)</li>
         <li>실제 약관 문구와 메일 발송 (샘플 약관 페이지만 있습니다)</li>
         <li>세부 권한(permission) 테이블, 조직·팀 구조</li>
-        <li>사용량 기록과 한도 관리</li>
+        <li>AI 사용량 기록과 한도 관리 (관리자용 사용량 화면 UI는 제공하며, 실제 집계는 추후 적용 예정)</li>
       </UL>
       <H2>Next steps</H2>
       <LinkCards

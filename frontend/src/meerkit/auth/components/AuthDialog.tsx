@@ -62,6 +62,8 @@ export function AuthDialog() {
               optionalFields={[...meerkitConfig.signup.optionalFields]}
               terms={[...meerkitConfig.signup.terms]}
               addressType={meerkitConfig.signup.addressType}
+              nickname={meerkitConfig.signup.nickname}
+              addressSearch={meerkitConfig.signup.addressSearch}
               emailVerification={
                 meerkitConfig.signup.emailVerification
                   ? {

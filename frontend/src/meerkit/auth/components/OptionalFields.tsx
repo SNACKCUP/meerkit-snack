@@ -7,7 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { AddressType, SignupOptionalField } from "../../define-config";
 import type { User } from "../../types";
 import { AddressField, AddressFieldLabel } from "./AddressField";
-import type { AddressSearchResult } from "./address-search";
+import { NicknameInput } from "./NicknameInput";
+import type { AddressSearchProvider, AddressSearchResult } from "./address-search";
 
 // 가입 폼과 내 정보 수정 폼이 함께 쓰는 선택 항목 입력 모음.
 export interface OptionalValues {
@@ -78,19 +79,37 @@ interface OptionalFieldsProps {
   values: OptionalValues;
   onChange: (patch: Partial<OptionalValues>) => void;
   addressType?: AddressType;
-  /** 주소 검색 방법을 바꾸고 싶을 때 */
+  /** 주소 검색 방식과 검색 방법 (AddressField 참고) */
+  addressSearch?: "popup" | "dialog";
   onSearchAddress?: () => Promise<AddressSearchResult | null>;
+  addressSearchProvider?: AddressSearchProvider;
   /** 라벨 옆에 (선택)을 붙일지 */
   markOptional?: boolean;
+  /** 닉네임 입력칸 옆에 [자동 생성] 버튼을 보여 줄지. 기본 true */
+  nicknameGenerator?: boolean;
   idPrefix: string;
 }
 
-export function OptionalFields({ fields, values, onChange, addressType = "basic", onSearchAddress, markOptional = true, idPrefix }: OptionalFieldsProps) {
+export function OptionalFields({ fields, values, onChange, addressType = "basic", addressSearch, onSearchAddress, addressSearchProvider, markOptional = true, nicknameGenerator = true, idPrefix }: OptionalFieldsProps) {
   const opt = markOptional ? <span className="font-normal text-muted-foreground"> (선택)</span> : null;
 
   return (
     <>
       {fields.map((field) => {
+        if (field === "nickname") {
+          return (
+            <div key={field} className="mk-swap grid gap-2">
+              <Label htmlFor={`${idPrefix}-nickname`}>닉네임{opt}</Label>
+              <NicknameInput
+                id={`${idPrefix}-nickname`}
+                value={values.nickname}
+                onChange={(nickname) => onChange({ nickname })}
+                generator={nicknameGenerator}
+                placeholder={`${NICKNAME_RANGE.min}~${NICKNAME_RANGE.max}자, 다른 사용자에게 보이는 이름`}
+              />
+            </div>
+          );
+        }
         if (field === "gender") {
           return (
             <div key={field} className="mk-swap grid gap-2">
@@ -115,7 +134,9 @@ export function OptionalFields({ fields, values, onChange, addressType = "basic"
                 idPrefix={`${idPrefix}-address`}
                 value={{ postcode: values.postcode, address: values.address, address_detail: values.address_detail }}
                 onChange={(v) => onChange(v)}
+                searchMode={addressSearch}
                 onSearch={onSearchAddress}
+                searchProvider={addressSearchProvider}
               />
             </div>
           );

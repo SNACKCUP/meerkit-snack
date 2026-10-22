@@ -17,6 +17,6 @@ export const usersApi = {
   updateRole: (id: number, role_id: number) =>
     api.patch<User>(`/users/${id}/role`, { role_id }).then((r) => r.data),
   remove: (id: number) => api.delete(`/users/${id}`),
-  updateMe: (input: UpdateProfileInput) => api.patch<User>("/users/me", input).then((r) => r.data),
+  updateMe: (input: Partial<UpdateProfileInput>) => api.patch<User>("/users/me", input).then((r) => r.data),
   changePassword: (input: ChangePasswordInput) => api.patch("/users/me/password", input),
 };

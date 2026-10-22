@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { IndexingContext } from "../indexing";
-import { Callout, CodeBlock, DocTable, H2, H3, Ic, P, UL } from "../ui";
+import { Callout, CodeBlock, DocTable, H2, H3, Ic, P } from "../ui";
 
 export function Hooks() {
   return (
@@ -77,6 +77,8 @@ export function Hooks() {
           [<Ic key="3">signup.passwordConfirm</Ic>, "boolean", "false", "가입 폼에 비밀번호 확인 추가"],
           [<Ic key="4">signup.optionalFields</Ic>, "SignupOptionalField[]", "[]", "가입 폼의 선택 항목 (nickname, phone, address, birth_date, gender)"],
           [<Ic key="a1">signup.addressType</Ic>, '"basic" | "postcode"', "basic", "주소 입력 방식 (주소+상세 / 우편번호+주소+상세)"],
+          [<Ic key="a3">signup.addressSearch</Ic>, '"popup" | "dialog"', "popup", "주소 검색 방식 (카카오 팝업 / 검색 창)"],
+          [<Ic key="a4">signup.nickname</Ic>, "{ generator, autoFill }", "{ true, false }", "닉네임 [자동 생성] 버튼, 가입 폼 미리 채우기"],
           [<Ic key="a2">signup.emailVerification</Ic>, "boolean", "false", "이메일 인증번호 받기·확인 사용 여부"],
           [<Ic key="5">signup.terms</Ic>, "TermsItem[]", "약관 3종", "가입 시 동의받을 약관. 빈 배열이면 숨김"],
           [<Ic key="6">login.maxAttempts</Ic>, "number", "5", "연속 실패 허용 횟수. 0이면 잠금 끄기"],
@@ -114,13 +116,16 @@ const FAQ_ITEMS: { id: string; category: FaqCategory; q: string; a: React.ReactN
   { id: "lock-secure", category: "account", q: "브라우저 잠금만 있으면 안전한가요?", a: "아니요. 사용자가 저장소를 지우거나 다른 기기로 우회할 수 있습니다. 서버에서도 같은 규칙으로 차단해야 합니다." },
   { id: "reset-mail", category: "account", q: "비밀번호 찾기 메일은 누가 보내나요?", a: "서버가 보냅니다. 킷은 화면과 API 규약만 제공합니다. 로컬 테스트에는 메일 캐처를 쓰는 것을 권장합니다." },
   { id: "profile-edit", category: "account", q: "내 정보 수정이나 비밀번호 변경 화면이 있나요?", a: <>있습니다. <Ic>/me</Ic>에서 프로필 수정과 비밀번호 변경 탭을 제공합니다 (Profile &amp; Password 참고).</> },
-  { id: "nickname-change", category: "account", q: "닉네임은 어디서 바꾸나요?", a: <><Ic>signup.optionalFields</Ic>에 <Ic>&quot;nickname&quot;</Ic>을 켜면 가입 때 입력받고, <Ic>/me</Ic>의 프로필 수정에서도 바꿀 수 있습니다. 닉네임이 있으면 메뉴와 아바타에 이름 대신 닉네임이 보입니다.</> },
+  { id: "nickname-change", category: "account", q: "닉네임은 어디서 바꾸나요?", a: <><Ic>signup.optionalFields</Ic>에 <Ic>&quot;nickname&quot;</Ic>을 켜면 가입 때 입력받고, 마이페이지(<Ic>/me</Ic>) 요약 카드의 [변경]으로 바꿀 수 있습니다. 닉네임이 있으면 메뉴와 아바타에 이름 대신 닉네임이 보입니다.</> },
+  { id: "forgot-text", category: "account", q: "비밀번호 찾기 화면의 문구는 어떻게 바꾸나요?", a: <>해당 컴포넌트 파일의 글자를 직접 고칩니다. 모달 제목·설명은 <Ic>AuthDialog.tsx</Ic>의 <Ic>copy.forgot</Ic>, 안내와 버튼은 <Ic>ForgotPasswordForm.tsx</Ic>에 있습니다. 파일별 위치는 Password Reset 페이지의 &quot;Change the text&quot;에 정리했습니다. 메일 본문은 서버 템플릿에서 바꿉니다.</> },
 
   { id: "role-signup", category: "signup", q: "가입할 때 역할을 고를 수 있나요?", a: "아니요. 일반 사용자가 스스로 MASTER를 지정하면 안 되므로, 기본 역할은 서버가 부여합니다. 역할 변경은 관리자 화면에서만 합니다." },
   { id: "terms-edit", category: "signup", q: "약관을 바꾸거나 없애고 싶어요.", a: <><Ic>signup.terms</Ic>를 고치세요. 빈 배열이면 약관 영역이 사라집니다. 약관 문구(/terms, /privacy)는 샘플이므로 교체해야 합니다.</> },
   { id: "more-fields", category: "signup", q: "가입 폼에 항목을 더 받고 싶어요.", a: <><Ic>signup.optionalFields</Ic>에 <Ic>nickname</Ic>, <Ic>phone</Ic>, <Ic>address</Ic>, <Ic>birth_date</Ic>, <Ic>gender</Ic>를 넣으세요. 백엔드 컬럼도 필요합니다.</> },
   { id: "address-type", category: "signup", q: "주소 입력은 어떤 방식이 있나요?", a: <>두 가지입니다. <Ic>basic</Ic>은 주소 + 상세 주소, <Ic>postcode</Ic>는 우편번호 + 주소 + 상세 주소입니다. <Ic>signup.addressType</Ic>으로 고릅니다. 주소 검색 버튼으로 고르면 우편번호와 주소가 함께 채워집니다.</> },
-  { id: "address-search", category: "signup", q: "주소 검색은 무엇을 쓰나요?", a: <>기본은 카카오(다음) 우편번호 팝업입니다. 다른 서비스를 쓰려면 <Ic>AddressField</Ic>의 <Ic>onSearch</Ic>에 같은 모양의 함수를 넘기세요. 검색을 불러오지 못하면 직접 입력할 수 있게 열립니다.</> },
+  { id: "address-search", category: "signup", q: "주소 검색은 무엇을 쓰나요?", a: <>두 가지입니다. 기본은 카카오(다음) 우편번호 팝업(서버 불필요)이고, <Ic>signup.addressSearch: &quot;dialog&quot;</Ic>로 바꾸면 결과 목록과 [더 보기]가 있는 검색 창을 씁니다(서비스 서버의 <Ic>/address/search</Ic> 필요). 팝업을 불러오지 못하면 직접 입력할 수 있게 열립니다.</> },
+  { id: "address-many", category: "signup", q: "주소 검색 결과가 너무 많으면 어떻게 되나요?", a: "검색 창은 10건씩 보여 주고 [더 보기]로 이어서 불러옵니다. 결과가 아주 많으면 번지나 건물명을 더해 좁히도록 안내하며, 카카오 API처럼 가져올 수 있는 개수에 상한이 있는 서비스에서는 검색어를 좁히는 것이 가장 좋습니다." },
+  { id: "nickname-auto", category: "signup", q: "닉네임을 자동으로 만들어 줄 수 있나요?", a: <>네. 닉네임을 켜면 입력칸 옆에 [자동 생성] 버튼이 생기고(<Ic>용감한미어캣482</Ic> 형태), <Ic>signup.nickname.autoFill: true</Ic>이면 가입 폼을 열 때 미리 채워 둡니다.</> },
   { id: "email-verify", category: "signup", q: "이메일 인증을 켜고 끄려면?", a: <><Ic>meerkit.config.ts</Ic>의 <Ic>signup.emailVerification</Ic>을 true/false로 바꾸세요. 켜면 이메일 옆에 [인증번호 받기]가 생기고, 인증해야 가입할 수 있습니다. 서비스마다 필요 여부가 달라서 기본은 꺼져 있습니다.</> },
 
   { id: "multi-role", category: "admin", q: "한 사용자가 여러 역할을 가질 수 있나요?", a: "기본은 하나입니다(users.role_id). 여러 개가 필요하면 연결 테이블을 도입해야 합니다." },
@@ -195,12 +200,6 @@ export function Faq() {
           ["인증번호를 받지 못함", "서버의 메일 발송 설정과 스팸함 확인. 로컬에서는 메일 캐처 확인"],
         ]}
       />
-      <H2>Contributing</H2>
-      <UL>
-        <li>킷 코드는 <Ic>src/meerkit/</Ic> 안에서만 수정합니다.</li>
-        <li>새 킷 컴포넌트를 만들면 이 문서에도 페이지를 추가합니다.</li>
-        <li>사용량 관련 기능은 이번 범위가 아니며 향후 확장으로 둡니다.</li>
-      </UL>
     </>
   );
 }

@@ -18,7 +18,15 @@ export const meerkitConfig = {
     optionalFields: userConfig.signup?.optionalFields ?? [],
     terms: userConfig.signup?.terms ?? [],
     addressType: userConfig.signup?.addressType ?? "basic",
+    addressSearch: userConfig.signup?.addressSearch ?? "popup",
+    nickname: {
+      generator: userConfig.signup?.nickname?.generator ?? true,
+      autoFill: userConfig.signup?.nickname?.autoFill ?? false,
+    },
     emailVerification: userConfig.signup?.emailVerification ?? false,
+  },
+  loading: {
+    variant: userConfig.loading?.variant ?? "ring",
   },
   login: {
     maxAttempts: userConfig.login?.maxAttempts ?? 5,

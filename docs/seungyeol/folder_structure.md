@@ -43,7 +43,7 @@ frontend/
 | `layout.tsx`                           | 전체             | `<MeerkitProvider>`로 감싼다             |
 | `page.tsx`                             | `/`              | `<WelcomePage />` 렌더링                 |
 | `globals.css`                          | 전체             | Tailwind + `tokens.css` import           |
-| `(meerkit)/docs/page.tsx`, `docs/[slug]/page.tsx` | `/docs`, `/docs/<slug>` | 문서 사이트 32페이지 (`/docs/search`는 검색) (`NEXT_PUBLIC_SHOW_DOCS_PAGE`) |
+| `(meerkit)/docs/page.tsx`, `docs/[slug]/page.tsx` | `/docs`, `/docs/<slug>` | 문서 사이트 37페이지 (`/docs/search`는 검색) (`NEXT_PUBLIC_SHOW_DOCS_PAGE`) |
 | `(meerkit)/me/page.tsx`                | `/me`            | 내 정보 (로그인 필요)                    |
 | `(meerkit)/admin/members/page.tsx`     | `/admin/members` | 유저 관리 (MASTER만)                     |
 | `(service)/`                           | -                | 서비스 화면 자리 (지금은 비어 있음)      |
@@ -52,7 +52,7 @@ frontend/
 
 ### 2-2. `src/components/ui/` (shadcn)
 
-`accordion`, `avatar`, `badge`, `button`, `card`, `checkbox`, `dialog`, `dropdown-menu`, `file-dropzone`, `input`, `label`, `native-select`, `pagination`, `radio-group`, `separator`, `sonner`, `table`, `tabs`
+`accordion`, `avatar`, `chart`, `badge`, `button`, `card`, `checkbox`, `dialog`, `dropdown-menu`, `file-dropzone`, `input`, `label`, `native-select`, `pagination`, `radio-group`, `separator`, `skeleton`, `sonner`, `table`, `tabs`
 
 ### 2-3. `src/meerkit/` (킷 본체)
 
@@ -68,7 +68,11 @@ meerkit/
 ├── api/                   client.ts(토큰 부착, 401 단일 갱신 후 재시도), auth.ts, users.ts
 ├── welcome/               WelcomePage (로고 + 로그인/회원가입/사용 설명서 버튼)
 ├── docs/                  DocsView(셸), DocsFooter(문서 전용 푸터), nav.ts(페이지 목록), ui.tsx(문서 부품), content/(페이지 본문, 목 데이터)
+├── ai/                    AiPromptInput(AI 입력 폼), ThinkingIndicator + ThinkingOrb(점 구슬, 상태 9종)
+├── loading/               Loader(9종), LoadingState, LoadingOverlay, useDelayedLoading
 ├── auth/
+│   ├── nickname.ts        닉네임 자동 생성
+│   ├── session-hint.ts    "로그인한 적 있음" 표시 (불필요한 세션 복원 요청 방지)
 │   ├── lockout.ts         로그인 실패 잠금 (sessionStorage에 저장)
 │   ├── ResetPasswordPage.tsx  /reset-password 화면
 │   ├── store.ts           Zustand: 액세스 토큰 (메모리, persist 안 함)
@@ -80,13 +84,15 @@ meerkit/
 │   ├── guards/            RequireAuth, RequireRole
 │   └── components/        AuthDialog, LoginForm, SignupForm, TermsAgreement, ForgotPasswordForm, ResetPasswordForm,
 │   │                      ProfileForm, ChangePasswordForm, UserAvatar, UserMenu(아바타 드롭다운),
-│   │                      AddressField(주소 2종), EmailVerificationField(이메일 인증), OptionalFields
+│   │                      AddressField(주소 2종) + AddressSearchDialog(검색 창), EmailVerificationField(이메일 인증),
+│   │                      NicknameInput(자동 생성) + NicknameForm(마이페이지), OptionalFields
 └── admin/
     ├── AdminMembersPage.tsx
     ├── members-filter.ts  조건 기본값, 필터 선택지, 목 데이터용 filterMembers
     ├── queries.ts         useMembers, useUpdateRole, useRemoveMember
     └── components/        MemberDirectory(검색·필터·페이지네이션), MemberFilters, MemberTable,
-    │                      RoleAssignDialog(권한 부여·변경 확인 창), RoleSelect
+    │                      RoleAssignDialog(권한 부여·변경 확인 창), RoleSelect,
+    │                      MemberAiUsage(Radial) · MemberAiUsageHistory(Bar) — UI만, 사용량 집계는 추후 적용
 ```
 
 | 위치                | 규칙                                                                      |
