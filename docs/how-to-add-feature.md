@@ -3,7 +3,7 @@
 MeerKit을 Fork 해서 내 서비스를 만들 때 따라 하는 순서입니다.
 예시로 `meetings`(회의록 요약) 기능을 추가한다고 가정합니다.
 
-## 0. 샘플 서비스가 필요 없다면 먼저 지우기
+## 0. 서브 서비스가 필요 없다면 먼저 지우기
 
 ```bash
 rm -rf backend/app/features/requirements backend/tests/features/requirements
@@ -15,7 +15,7 @@ rm -rf "frontend/src/app/(service)/requirements"
 - `backend/app/api.py`
 - `backend/alembic/env.py`
 
-샘플 테이블 마이그레이션이 이미 있다면, 새 마이그레이션으로 테이블을 지우거나 새 프로젝트라면 `alembic/versions/`를 비우고 다시 생성합니다.
+서브 서비스 테이블 마이그레이션이 이미 있다면, 새 마이그레이션으로 테이블을 지우거나 새 프로젝트라면 `alembic/versions/`를 비우고 다시 생성합니다.
 
 ## 1. 백엔드 기능 폴더 만들기
 
