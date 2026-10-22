@@ -81,6 +81,7 @@ export const docGroups: DocGroup[] = [
     items: [
       { slug: "ai-prompt-input", title: "AI Prompt Input", description: "AI에게 질문하거나 코멘트를 남기는 입력 폼. 글 입력, 파일 첨부, 에이전트 선택, 보내기·중지를 한 덩어리로 묶었습니다." },
       { slug: "thinking-indicator", title: "Thinking Indicator", description: "AI가 답을 준비하는 동안 보여 주는 \"생각 중\" 애니메이션입니다." },
+      { slug: "voice", title: "Voice", description: "마이크로 말하면 입력창에 글로 들어가고, 목소리 크기에 따라 컬러 파동이 일렁입니다." },
     ],
   },
   {

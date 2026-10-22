@@ -8,6 +8,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatBytes, matchesAccept } from "@/components/ui/file-dropzone";
 import { cn } from "@/lib/utils";
 
+import { VoiceGlow } from "./VoiceGlow";
+import { VoiceButton } from "./VoiceInput";
+import { useVoiceRecorder, type VoiceOptions } from "./use-voice-recorder";
+
 export interface AiAgent {
   id: string;
   label: string;
@@ -34,6 +38,11 @@ interface AiPromptInputProps {
   maxSizeMB?: number;
   /** 입력창 아래의 컬러 글로우. 포커스 중이거나 응답을 기다리는 동안 켜진다. 기본 true */
   glow?: boolean;
+  /**
+   * 마이크 버튼을 보여 준다. 누르면 녹음하고, 말한 내용이 입력창에 글로 들어간다.
+   * true면 브라우저 음성 인식을 쓰고, 객체로 주면 STT 연결(onTranscribe)이나 언어를 정할 수 있다.
+   */
+  voice?: boolean | VoiceOptions;
   disabled?: boolean;
   autoFocus?: boolean;
   className?: string;
@@ -56,6 +65,7 @@ export function AiPromptInput({
   maxFiles = 4,
   maxSizeMB = 10,
   glow = true,
+  voice,
   disabled,
   autoFocus,
   className,
@@ -67,8 +77,31 @@ export function AiPromptInput({
   const fileRef = useRef<HTMLInputElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
+  const baseRef = useRef("");
+  const voiceOptions = typeof voice === "object" ? voice : undefined;
+  const mic = useVoiceRecorder(voiceOptions, (spoken, final) => {
+    // 녹음을 시작하기 전에 쓰던 글 뒤에 말한 내용을 이어 붙인다
+    setText(`${baseRef.current}${baseRef.current && spoken ? " " : ""}${spoken}`.slice(0, maxLength));
+    requestAnimationFrame(resize);
+    if (final) areaRef.current?.focus();
+  });
+  const listening = mic.status === "listening";
+  const voiceBusy = mic.status === "requesting" || mic.status === "transcribing" || listening;
+
+  function toggleVoice() {
+    if (listening) return mic.stop();
+    baseRef.current = text.trim();
+    mic.start();
+  }
+
+  function cancelVoice() {
+    mic.cancel();
+    setText(baseRef.current);
+    requestAnimationFrame(resize);
+  }
+
   const current = agents?.find((a) => a.id === agent) ?? agents?.[0];
-  const canSend = text.trim().length > 0 && !pending && !disabled;
+  const canSend = text.trim().length > 0 && !pending && !disabled && !voiceBusy;
   const nearLimit = text.length >= maxLength * 0.8;
 
   function resize() {
@@ -102,14 +135,16 @@ export function AiPromptInput({
 
   return (
     <div className={cn("relative", className)}>
-      <span className="mk-glow" data-active={glow && (focused || !!pending)} aria-hidden />
+      <span className="mk-glow" data-active={glow && (focused || !!pending) && !listening} aria-hidden />
       <div
         className={cn(
-          "relative grid gap-2 rounded-3xl border bg-surface p-3 shadow-soft transition-[box-shadow,border-color] duration-300",
+          "relative isolate grid gap-2 overflow-hidden rounded-3xl border bg-surface p-3 shadow-soft transition-[box-shadow,border-color] duration-300",
           focused && "border-brand/40 shadow-[0_0_0_3px_color-mix(in_srgb,var(--mk-brand)_12%,transparent),var(--mk-shadow-soft)]",
           disabled && "opacity-60",
         )}
       >
+        {voice && <VoiceGlow levelRef={mic.levelRef} active={listening} className="absolute inset-x-0 bottom-0 -z-10" />}
+
         {files.length > 0 && (
           <ul className="flex flex-wrap gap-1.5">
             {files.map((file, i) => (
@@ -135,6 +170,7 @@ export function AiPromptInput({
           rows={1}
           autoFocus={autoFocus}
           disabled={disabled}
+          readOnly={voiceBusy}
           maxLength={maxLength}
           placeholder={placeholder}
           value={text}
@@ -191,7 +227,19 @@ export function AiPromptInput({
             </DropdownMenu>
           )}
 
+          {voice && (mic.status === "listening" || mic.status === "transcribing" || mic.status === "requesting") && (
+            <span role="status" className="mk-swap text-xs text-muted-foreground">
+              {mic.status === "listening" ? "듣고 있어요… 끝나면 ■를 눌러 주세요" : mic.status === "requesting" ? "마이크를 켜는 중…" : "글로 옮기는 중…"}
+            </span>
+          )}
+
           <span className="ml-auto flex items-center gap-2">
+            {voice && listening && (
+              <Button type="button" variant="ghost" size="sm" onClick={cancelVoice} className="rounded-full text-muted-foreground">
+                취소
+              </Button>
+            )}
+            {voice && <VoiceButton status={mic.status} disabled={disabled || !!pending} onClick={toggleVoice} />}
             {nearLimit && (
               <span className={cn("text-xs tabular-nums", text.length >= maxLength ? "text-destructive" : "text-muted-foreground")}>
                 {text.length}/{maxLength}
@@ -209,6 +257,10 @@ export function AiPromptInput({
           </span>
         </div>
       </div>
+
+      {mic.status === "error" && mic.error && (
+        <p role="alert" className="mk-swap mt-2 px-2 text-xs text-destructive">{mic.error}</p>
+      )}
 
       {errors.length > 0 && (
         <ul role="alert" className="mk-swap mt-2 grid gap-0.5 px-2 text-xs text-destructive">

@@ -27,3 +27,6 @@ export type { AiUsage, UsagePeriod, UsagePoint } from "./admin/usage-status";
 export { Loader, LoadingState, LoadingOverlay, useDelayedLoading, LOADER_VARIANTS } from "./loading";
 export type { LoaderVariant, LoaderSize } from "./loading";
 export { Skeleton } from "@/components/ui/skeleton";
+export { VoiceGlow } from "./ai/VoiceGlow";
+export { VoiceButton } from "./ai/VoiceInput";
+export { useVoiceRecorder, type VoiceOptions, type VoiceStatus } from "./ai/use-voice-recorder";

@@ -5,6 +5,7 @@ import { GuideAddRole, GuideCallApi, GuideProtectPage, Security } from "./guides
 import { ApiReference, Authentication, DataModel, Roles } from "./core";
 import { Deployment, Installation, Introduction, ProjectStructure, Theming } from "./getting-started";
 import { LoginLockoutDoc, MemberDirectoryDoc, PasswordResetDoc, ProfileDoc, TermsAgreementDoc } from "./flows";
+import { VoiceDoc } from "./voice";
 import { LoadingDoc } from "./loading";
 import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, NicknameDoc, RoleManagerDoc } from "./extras";
 import { AiPromptInputDoc, ThinkingIndicatorDoc } from "./ai";
@@ -33,6 +34,7 @@ export const docContent: Record<string, ComponentType> = {
   "address-field": AddressFieldDoc,
   "file-dropzone": FileDropzoneDoc,
   loading: LoadingDoc,
+  voice: VoiceDoc,
   "terms-agreement": TermsAgreementDoc,
   "password-reset": PasswordResetDoc,
   profile: ProfileDoc,

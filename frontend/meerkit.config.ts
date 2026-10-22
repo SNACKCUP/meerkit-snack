@@ -35,6 +35,9 @@ export default defineMeerkitConfig({
   // "불러오는 중" 표시 스타일: "ring" | "dash" | "dots" | "bars" | "pulse" | "spokes" | "grid" | "progress" | "morph"
   loading: { variant: "ring" },
 
+  // 음성 입력 파동 색 (2개 이상). 생략하면 파랑, 보라, 분홍, 청록
+  ai: { voice: { colors: ["#60a5fa", "#a78bfa", "#f472b6", "#2dd4bf"] } },
+
   login: {
     // 연속 5회 실패하면 5분 동안 로그인을 잠근다. maxAttempts: 0이면 끈다.
     maxAttempts: 5,

@@ -81,6 +81,8 @@ export function Hooks() {
           [<Ic key="a4">signup.nickname</Ic>, "{ generator, autoFill }", "{ true, false }", "닉네임 [자동 생성] 버튼, 가입 폼 미리 채우기"],
           [<Ic key="a2">signup.emailVerification</Ic>, "boolean", "false", "이메일 인증번호 받기·확인 사용 여부"],
           [<Ic key="5">signup.terms</Ic>, "TermsItem[]", "약관 3종", "가입 시 동의받을 약관. 빈 배열이면 숨김"],
+          [<Ic key="l1">loading.variant</Ic>, "LoaderVariant", '"ring"', "불러오는 중 표시 스타일 9종 중 하나"],
+          [<Ic key="v1">ai.voice.colors</Ic>, "string[]", "파랑·보라·분홍·청록", "음성 입력 파동 색 (2개 이상)"],
           [<Ic key="6">login.maxAttempts</Ic>, "number", "5", "연속 실패 허용 횟수. 0이면 잠금 끄기"],
           [<Ic key="7">login.lockMinutes</Ic>, "number", "5", "잠금 시간(분)"],
         ]}

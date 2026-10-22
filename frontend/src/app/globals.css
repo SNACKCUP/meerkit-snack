@@ -215,6 +215,7 @@
 :root[data-mk-motion="off"] [class*="mk-ld"] *,
 :root[data-mk-motion="off"] .mk-skeleton,
 :root[data-mk-motion="off"] .mk-glow,
+:root[data-mk-motion="off"] .animate-ping,
 :root[data-mk-motion="off"] .mk-dot,
 :root[data-mk-motion="off"] .mk-shimmer-text,
 :root[data-mk-motion="off"] .mk-accordion-content,
@@ -226,7 +227,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   [class*="mk-ld"], [class*="mk-ld"] *, .mk-skeleton,
-  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text {
+  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping {
     animation: none !important;
   }
 }

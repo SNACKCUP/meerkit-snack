@@ -62,6 +62,12 @@ export interface MeerkitUserConfig {
     /** 기본 로딩 스타일. 기본 "ring" */
     variant?: LoaderVariant;
   };
+  ai?: {
+    voice?: {
+      /** 음성 입력 파동 색(CSS 색, 2개 이상). 왼쪽에서 오른쪽으로 번지며 서로 섞인다. 기본: 파랑, 보라, 분홍, 청록 */
+      colors?: string[];
+    };
+  };
   login?: {
     /** 이 횟수만큼 연속 실패하면 로그인을 잠근다. 0이면 잠금 기능을 끈다. */
     maxAttempts?: number;

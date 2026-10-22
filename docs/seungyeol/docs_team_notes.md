@@ -115,3 +115,10 @@ UI/docs를 고친 뒤에는 **브라우저 콘솔에 에러가 없는지** 확�
 - 기존 "불러오는 중…" 자리(RequireAuth/RequireRole, MemberDirectory, MemberAiUsage(History), AddressSearchDialog)를 모두 이 모듈로 교체했다. 새 로딩 화면은 직접 문구를 쓰지 말고 `LoadingState`를 쓴다.
 - docs에 `Loading` 페이지(공통) 추가. `globals.css`에 `cursor: pointer`(버튼·링크 등) 기본 규칙과 로더 CSS가 들어 있다.
 - 문서 하단 이전/다음 버튼 위 여백을 64px → 120px로 늘렸다.
+
+### Voice (AI Prompt Input의 마이크 입력)
+
+- **상태:** 프론트 UI만 작업. 음성→글 변환(STT) 서버는 없다. `voice={true}`는 브라우저 `SpeechRecognition`(Chrome 계열 위주)을 쓰고, `voice={{ onTranscribe }}`로 서비스 STT를 연결한다. docs 페이지 상단에 "UI만 제공" 안내를 넣었다.
+- 파일: `ai/use-voice-recorder.ts`(녹음·음량·변환), `ai/VoiceGlow.tsx`(음량 따라 일렁이는 canvas 파동), `ai/VoiceInput.tsx`(마이크 버튼). 외부 패키지 추가 없음.
+- **검증 한계:** 개발용 브라우저 창은 마이크가 막혀 있어 실제 녹음·음성 인식은 못 해 봤다. 데모 음성 모드, 권한 거부 안내, 입력창 채움, 파동 렌더링까지만 확인했다. **Chrome에서 실제 마이크로 한 번 확인이 필요하다** (HTTPS 또는 localhost).
+- STT 서버를 만들 경우 오디오(Blob, 브라우저 기본 webm/mp4)를 받아 `{ text }`를 돌려주는 엔드포인트가 필요하다 (경로 미정). 녹음 데이터 보관·개인정보 처리 정책도 함께 정해야 한다.

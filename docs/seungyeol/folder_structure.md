@@ -68,7 +68,7 @@ meerkit/
 ├── api/                   client.ts(토큰 부착, 401 단일 갱신 후 재시도), auth.ts, users.ts
 ├── welcome/               WelcomePage (로고 + 로그인/회원가입/사용 설명서 버튼)
 ├── docs/                  DocsView(셸), DocsFooter(문서 전용 푸터), nav.ts(페이지 목록), ui.tsx(문서 부품), content/(페이지 본문, 목 데이터)
-├── ai/                    AiPromptInput(AI 입력 폼), ThinkingIndicator + ThinkingOrb(점 구슬, 상태 9종)
+├── ai/                    AiPromptInput(AI 입력 폼), ThinkingIndicator + ThinkingOrb(점 구슬, 상태 9종), Voice(use-voice-recorder, VoiceGlow, VoiceInput)
 ├── loading/               Loader(9종), LoadingState, LoadingOverlay, useDelayedLoading
 ├── auth/
 │   ├── nickname.ts        닉네임 자동 생성
