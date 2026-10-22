@@ -5,7 +5,7 @@
 FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작하기 위한 재사용 가능한 스타터킷입니다.
 
 **이름의 의미**: 미어캣(meerkat)과 발음이 같은 MeerKit은 네덜란드어 *meer*(더 많이)와 *kit*를 합친 이름입니다. 무리 지어 서로를 지켜 주는 미어캣처럼, 공통 기반이 팀의 서비스 개발을 받쳐 준다는 뜻을 담았습니다.
-샘플 서비스로 **요구사항 정리 도우미**(고객 문서 업로드 → AI가 요구사항 분류·정제 → 관리자 확정 → 기능정의서 생성)가 들어 있습니다.
+서브 서비스로 **매무새(요구사항 정리 도우미)**(고객 문서 업로드 → AI가 요구사항 분류·정제 → 관리자 확정 → 기능정의서 생성)가 들어 있습니다.
 
 ## 주요 구성
 
@@ -78,7 +78,7 @@ meerkit/
 │   │   ├── auth/        # 공통 기반: 가입, 로그인, 토큰 갱신
 │   │   ├── permissions/ # 공통 기반: 역할 검사
 │   │   ├── llm/         # 공통 기반: LangChain 클라이언트, 프롬프트
-│   │   └── features/    # 샘플 서비스 (교체 영역)
+│   │   └── features/    # 서브 서비스 (교체 영역)
 │   │       └── requirements/
 │   ├── alembic/         # DB 마이그레이션
 │   └── tests/
@@ -95,7 +95,7 @@ meerkit/
 └── .github/workflows/   # CI
 ```
 
-**핵심 규칙: 공통 기반은 서비스 코드(백엔드 `features/`, 프론트 `app/(service)/`)를 import 하지 않습니다.** 그래서 샘플 서비스 폴더를 지워도 스타터킷은 그대로 동작합니다.
+**핵심 규칙: 공통 기반은 서비스 코드(백엔드 `features/`, 프론트 `app/(service)/`)를 import 하지 않습니다.** 그래서 서브 서비스 폴더를 지워도 스타터킷은 그대로 동작합니다.
 자세한 내용은 [docs/architecture.md](docs/architecture.md)를 보세요.
 
 ## 자주 쓰는 명령
@@ -130,7 +130,7 @@ meerkit/
 
 ## 문서
 
-- [아키텍처](docs/architecture.md): 공통 기반과 샘플 서비스를 나누는 규칙
+- [아키텍처](docs/architecture.md): 공통 기반과 서브 서비스를 나누는 규칙
 - [새 기능 추가하기](docs/how-to-add-feature.md): 이 킷을 Fork 해서 내 서비스를 만드는 순서
 - [향후 확장](docs/future-extensions.md): 이번 범위에서 제외한 항목
 - [협업 규칙](CONTRIBUTING.md): 브랜치, 커밋, PR 규칙

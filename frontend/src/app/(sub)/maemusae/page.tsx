@@ -471,7 +471,7 @@ export default function MaemusaePage() {
         </section>
 
         <footer className="mt-16 flex items-center justify-between border-t border-[#111]/15 pt-5 text-[12px] text-[#6c6a62]">
-          <span>매무새 — Meerkit 위에 얹은 샘플 서비스</span>
+          <span>매무새 — Meerkit 위에 얹은 서브 서비스</span>
           <span>© 2026</span>
         </footer>
       </div>
