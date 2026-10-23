@@ -136,7 +136,7 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 ## 8. 확인 명령
 
 ```bash
-# backend (DB가 켜져 있어야 함: docker compose up -d db)
+# backend (DB가 켜져 있어야 함: npm run db:start)
 uv run ruff check .
 uv run alembic upgrade head
 uv run pytest
