@@ -112,7 +112,7 @@ meerkit/
 |---|---|
 | DB 켜기 / 끄기 | `npm run db:start` / `npm run db:stop` (루트) |
 | DB 상태 확인 | `npm run db:status` (루트) |
-| 백엔드 테스트 | `uv run pytest` (backend) |
+| 백엔드 테스트 | `uv run pytest` (backend). `TEST_DATABASE_URL`의 `meerkit_test` DB를 쓰며, 처음 실행할 때 자동으로 만들고 마이그레이션합니다. 개발 DB는 건드리지 않습니다 |
 | 백엔드 린트 | `uv run ruff check .` (backend) |
 | 마이그레이션 생성 | `uv run alembic revision --autogenerate -m "설명"` (backend) |
 | 마이그레이션 적용 | `uv run alembic upgrade head` (backend) |
@@ -125,6 +125,7 @@ meerkit/
 | 변수 | 위치 | 설명 |
 |---|---|---|
 | `DATABASE_URL` | backend | PostgreSQL 접속 주소 |
+| `TEST_DATABASE_URL` | backend | pytest 전용 DB 주소 (이름이 `_test`로 끝나야 함, 비우면 `DATABASE_URL` 사용) |
 | `JWT_SECRET_KEY` | backend | JWT 서명 키, 32자 이상 (운영에서는 반드시 변경) |
 | `JWT_EXPIRE_MINUTES` | backend | 액세스 토큰 유효 시간(분, 기본 30) |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | backend | 리프레시 토큰(httpOnly 쿠키) 유효 기간(일, 기본 14) |

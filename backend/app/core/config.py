@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     app_env: str = "local"
     database_url: str
+    test_database_url: str = ""  # pytest 전용 DB 주소, 비우면 DATABASE_URL 사용
     jwt_secret_key: str
     jwt_expire_minutes: int = 30  # 액세스 토큰 유효 시간(분)
     refresh_token_expire_days: int = 14  # 리프레시 토큰(httpOnly 쿠키) 유효 기간(일)
