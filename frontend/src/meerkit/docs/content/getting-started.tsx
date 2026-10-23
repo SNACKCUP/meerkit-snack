@@ -240,7 +240,7 @@ backend/
     ├── core/            설정, DB 연결
     ├── auth/            회원가입·로그인 (구현 예정)
     ├── llm/             LLM 호출 모듈 (구현 예정)
-    └── features/        샘플 기능 (서비스 코드는 여기에)
+    └── features/        서브 서비스 (서비스 코드는 여기에)
 `}</Tree>
       <Callout>백엔드는 아직 구현 전입니다. 위 구조는 현재 저장소 기준이며, 인증·유저 API가 들어오면 갱신됩니다.</Callout>
       <H2>Import direction</H2>
