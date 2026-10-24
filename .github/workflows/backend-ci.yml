@@ -14,7 +14,7 @@ jobs:
         working-directory: backend
     services:
       db:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: starter
           POSTGRES_PASSWORD: starter

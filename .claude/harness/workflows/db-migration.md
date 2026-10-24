@@ -1,6 +1,6 @@
 # DB 마이그레이션 작업 순서 (Alembic)
 
-> 대상: `backend/` (PostgreSQL 16, SQLAlchemy, Alembic). 로컬 DB는 `docker compose up -d db` (계정 `starter`).
+> 대상: `backend/` (PostgreSQL 17, SQLAlchemy, Alembic). 로컬 DB는 Supabase CLI로 띄운다: 루트에서 `npm run db:start` (계정 `postgres`, 포트 `54322`). `docker compose up -d db`(PostgreSQL 16, 계정 `starter`)는 대체용이다.
 
 ## 스키마를 바꿀 때
 

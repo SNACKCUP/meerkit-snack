@@ -35,10 +35,18 @@ cd meerkit
 
 ### 2. DB 실행 (루트 폴더)
 
+로컬 DB는 Supabase CLI로 띄웁니다. CLI 버전은 루트 `package.json`에 고정되어 있습니다.
+
 ```bash
-docker compose up -d db
-docker compose ps          # db 가 Up 이면 성공
+npm install                # 처음 한 번 (Supabase CLI 설치)
+npm run db:start           # 첫 실행은 이미지 다운로드로 몇 분 걸립니다
+npm run db:status          # DB URL, Studio 주소 확인
 ```
+
+- DB: `127.0.0.1:54322` (계정 `postgres`/`postgres`, **로컬 전용**)
+- Studio(DB 관리 화면): http://127.0.0.1:54323
+- 끄기: `npm run db:stop` (데이터는 유지됩니다). `npx supabase stop --no-backup`은 **데이터를 지우니** 주의하세요.
+- 대체용: Supabase를 쓸 수 없으면 `docker compose up -d db`로 PostgreSQL 16을 띄우고, `backend/.env`의 `DATABASE_URL`을 `.env.example`에 주석으로 있는 대체용 주소로 바꿉니다.
 
 ### 3. 백엔드 실행 (터미널 1)
 
@@ -102,8 +110,9 @@ meerkit/
 
 | 하고 싶은 일 | 명령 (실행 위치) |
 |---|---|
-| DB 켜기 / 끄기 | `docker compose up -d db` / `docker compose stop` (루트) |
-| 백엔드 테스트 | `uv run pytest` (backend) |
+| DB 켜기 / 끄기 | `npm run db:start` / `npm run db:stop` (루트) |
+| DB 상태 확인 | `npm run db:status` (루트) |
+| 백엔드 테스트 | `uv run pytest` (backend). `TEST_DATABASE_URL`의 `meerkit_test` DB를 쓰며, 처음 실행할 때 자동으로 만들고 마이그레이션합니다. 개발 DB는 건드리지 않습니다 |
 | 백엔드 린트 | `uv run ruff check .` (backend) |
 | 마이그레이션 생성 | `uv run alembic revision --autogenerate -m "설명"` (backend) |
 | 마이그레이션 적용 | `uv run alembic upgrade head` (backend) |
@@ -116,6 +125,7 @@ meerkit/
 | 변수 | 위치 | 설명 |
 |---|---|---|
 | `DATABASE_URL` | backend | PostgreSQL 접속 주소 |
+| `TEST_DATABASE_URL` | backend | pytest 전용 DB 주소 (이름이 `_test`로 끝나야 함, 비우면 `DATABASE_URL` 사용) |
 | `JWT_SECRET_KEY` | backend | JWT 서명 키, 32자 이상 (운영에서는 반드시 변경) |
 | `JWT_EXPIRE_MINUTES` | backend | 액세스 토큰 유효 시간(분, 기본 30) |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | backend | 리프레시 토큰(httpOnly 쿠키) 유효 기간(일, 기본 14) |
@@ -127,6 +137,17 @@ meerkit/
 | `NEXT_PUBLIC_API_BASE_URL` | frontend | 브라우저가 호출할 API 기본 경로 (기본값 `/api`) |
 | `NEXT_PUBLIC_DOCS_URL` | frontend | 초기 화면의 "사용 설명서" 링크 |
 | `API_PROXY_TARGET` | frontend | `/api` 프록시가 전달할 백엔드 주소 (기본값 `http://localhost:8000`) |
+
+### 운영 DB(호스팅 Supabase)로 옮길 때
+
+- 백엔드 서버가 IPv4만 쓰는 환경이면 Session pooler 주소를 씁니다. Direct connection 주소는 IPv6 전용입니다.
+- `DATABASE_URL` 끝에 `?sslmode=require`를 붙입니다.
+- Transaction pooler(포트 6543)는 쓰지 않습니다. psycopg의 prepared statement와 맞지 않습니다.
+- 백엔드가 DB에 직접 접속하므로 Data API를 끄거나, `public` 테이블에 RLS를 켭니다. 그대로 두면 anon 키로 테이블이 노출될 수 있습니다.
+- 스키마는 Alembic으로만 바꿉니다. Studio에서 직접 고치거나 `supabase db push`를 쓰지 않습니다.
+- DB 리전은 백엔드 서버와 같은 리전으로 고릅니다.
+- 무료 플랜은 7일 동안 사용이 없으면 일시 정지되고, 일일 백업이 없습니다. 운영 데이터가 생기면 유료 플랜이나 별도 백업을 준비합니다.
+- `DATABASE_URL` 등 비밀 값은 배포 플랫폼의 환경 변수나 GitHub Secrets에만 넣습니다. 저장소에 커밋하지 않습니다.
 
 ## 문서
 
@@ -144,5 +165,5 @@ meerkit/
 | `no configuration file provided` | `docker-compose.yml`이 있는 루트 폴더에서 실행합니다. |
 | `ModuleNotFoundError: No module named 'app'` | `backend/` 폴더에서 실행합니다 (`pwd`로 확인). |
 | `database_url Field required` | `backend/.env`가 있는지 확인합니다 (`ls -a`). |
-| `connection refused` (DB) | `docker compose ps`로 DB가 켜져 있는지 확인합니다. |
+| `connection refused` (DB) | 루트에서 `npm run db:status`로 DB가 켜져 있는지 확인하고, 꺼져 있으면 `npm run db:start`를 실행합니다. |
 | `.env`를 고쳤는데 반영이 안 됨 | 서버를 Ctrl+C로 끄고 다시 실행합니다. |
