@@ -8,13 +8,14 @@ import { ChartContainer, type ChartConfig } from "@/components/ui/chart";
 import { LoadingState } from "../../loading";
 import { cn } from "@/lib/utils";
 
+import { RoleBadges } from "../../auth/components/RoleBadges";
 import { UserAvatar, displayName } from "../../auth/components/UserAvatar";
 import type { User } from "../../types";
 import { LEVEL_COLOR, LEVEL_LABEL, formatNumber, usageLevel, type AiUsage } from "../usage-status";
 
 interface MemberAiUsageProps {
   /** 어느 멤버의 사용량인지 머리말에 보여 준다. 없으면 차트만 보인다 */
-  member?: Pick<User, "name" | "nickname" | "avatar_url" | "user_id" | "role">;
+  member?: Pick<User, "name" | "nickname" | "avatar_url" | "user_id" | "roles">;
   usage: AiUsage | null | undefined;
   loading?: boolean;
   className?: string;
@@ -47,7 +48,7 @@ export function MemberAiUsage({ member, usage, loading, className }: MemberAiUsa
               <p className="truncate text-sm font-semibold">{displayName(member)}</p>
               <p className="truncate text-xs text-muted-foreground">{member.user_id}</p>
             </div>
-            <Badge variant="outline">{member.role.name}</Badge>
+            <RoleBadges roles={member.roles} className="justify-end" />
           </div>
         )}
 

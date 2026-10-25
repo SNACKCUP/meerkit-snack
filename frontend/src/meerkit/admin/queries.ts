@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { usersApi } from "../api/users";
+import type { RoleName } from "../roles";
 import type { MemberQuery } from "../types";
 
 const membersKey = ["meerkit", "admin", "members"] as const;
@@ -14,10 +15,10 @@ export function useMembers(query: MemberQuery) {
   });
 }
 
-export function useUpdateRole() {
+export function useUpdateRoles() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, roleId }: { id: number; roleId: number }) => usersApi.updateRole(id, roleId),
+    mutationFn: ({ id, roles }: { id: number; roles: RoleName[] }) => usersApi.updateRoles(id, roles),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey }),
   });
 }
