@@ -55,6 +55,27 @@ def create_meeting(
     return service.create_meeting(db, user, body)
 ```
 
+### 오류는 service에서 AppError로 던지기
+
+router에서 try/except로 `HTTPException`을 만들 필요가 없습니다. service가 `app.core.exceptions`의 예외를 던지면 전역 핸들러가 `{"detail", "code", "request_id"}` 형식과 상태 코드를 정합니다.
+
+```python
+from app.core.exceptions import ConflictError, NotFoundError
+
+
+def get_meeting(db, meeting_id: int):
+    meeting = repository.get(db, meeting_id)
+    if meeting is None:
+        raise NotFoundError("MEETING_NOT_FOUND", "회의를 찾을 수 없습니다.")  # → 404
+    return meeting
+```
+
+- 상태별 예외: `BadRequestError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `ValidationError` 422, `RateLimitedError` 429(`retry_after=초`).
+- `code`는 영문 대문자 상수(예: `MEETING_NOT_FOUND`)로, 프론트와 로그에서 오류를 구분하는 값입니다. `detail`은 사용자에게 그대로 보여 줄 문장입니다.
+- 지금 있는 `HTTPException`도 같은 형식으로 감싸지므로 급하게 바꿀 필요는 없습니다.
+
+> 참고: 서브 서비스 매무새(`features/requirements`)는 아직 예전 방식(`NotFoundError(Exception)` + router의 `HTTPException` 변환)입니다. 응답 형식은 전역 핸들러가 이미 통일하므로 동작에는 문제가 없고, `AppError`로 옮기는 작업은 매무새 담당이 **나중에 따로** 진행합니다 (공통 기반 작업 S1에서는 매무새 코드를 건드리지 않음).
+
 ### models.py 예시
 
 ```python

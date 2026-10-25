@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.auth import repository as auth_repository
 from app.auth.models import EmailVerification, PasswordResetToken
 from app.core.config import settings
+from app.core.exceptions import AppError
 from app.core.security import (
     create_email_verification_token,
     create_token,
@@ -34,11 +35,25 @@ from app.users.models import User
 logger = logging.getLogger(__name__)
 
 
-class AuthError(Exception):
+# 오류 코드 → HTTP 상태. 전역 핸들러(core.exceptions)가 이 값으로 응답합니다.
+_STATUS = {
+    "INVALID_CREDENTIALS": 401,
+    "INACTIVE_USER": 401,
+    "WITHDRAWN_USER": 401,
+    "ACCOUNT_LOCKED": 429,
+    "RATE_LIMITED": 429,
+    "EMAIL_TAKEN": 409,
+    "INVALID_CODE": 400,
+    "INVALID_RESET_TOKEN": 400,
+    "INVALID_PASSWORD": 400,
+    "SAME_PASSWORD": 400,
+    "EMAIL_VERIFICATION_REQUIRED": 400,
+}
+
+
+class AuthError(AppError):
     def __init__(self, code: str, message: str, *, retry_after: int | None = None):
-        super().__init__(message)
-        self.code = code
-        self.retry_after = retry_after  # 429 응답의 Retry-After(초)
+        super().__init__(code, message, status_code=_STATUS.get(code, 400), retry_after=retry_after)
 
 
 def _now() -> datetime:

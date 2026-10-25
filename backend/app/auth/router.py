@@ -38,37 +38,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 REFRESH_COOKIE = "meerkit_refresh"
 REFRESH_COOKIE_PATH = "/api/auth"  # 갱신·로그아웃 요청에만 쿠키가 실립니다
 
-# 서비스 오류 코드 → HTTP 상태. 429는 Retry-After(초) 헤더를 함께 보냅니다.
-_ERROR_STATUS = {
-    "INVALID_CREDENTIALS": status.HTTP_401_UNAUTHORIZED,
-    "INACTIVE_USER": status.HTTP_401_UNAUTHORIZED,
-    "WITHDRAWN_USER": status.HTTP_401_UNAUTHORIZED,
-    "ACCOUNT_LOCKED": status.HTTP_429_TOO_MANY_REQUESTS,
-    "RATE_LIMITED": status.HTTP_429_TOO_MANY_REQUESTS,
-    "EMAIL_TAKEN": status.HTTP_409_CONFLICT,
-    "LOGIN_ID_TAKEN": status.HTTP_409_CONFLICT,
-    "NICKNAME_TAKEN": status.HTTP_409_CONFLICT,
-    "INVALID_CODE": status.HTTP_400_BAD_REQUEST,
-    "INVALID_RESET_TOKEN": status.HTTP_400_BAD_REQUEST,
-    "INVALID_PASSWORD": status.HTTP_400_BAD_REQUEST,
-    "SAME_PASSWORD": status.HTTP_400_BAD_REQUEST,
-    "EMAIL_VERIFICATION_REQUIRED": status.HTTP_400_BAD_REQUEST,
-    "UNKNOWN_TERM": status.HTTP_422_UNPROCESSABLE_CONTENT,
-    "TERMS_REQUIRED": status.HTTP_422_UNPROCESSABLE_CONTENT,
-}
-
-
-def http_error(e: service.AuthError | user_service.UserError) -> HTTPException:
-    headers = None
-    if getattr(e, "retry_after", None):
-        headers = {"Retry-After": str(e.retry_after)}
-    return HTTPException(
-        status_code=_ERROR_STATUS.get(e.code, status.HTTP_400_BAD_REQUEST),
-        detail=str(e),
-        headers=headers,
-    )
-
-
 def set_refresh_cookie(response: Response, token: str) -> None:
     response.set_cookie(
         REFRESH_COOKIE,
@@ -108,10 +77,7 @@ def check_user_id(
 def send_email_code(
     body: EmailCodeRequest, tasks: BackgroundTasks, db: Session = Depends(get_db)
 ):
-    try:
-        service.send_email_code(db, tasks, body.email)
-    except service.AuthError as e:
-        raise http_error(e) from e
+    service.send_email_code(db, tasks, body.email)
 
 
 @router.post(
@@ -120,10 +86,7 @@ def send_email_code(
     summary="인증번호 확인 → 가입에 붙일 증표 발급",
 )
 def verify_email_code(body: VerifyEmailCodeRequest, db: Session = Depends(get_db)):
-    try:
-        return VerifyEmailCodeResponse(token=service.verify_email_code(db, body.email, body.code))
-    except service.AuthError as e:
-        raise http_error(e) from e
+    return VerifyEmailCodeResponse(token=service.verify_email_code(db, body.email, body.code))
 
 
 @router.post(
@@ -141,10 +104,7 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
         "profile": body.model_dump(include=set(ProfileFields.model_fields)),
         "agreed_terms": body.agreed_terms,
     }
-    try:
-        return service.signup(db, data, verification_token=body.email_verification_token)
-    except (service.AuthError, user_service.UserError) as e:
-        raise http_error(e) from e
+    return service.signup(db, data, verification_token=body.email_verification_token)
 
 
 @router.post(
@@ -153,10 +113,7 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
     summary="로그인 (연속 실패 시 잠금: 429 + Retry-After)",
 )
 def login(body: LoginRequest, response: Response, db: Session = Depends(get_db)):
-    try:
-        user = service.authenticate(db, body.user_id, body.password)
-    except service.AuthError as e:
-        raise http_error(e) from e
+    user = service.authenticate(db, body.user_id, body.password)
     return login_response(response, user)
 
 
@@ -197,10 +154,7 @@ def forgot_password(
     summary="메일 링크의 토큰으로 새 비밀번호 설정 (30분, 한 번만)",
 )
 def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
-    try:
-        service.reset_password(db, body.token, body.password)
-    except service.AuthError as e:
-        raise http_error(e) from e
+    service.reset_password(db, body.token, body.password)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="로그아웃")

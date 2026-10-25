@@ -6,6 +6,7 @@ class Settings(BaseSettings):
 
     app_env: str = "local"
     log_level: str = "INFO"
+    log_format: str = ""  # json | text. 비우면 APP_ENV=local 은 text, 그 밖은 json
     database_url: str
     test_database_url: str = ""  # pytest 전용 DB 주소, 비우면 DATABASE_URL 사용
     jwt_secret_key: str

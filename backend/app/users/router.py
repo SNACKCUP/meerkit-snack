@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth import router as auth_router
@@ -30,20 +30,6 @@ me_router = APIRouter(prefix="/users/me", tags=["users (me)"])
 router = APIRouter(prefix="/users", tags=["users (admin)"])
 
 
-_ERROR_STATUS = {
-    "USER_NOT_FOUND": status.HTTP_404_NOT_FOUND,
-    "SELF_CHANGE_FORBIDDEN": status.HTTP_400_BAD_REQUEST,
-    "UNKNOWN_ROLE": status.HTTP_422_UNPROCESSABLE_CONTENT,
-    "EMAIL_TAKEN": status.HTTP_409_CONFLICT,
-    "NICKNAME_TAKEN": status.HTTP_409_CONFLICT,
-    "INVALID_PASSWORD": status.HTTP_400_BAD_REQUEST,
-    "USER_DELETED": status.HTTP_409_CONFLICT,
-}
-
-
-def _http_error(e: service.UserError) -> HTTPException:
-    return HTTPException(status_code=_ERROR_STATUS.get(e.code, 400), detail=str(e))
-
 
 @me_router.get("", response_model=UserRead, summary="내 정보")
 def get_me(user: User = Depends(get_current_user)):
@@ -61,19 +47,14 @@ def update_me(
         if required in changes and changes[required] is None:
             del changes[required]  # 이름·이메일은 지울 수 없음
     email_verified = False
-    try:
-        new_email = changes.get("email")
-        email_changed = bool(new_email) and new_email.strip().lower() != user.email
-        if email_changed and (
-            settings.signup_email_verification_required or body.email_verification_token
-        ):
-            auth_service.consume_email_verification(db, body.email_verification_token, new_email)
-            email_verified = True
-        return service.update_profile(db, user, changes, email_verified=email_verified)
-    except auth_service.AuthError as e:
-        raise auth_router.http_error(e) from e
-    except service.UserError as e:
-        raise _http_error(e) from e
+    new_email = changes.get("email")
+    email_changed = bool(new_email) and new_email.strip().lower() != user.email
+    if email_changed and (
+        settings.signup_email_verification_required or body.email_verification_token
+    ):
+        auth_service.consume_email_verification(db, body.email_verification_token, new_email)
+        email_verified = True
+    return service.update_profile(db, user, changes, email_verified=email_verified)
 
 
 @me_router.delete(
@@ -87,10 +68,7 @@ def withdraw_me(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    try:
-        service.withdraw(db, user, body.password)
-    except service.UserError as e:
-        raise _http_error(e) from e
+    service.withdraw(db, user, body.password)
     response.delete_cookie(auth_router.REFRESH_COOKIE, path=auth_router.REFRESH_COOKIE_PATH)
 
 
@@ -105,10 +83,7 @@ def change_password(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    try:
-        auth_service.change_password(db, user, body.current_password, body.new_password)
-    except auth_service.AuthError as e:
-        raise auth_router.http_error(e) from e
+    auth_service.change_password(db, user, body.current_password, body.new_password)
     # 지금 쓰던 액세스 토큰도 무효가 되므로, 프론트는 401을 받으면 /auth/refresh 로 새 토큰을 받습니다.
     auth_router.set_refresh_cookie(response, auth_service.issue_tokens(user)[1])
 
@@ -140,10 +115,7 @@ def update_roles(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    try:
-        return service.update_roles(db, admin, user_id, body.roles)
-    except service.UserError as e:
-        raise _http_error(e) from e
+    return service.update_roles(db, admin, user_id, body.roles)
 
 
 @router.patch("/{user_id}/active", response_model=UserRead, summary="활성/비활성")
@@ -153,10 +125,7 @@ def update_active(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    try:
-        return service.update_active(db, admin, user_id, body.is_active)
-    except service.UserError as e:
-        raise _http_error(e) from e
+    return service.update_active(db, admin, user_id, body.is_active)
 
 
 @router.delete(
@@ -169,7 +138,4 @@ def delete_user(
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    try:
-        service.delete_user(db, admin, user_id)
-    except service.UserError as e:
-        raise _http_error(e) from e
+    service.delete_user(db, admin, user_id)
