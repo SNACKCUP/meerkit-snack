@@ -12,5 +12,13 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
 
+  # 로컬 가짜 메일함. 실제로는 아무 데도 보내지 않습니다.
+  # backend/.env 에 MAIL_BACKEND=smtp, MAIL_SMTP_HOST=localhost, MAIL_SMTP_PORT=1025 → 받은 메일은 http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025" # 웹 화면
+      - "1025:1025" # SMTP
+
 volumes:
   pgdata:

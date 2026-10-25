@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: str = "local"
+    log_level: str = "INFO"
     database_url: str
     test_database_url: str = ""  # pytest 전용 DB 주소, 비우면 DATABASE_URL 사용
     jwt_secret_key: str
@@ -12,6 +13,23 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 14  # 리프레시 토큰(httpOnly 쿠키) 유효 기간(일)
     cookie_secure: bool = False  # 배포(https)에서는 true
     cors_origins: str = "http://localhost:3000"  # 여러 개면 쉼표로 구분
+    # 메일 안의 링크가 여는 프론트 주소 (예: 비밀번호 재설정 화면)
+    frontend_base_url: str = "http://localhost:3000"
+
+    # 메일 발송: console(로컬, 로그로만) / smtp(Mailpit 또는 메일 업체) / fake(테스트)
+    mail_backend: str = "console"
+    mail_from: str = "MeerKit <no-reply@localhost>"
+    mail_smtp_host: str = "localhost"
+    mail_smtp_port: int = 1025  # Mailpit 기본 포트
+    mail_smtp_username: str = ""
+    mail_smtp_password: str = ""
+    mail_smtp_starttls: bool = False  # 587 포트 업체는 보통 true
+    mail_smtp_ssl: bool = False  # 465 포트 업체는 true
+    mail_smtp_timeout: int = 10  # 초
+    # 같은 이메일로 보내는 인증·재설정 메일 제한
+    mail_cooldown_seconds: int = 60
+    mail_daily_limit: int = 10
+
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
     openai_api_key: str = ""

@@ -12,6 +12,7 @@ from app.core.config import settings
 # TEST_DATABASE_URL이 있으면 그 DB를 씁니다. app.core.database가 엔진을 만들기 전에 바꿔야 해서 맨 위에 둡니다.
 if settings.test_database_url:
     settings.database_url = settings.test_database_url
+settings.mail_backend = "fake"  # 테스트에서는 메일을 보내지 않고 mail_outbox에 쌓습니다
 
 # 개발·운영 DB에서 테스트가 돌지 않도록 이름이 _test로 끝나는 DB만 허용합니다.
 _test_url = make_url(settings.database_url)
@@ -44,6 +45,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.database import engine, get_db
+from app.mail.backends import FakeBackend
 from app.main import app
 from app.permissions import roles
 from app.users import service as user_service
@@ -68,6 +70,13 @@ def client(db):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def mail_outbox():
+    FakeBackend.outbox.clear()
+    yield FakeBackend.outbox
+    FakeBackend.outbox.clear()
 
 
 PASSWORD = "password123"
