@@ -91,3 +91,21 @@ def test_withdrawn_user_keeps_login_id_and_email_reserved(client, make_user, log
     client.request("DELETE", "/api/users/me", json={"password": "password123"}, headers=login("user01"))
     assert client.get("/api/auth/check-user-id", params={"user_id": "user01"}).json()["available"] is False
     assert client.post("/api/auth/email/send-code", json={"email": "user01@example.com"}).status_code == 409
+
+
+def test_blank_optional_fields_are_cleared(client, make_user, login):
+    make_user("user01", nickname="미어캣", phone="010-1234-5678", birth_date="1990-01-02")
+    headers = login("user01")
+    response = client.patch(
+        "/api/users/me",
+        json={"nickname": "", "phone": "  ", "birth_date": "", "address": ""},
+        headers=headers,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert (body["nickname"], body["phone"], body["birth_date"], body["address"]) == (None,) * 4
+
+
+def test_blank_required_field_still_rejected(client, make_user, login):
+    make_user("user01")
+    assert client.patch("/api/users/me", json={"name": ""}, headers=login("user01")).status_code == 422
