@@ -36,6 +36,7 @@
 | **DB 접근 / 권한** (Supabase 미사용) | `.claude/harness/errors/supabase-rls.md` | 서버가 권한 판단, 해시·쿠키 규칙, 프론트와 어긋난 스키마 표 |
 | **스타일링 / CSS**          | `.claude/harness/rules/tailwind-v4.md`      | CSS 변수 토큰, 빌드로 CSS 검증, 움직임 끄기  |
 | **DB 마이그레이션/배포**    | `.claude/harness/workflows/db-migration.md` | Alembic 순서, 롤백 계획, 무중단 스키마 변경 |
+| **pytest 로그 검사**        | `.claude/harness/errors/pytest-app-logging.md` | `app` 로거 `propagate=False`, caplog 켜고 되돌리기 |
 
 ---
 
