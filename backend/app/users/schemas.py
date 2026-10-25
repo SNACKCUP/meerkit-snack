@@ -1,7 +1,9 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.auth.schemas import OPTIONAL_PROFILE_FIELDS, blank_to_none
 
 
 class RoleRead(BaseModel):
@@ -67,6 +69,8 @@ class ProfileUpdate(BaseModel):
     address_detail: str | None = Field(default=None, max_length=255)
     birth_date: date | None = None
     gender: str | None = Field(default=None, max_length=10)
+
+    _blank_to_none = field_validator(*OPTIONAL_PROFILE_FIELDS, mode="before")(blank_to_none)
 
 
 class WithdrawRequest(BaseModel):

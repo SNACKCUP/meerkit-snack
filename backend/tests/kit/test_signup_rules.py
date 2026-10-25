@@ -118,3 +118,10 @@ def test_check_user_id(client, make_user):
         "available": False
     }
     assert client.get("/api/auth/check-user-id", params={"user_id": "x"}).status_code == 422
+
+
+def test_signup_blank_optional_fields_become_null(signup):
+    response = signup("user01", nickname="", birth_date="", phone=" ")
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert (body["nickname"], body["birth_date"], body["phone"]) == (None, None, None)
