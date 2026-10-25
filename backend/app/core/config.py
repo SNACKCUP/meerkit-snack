@@ -25,6 +25,10 @@ class Settings(BaseSettings):
 
     password_reset_expire_minutes: int = 30  # 비밀번호 재설정 링크 유효 시간 (한 번만 사용)
 
+    # 탈퇴 후 이 기간(일)이 지나면 개인정보를 지웁니다 (uv run python -m app.users.purge, 매일 실행)
+    account_retention_days: int = 365
+    email_verification_retention_days: int = 7  # 가입 인증번호 기록(이메일 포함) 보관 기간
+
     # 메일 안의 링크가 여는 프론트 주소 (예: 비밀번호 재설정 화면)
     frontend_base_url: str = "http://localhost:3000"
 

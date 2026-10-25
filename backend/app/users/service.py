@@ -136,6 +136,36 @@ def withdraw(db: Session, user: User, password: str) -> None:
     db.commit()
 
 
+DELETED_NAME = "탈퇴회원"
+UNUSABLE_PASSWORD = "!deleted"  # 어떤 비밀번호와도 맞지 않는 값 (로그인은 deleted_at 으로 먼저 막힘)
+PERSONAL_FIELDS = (
+    "nickname",
+    "phone",
+    "postcode",
+    "address",
+    "address_detail",
+    "birth_date",
+    "gender",
+    "avatar_url",
+    "email_verified_at",
+    "last_login_at",
+)
+
+
+def anonymize(user: User) -> None:
+    """개인정보를 지우고 deleted_at 을 기록합니다. 행은 남겨 다른 데이터의 참조(작성자 등)가 깨지지 않게 합니다."""
+    user.login_id = f"{RESERVED_LOGIN_ID_PREFIX}{user.id}"
+    user.email = f"{RESERVED_LOGIN_ID_PREFIX}{user.id}@deleted.invalid"
+    user.name = DELETED_NAME
+    user.hashed_password = UNUSABLE_PASSWORD
+    for field in PERSONAL_FIELDS:
+        setattr(user, field, None)
+    user.is_active = False
+    user.failed_login_count = 0
+    user.locked_until = None
+    user.deleted_at = datetime.now(UTC)
+
+
 # ---- 관리자 ----
 
 

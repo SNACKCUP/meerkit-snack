@@ -1,5 +1,7 @@
 """users 테이블 접근. SQL(쿼리)은 이 파일에만 둡니다."""
 
+from datetime import datetime
+
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -82,3 +84,24 @@ def list_current_terms(db: Session) -> list[Term]:
 def add_term_agreements(db: Session, user_id: int, term_ids: list[int]) -> None:
     db.add_all(UserTermAgreement(user_id=user_id, term_id=term_id) for term_id in term_ids)
     db.flush()
+
+
+def withdrawn_before(db: Session, cutoff: datetime, limit: int) -> list[User]:
+    """cutoff 이전에 탈퇴했고 아직 개인정보를 지우지 않은 계정"""
+    return list(
+        db.scalars(
+            select(User)
+            .where(User.deactivated_at <= cutoff, User.deleted_at.is_(None))
+            .order_by(User.id)
+            .limit(limit)
+        )
+    )
+
+
+def count_withdrawn_before(db: Session, cutoff: datetime) -> int:
+    return (
+        db.scalar(
+            select(func.count(User.id)).where(User.deactivated_at <= cutoff, User.deleted_at.is_(None))
+        )
+        or 0
+    )

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.auth.models import EmailVerification, PasswordResetToken
@@ -65,3 +65,12 @@ def expire_reset_tokens(db: Session, user_id: int, now: datetime) -> None:
 
 def get_reset_token_by_hash(db: Session, token_hash: str) -> PasswordResetToken | None:
     return db.scalar(select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash))
+
+
+def delete_email_verifications_before(db: Session, cutoff: datetime) -> int:
+    result = db.execute(delete(EmailVerification).where(EmailVerification.created_at < cutoff))
+    return result.rowcount or 0
+
+
+def delete_reset_tokens_of(db: Session, user_id: int) -> None:
+    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id))
