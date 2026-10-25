@@ -13,10 +13,10 @@ class AuthError(Exception):
         self.code = code
 
 
-def authenticate(db: Session, email: str, password: str) -> User:
-    user = repository.get_by_email(db, email.strip().lower())
+def authenticate(db: Session, login_id: str, password: str) -> User:
+    user = repository.get_by_login_id(db, login_id.strip().lower())
     if user is None or not verify_password(password, user.hashed_password):
-        raise AuthError("INVALID_CREDENTIALS", "이메일 또는 비밀번호가 올바르지 않습니다.")
+        raise AuthError("INVALID_CREDENTIALS", "아이디 또는 비밀번호가 올바르지 않습니다.")
     if not user.is_active:
         raise AuthError("INACTIVE_USER", "비활성화된 계정입니다. 관리자에게 문의하세요.")
     return user

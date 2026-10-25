@@ -18,4 +18,4 @@ def require_roles(*codes: str) -> Callable[..., User]:
     return checker
 
 
-require_admin = require_roles(roles.ADMIN)
+require_admin = require_roles(roles.ADMIN_ROLE)

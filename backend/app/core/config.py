@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
 
     # 로컬 테스트용 관리자 시드 계정 (uv run python -m app.users.seed)
+    seed_admin_user_id: str = "admin"
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = ""
     seed_admin_name: str = "관리자"

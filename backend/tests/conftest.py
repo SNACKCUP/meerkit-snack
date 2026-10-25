@@ -75,17 +75,27 @@ PASSWORD = "password123"
 
 @pytest.fixture
 def make_user(db):
-    def _make(email: str, *, admin: bool = False, password: str = PASSWORD):
-        codes = [roles.USER, roles.ADMIN] if admin else [roles.USER]
-        return user_service.create_user(db, email=email, password=password, name="테스트", roles=codes)
+    """make_user("user01") → 아이디 user01, 이메일 user01@example.com 인 VIEWER 계정"""
+
+    def _make(login_id: str, *, admin: bool = False, password: str = PASSWORD, **fields):
+        codes = [roles.ADMIN_ROLE] if admin else [roles.DEFAULT_ROLE]
+        return user_service.create_user(
+            db,
+            login_id=login_id,
+            email=fields.pop("email", f"{login_id}@example.com"),
+            password=password,
+            name=fields.pop("name", "테스트"),
+            profile=fields,
+            roles=codes,
+        )
 
     return _make
 
 
 @pytest.fixture
 def login(client):
-    def _login(email: str, password: str = PASSWORD) -> dict[str, str]:
-        response = client.post("/api/auth/login", json={"email": email, "password": password})
+    def _login(login_id: str, password: str = PASSWORD) -> dict[str, str]:
+        response = client.post("/api/auth/login", json={"user_id": login_id, "password": password})
         assert response.status_code == 200, response.text
         return {"Authorization": f"Bearer {response.json()['access_token']}"}
 

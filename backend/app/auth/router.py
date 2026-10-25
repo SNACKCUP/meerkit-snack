@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import service
 from app.auth.deps import get_current_user
-from app.auth.schemas import LoginRequest, SignupRequest, TokenResponse
+from app.auth.schemas import LoginRequest, ProfileFields, SignupRequest, TokenResponse
 from app.core.config import settings
 from app.core.database import get_db
 from app.users import service as user_service
@@ -38,12 +38,17 @@ def _login_response(response: Response, user: User) -> TokenResponse:
     "/signup",
     response_model=UserRead,
     status_code=status.HTTP_201_CREATED,
-    summary="회원가입 (기본 역할 USER)",
+    summary="회원가입 (기본 역할 VIEWER)",
 )
 def signup(body: SignupRequest, db: Session = Depends(get_db)):
     try:
         return user_service.create_user(
-            db, email=body.email, password=body.password, name=body.name
+            db,
+            login_id=body.user_id,
+            email=body.email,
+            password=body.password,
+            name=body.name,
+            profile=body.model_dump(include=set(ProfileFields.model_fields)),
         )
     except user_service.UserError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e)) from e
@@ -52,7 +57,7 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse, summary="로그인")
 def login(body: LoginRequest, response: Response, db: Session = Depends(get_db)):
     try:
-        user = service.authenticate(db, body.email, body.password)
+        user = service.authenticate(db, body.user_id, body.password)
     except service.AuthError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e)) from e
     return _login_response(response, user)

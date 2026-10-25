@@ -1,12 +1,15 @@
 """회원 관리 업무 규칙. HTTP는 모르고, DB 접근은 repository에 맡깁니다."""
 
+from typing import Any
+
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.permissions.roles import DEFAULT_ROLE
 from app.users import repository
 from app.users.models import User
 
-DEFAULT_ROLE = "USER"
+RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 
 
 class UserError(Exception):
@@ -17,13 +20,36 @@ class UserError(Exception):
         self.code = code
 
 
+def is_login_id_available(db: Session, login_id: str) -> bool:
+    login_id = login_id.strip().lower()
+    if login_id.startswith(RESERVED_LOGIN_ID_PREFIX):
+        return False
+    return repository.get_by_login_id(db, login_id) is None
+
+
 def create_user(
-    db: Session, *, email: str, password: str, name: str, roles: list[str] | None = None
+    db: Session,
+    *,
+    login_id: str,
+    email: str,
+    password: str,
+    name: str,
+    profile: dict[str, Any] | None = None,
+    roles: list[str] | None = None,
 ) -> User:
+    """가입 규칙(중복 검사, 기본 역할). commit까지 합니다."""
+    login_id = login_id.strip().lower()
     email = email.strip().lower()
+    profile = {k: v for k, v in (profile or {}).items() if v is not None}
+    if not is_login_id_available(db, login_id):
+        raise UserError("LOGIN_ID_TAKEN", "이미 사용 중인 아이디입니다.")
     if repository.get_by_email(db, email):
         raise UserError("EMAIL_TAKEN", "이미 가입된 이메일입니다.")
-    user = User(email=email, hashed_password=hash_password(password), name=name)
+    if profile.get("nickname") and repository.get_by_nickname(db, profile["nickname"]):
+        raise UserError("NICKNAME_TAKEN", "이미 사용 중인 닉네임입니다.")
+    user = User(
+        login_id=login_id, email=email, hashed_password=hash_password(password), name=name, **profile
+    )
     user.roles = repository.get_roles_by_codes(db, roles or [DEFAULT_ROLE])
     repository.add(db, user)
     db.commit()
@@ -47,7 +73,7 @@ def _get_other_user(db: Session, actor: User, user_id: int) -> User:
 
 def update_roles(db: Session, actor: User, user_id: int, codes: list[str]) -> User:
     user = _get_other_user(db, actor, user_id)
-    codes = sorted(set(codes) | {DEFAULT_ROLE})  # 모든 사용자는 기본 역할을 가집니다
+    codes = sorted(set(codes))
     roles = repository.get_roles_by_codes(db, codes)
     if len(roles) != len(codes):
         raise UserError("UNKNOWN_ROLE", "존재하지 않는 역할이 있습니다.")
