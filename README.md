@@ -72,7 +72,8 @@ npm run dev
 ```
 
 - 화면: http://localhost:3000 → 회원가입·로그인, `/me`(내 정보), `/admin/members`(관리자 전용 멤버 관리)
-- 관리자 계정: `backend/.env`의 `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` (**로컬 전용** 값)
+- 관리자(MASTER) 계정: `backend/.env`의 `SEED_ADMIN_USER_ID`(로그인 아이디) / `SEED_ADMIN_PASSWORD` (**로컬 전용** 값)
+- 가입 이메일 인증번호·비밀번호 재설정 메일: 기본(`MAIL_BACKEND=console`)은 백엔드 터미널 로그에 출력됩니다. 메일함처럼 보려면 `docker compose up -d mailpit` 후 `MAIL_BACKEND=smtp` → http://localhost:8025
 - 개발 중 `/api` 요청은 Next.js 프록시(`next.config.ts`의 rewrites)가 백엔드(8000)로 전달하므로 CORS 설정 없이 동작합니다.
 
 ## 폴더 구조
@@ -130,7 +131,13 @@ meerkit/
 | `JWT_EXPIRE_MINUTES` | backend | 액세스 토큰 유효 시간(분, 기본 30) |
 | `REFRESH_TOKEN_EXPIRE_DAYS` | backend | 리프레시 토큰(httpOnly 쿠키) 유효 기간(일, 기본 14) |
 | `COOKIE_SECURE` | backend | 배포(https)에서는 `true` |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` | backend | 로컬 테스트용 관리자 계정 (**로컬 전용**) |
+| `SEED_ADMIN_USER_ID`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, `SEED_ADMIN_NAME` | backend | 로컬 테스트용 관리자(MASTER) 계정 (**로컬 전용**) |
+| `FRONTEND_BASE_URL` | backend | 메일 링크가 여는 프론트 주소 (비밀번호 재설정 화면) |
+| `MAIL_BACKEND`, `MAIL_FROM`, `MAIL_SMTP_*` | backend | 메일 발송 방법(`console`/`smtp`)과 SMTP 설정. 업체 비밀번호·키는 `.env`에만 |
+| `MAIL_COOLDOWN_SECONDS`, `MAIL_DAILY_LIMIT` | backend | 같은 이메일로 보내는 인증·재설정 메일 간격(기본 60초)과 하루 한도(기본 10) |
+| `SIGNUP_EMAIL_VERIFICATION_REQUIRED` | backend | 가입·이메일 변경 때 이메일 인증 필수 여부 (기본 `true`) |
+| `LOGIN_LOCK_MAX_ATTEMPTS`, `LOGIN_LOCK_MINUTES` | backend | 연속 실패 N회 → M분 로그인 잠금 (기본 5회, 5분, 0이면 끔) |
+| `ACCOUNT_RETENTION_DAYS` | backend | 탈퇴 후 개인정보를 지우기까지 기간(일, 기본 365) |
 | `CORS_ORIGINS` | backend | 허용할 프론트 주소, 여러 개면 쉼표로 구분 |
 | `LLM_PROVIDER`, `LLM_MODEL` | backend | 사용할 LLM 공급자와 모델 |
 | `OPENAI_API_KEY` | backend | OpenAI 키 |

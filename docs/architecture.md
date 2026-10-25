@@ -15,10 +15,11 @@
 flowchart TB
     subgraph KIT["스타터킷 공통 기반 (재사용)"]
         core["core<br/>설정 · DB · 보안(해시·JWT)"]
-        users["users<br/>회원 · 역할 · 멤버 관리"]
-        auth["auth<br/>가입 · 로그인 · 토큰 갱신"]
+        users["users<br/>회원 · 역할 · 약관 · 멤버 관리 · 탈퇴/파기"]
+        auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정"]
         perm["permissions<br/>require_roles · require_admin"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
+        mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
         req["features/requirements<br/>업로드 · 분류 · 확정 · 기능정의서 · Excel"]
@@ -28,12 +29,14 @@ flowchart TB
     req --> llm
     perm --> auth
     auth --> users
+    auth --> mail
     users --> core
+    mail --> core
     llm --> core
 ```
 
 - 화살표는 "import 한다"는 뜻입니다.
-- **킷(`core`, `users`, `auth`, `permissions`, `llm`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
+- **킷(`core`, `users`, `auth`, `permissions`, `llm`, `mail`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
 - `features/` 안의 기능끼리도 서로 import 하지 않습니다. 공통으로 필요해지면 공통 기반으로 올립니다.
 - 각 모듈 안에서는 `router → service → repository` 방향으로만 import 합니다.
 - 프론트엔드도 같습니다: 킷(`src/meerkit`)은 `src/app`(라우트·서비스 화면)을 import 하지 않고, `src/app`은 킷을 `@/meerkit`(공개 API)으로만 씁니다. ESLint가 검사합니다.
@@ -48,23 +51,31 @@ backend/
 │   ├── core/
 │   │   ├── config.py      # pydantic-settings, .env 로딩
 │   │   ├── database.py    # engine, SessionLocal, Base, get_db
-│   │   ├── security.py    # 비밀번호 해시(argon2), JWT 발급/검증
+│   │   ├── security.py    # 비밀번호 해시(argon2), JWT 발급/검증, 일회용 코드·토큰(HMAC 해시)
+│   │   ├── logging.py     # app.* 로거 설정
 │   │   └── models.py      # TimestampMixin 등 공통 컬럼
-│   ├── users/             # 회원·역할 (킷)
-│   │   ├── models.py      # User, Role, UserRole (users / roles / user_roles)
-│   │   ├── repository.py  # 쿼리
-│   │   ├── service.py     # 가입, 역할 변경, 활성/비활성 규칙
+│   ├── users/             # 회원·역할·약관 (킷)
+│   │   ├── models.py      # User, Role, UserRole, Term, UserTermAgreement
+│   │   ├── repository.py  # 쿼리 (멤버 검색·페이지 포함)
+│   │   ├── service.py     # 가입, 약관 확인, 내 정보, 탈퇴, 역할 변경, 활성/비활성, 개인정보 파기
 │   │   ├── schemas.py
-│   │   ├── router.py      # /api/users (관리자 전용)
-│   │   └── seed.py        # 로컬 테스트용 관리자 계정 만들기
-│   ├── auth/              # 가입·로그인·토큰 갱신 (킷)
-│   │   ├── router.py      # /api/auth/signup, login, refresh, logout, me
-│   │   ├── service.py
+│   │   ├── router.py      # /api/users/me (본인), /api/users (관리자 전용)
+│   │   ├── purge.py       # 보관 기간이 지난 탈퇴 계정 개인정보 삭제 (매일 실행)
+│   │   └── seed.py        # 로컬 테스트용 관리자(MASTER) 계정 만들기
+│   ├── auth/              # 가입·로그인·토큰·이메일 인증·비밀번호 재설정 (킷)
+│   │   ├── models.py      # EmailVerification, PasswordResetToken
+│   │   ├── repository.py
+│   │   ├── router.py      # /api/auth/...
+│   │   ├── service.py     # 로그인 잠금, 인증번호, 재설정 토큰, 메일 횟수 제한
 │   │   ├── schemas.py
 │   │   └── deps.py        # get_current_user
 │   ├── permissions/       # 권한 검사 (킷)
-│   │   ├── roles.py       # USER, ADMIN
+│   │   ├── roles.py       # MASTER, OWNER, VIEWER, WRITER, ADMIN_ROLE, DEFAULT_ROLE
 │   │   └── deps.py        # require_roles(), require_admin
+│   ├── mail/              # 메일 발송 (킷). 어디서든 send_mail 하나로 사용
+│   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
+│   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
+│   │   └── backends.py    # console / smtp / fake (MAIL_BACKEND)
 │   ├── llm/
 │   │   ├── client.py      # get_chat_model(): 설정값으로 모델 생성
 │   │   ├── prompts.py     # 프롬프트 파일 로더
@@ -84,7 +95,7 @@ backend/
 ├── alembic/
 └── tests/
     ├── conftest.py        # 테스트 DB(테스트마다 롤백), TestClient, 로그인 헬퍼
-    ├── kit/               # auth, users 테스트
+    ├── kit/               # auth, users, mail, 잠금, 비밀번호, 파기 테스트
     └── features/
 ```
 
@@ -95,8 +106,48 @@ backend/
 | 액세스 토큰 | JWT, 응답 본문으로 전달. 프론트는 **메모리**(Zustand)에만 보관. 유효 30분 |
 | 리프레시 토큰 | JWT, **httpOnly 쿠키**(`meerkit_refresh`, 경로 `/api/auth`). 자바스크립트로 읽을 수 없음. 유효 14일 |
 | 새로고침 | 프론트가 시작할 때 `/api/auth/refresh`를 불러 액세스 토큰을 다시 받음 |
+| 로그인 | 아이디(`user_id`, DB 컬럼 `login_id`) + 비밀번호. 이메일은 연락·인증용 |
 | 역할 확인 | 토큰에는 사용자 id만 넣고, 역할은 요청마다 DB에서 읽음 → 역할 변경이 바로 반영 |
-| 비활성 계정 | 로그인, 토큰 사용, 갱신 모두 거부 |
+| 비활성·탈퇴 계정 | 로그인, 토큰 사용, 갱신 모두 거부 |
+| 비밀번호 변경 | 변경 시각(`password_changed_at`) 이전에 발급된 토큰은 거부 → 다른 기기 로그인이 풀림 |
+| 로그인 잠금 | 연속 5회 실패 → 5분 잠금 (`LOGIN_LOCK_*`). 잠긴 동안 `429` + `Retry-After`(초) |
+
+### 계정 규칙
+
+| 항목 | 규칙 |
+|---|---|
+| 역할 | `MASTER`(1) / `OWNER`(2) / `VIEWER`(3) / `WRITER`(4). 한 사람이 여러 역할을 가질 수 있음(`user_roles`). 가입하면 `VIEWER`. 역할별 세부 권한은 아직 없음 |
+| 관리자 | `permissions/roles.py`의 `ADMIN_ROLE = "MASTER"`. 관리자 API는 `require_admin`으로 검사 |
+| 가입 | 이메일 인증(`/auth/email/send-code` → `/auth/email/verify-code` → 증표) + 필수 약관(`terms`, `privacy`) 동의. 동의 기록은 `user_term_agreements`(약관 버전별) |
+| 인증번호 | 6자리, 10분, 5회까지. DB에는 HMAC 해시만. 같은 이메일 60초 간격·하루 10회 |
+| 비밀번호 찾기 | 가입 여부와 관계없이 항상 같은 응답(202). 링크 토큰은 해시 저장, 30분, 한 번만, 새 링크를 보내면 이전 링크 무효 |
+| 탈퇴 | `is_active=false` + `deactivated_at` 기록(관리자 삭제도 같음). 아이디·이메일은 계속 점유 |
+| 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록. 행은 남김. `.github/workflows/account-purge.yml`이 매일 실행 |
+| 메일 | `app.mail.send_mail`만 사용. 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 |
+
+### 인증·회원 API (`/api` 아래)
+
+| 메서드 · 경로 | 설명 |
+|---|---|
+| `GET /auth/terms` | 가입 약관 목록 (현재 버전) |
+| `GET /auth/check-user-id?user_id=` | 아이디 사용 가능 여부 `{available}` |
+| `POST /auth/email/send-code` `{email}` | 인증번호 발송 → 204 / 409(가입된 이메일) / 429 |
+| `POST /auth/email/verify-code` `{email, code}` | → `{token}` / 400 |
+| `POST /auth/signup` | `{user_id, email, password, name, agreed_terms, email_verification_token, 선택 항목}` → 201 User |
+| `POST /auth/login` `{user_id, password}` | → `{access_token}` + 리프레시 쿠키 / 401 / 429 |
+| `POST /auth/refresh`, `POST /auth/logout` | 토큰 갱신, 로그아웃 |
+| `POST /auth/password/forgot` `{email}` | 항상 202 |
+| `POST /auth/password/reset` `{token, password}` | 204 / 400 |
+| `GET /users/me`, `PATCH /users/me` | 내 정보 조회·수정 (이메일 변경은 새 이메일 증표 필요). `GET /auth/me`는 임시 유지 |
+| `PATCH /users/me/password` `{current_password, new_password}` | 204 (+ 새 리프레시 쿠키) / 400 |
+| `DELETE /users/me` `{password}` | 탈퇴 → 204 |
+| `GET /users?q=&role_id=&status=&page=&size=` | (MASTER) 멤버 검색 → `{items, total, page, size}`. status: `active` / `inactive` / `deleted` |
+| `GET /users/roles` | 역할 목록 `[{id, name}]` |
+| `PUT /users/{id}/roles` `{roles: [코드]}` | (MASTER) 역할 변경 (여러 개) |
+| `PATCH /users/{id}/active` `{is_active}` | (MASTER) 활성/비활성, 잠금 해제, 탈퇴 취소 |
+| `DELETE /users/{id}` | (MASTER) 탈퇴 처리 (바로 지우지 않음) |
+
+User 응답: `id, user_id, email, name, 선택 항목, email_verified, roles: [{id, name}], is_active, created_at, updated_at, deactivated_at(탈퇴 시각), deleted_at(개인정보 파기 시각)`. `hashed_password`는 절대 포함하지 않습니다.
 
 ### 기능 폴더 안의 역할 나누기
 
@@ -210,4 +261,5 @@ frontend/
 | 비밀번호 해시 | pwdlib[argon2] | passlib 유지보수 중단, FastAPI 공식 문서 기준 |
 | 문서 파싱 | MarkItDown | txt/docx/pdf를 하나의 API로 처리 |
 | Excel | openpyxl | 고정 템플릿에 값 채우기에 충분 |
-| 로컬 DB | Docker Compose | 팀원 간 DB 버전과 설정을 동일하게 유지 |
+| 로컬 DB | Supabase CLI (Postgres 17), 대체용 Docker Compose | 팀원 간 DB 버전과 설정을 동일하게 유지 |
+| 로컬 메일 | Mailpit (Docker Compose) | 실제로 보내지 않고 받은 메일을 브라우저에서 확인 |

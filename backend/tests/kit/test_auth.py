@@ -1,40 +1,48 @@
-def test_signup_then_login_and_me(client, login):
-    response = client.post(
-        "/api/auth/signup",
-        json={"email": "New@Example.com", "password": "password123", "name": "소영"},
-    )
-    assert response.status_code == 201
+def test_signup_then_login_and_me(client, signup, login):
+    response = signup("Writer01", email="New@Example.com", name="소영", nickname="미어캣")
+    assert response.status_code == 201, response.text
     body = response.json()
+    assert body["user_id"] == "writer01"
     assert body["email"] == "new@example.com"
-    assert body["roles"] == ["USER"]
+    assert body["nickname"] == "미어캣"
+    assert body["email_verified"] is True
+    assert body["roles"] == [{"id": 3, "name": "VIEWER"}]
     assert "hashed_password" not in body
 
-    headers = login("new@example.com")
+    headers = login("writer01")
     me = client.get("/api/auth/me", headers=headers)
     assert me.status_code == 200
     assert me.json()["name"] == "소영"
 
 
-def test_signup_rejects_duplicate_email(client, make_user):
-    make_user("dup@example.com")
-    response = client.post(
-        "/api/auth/signup",
-        json={"email": "dup@example.com", "password": "password123", "name": "x"},
-    )
+def test_signup_rejects_duplicate_login_id(client, make_user, signup):
+    make_user("dupuser")
+    assert signup("dupuser", email="other@example.com").status_code == 409
+
+
+def test_send_code_rejects_registered_email(client, make_user):
+    make_user("dupuser")
+    response = client.post("/api/auth/email/send-code", json={"email": "dupuser@example.com"})
     assert response.status_code == 409
 
 
-def test_signup_rejects_short_password(client):
-    response = client.post(
-        "/api/auth/signup", json={"email": "a@example.com", "password": "short", "name": "x"}
-    )
-    assert response.status_code == 422
+def test_signup_validates_fields(client):
+    base = {
+        "user_id": "user01",
+        "email": "a@example.com",
+        "password": "password123",
+        "name": "x",
+        "agreed_terms": ["terms", "privacy"],
+    }
+    assert client.post("/api/auth/signup", json={**base, "password": "short"}).status_code == 422
+    assert client.post("/api/auth/signup", json={**base, "user_id": "ab"}).status_code == 422
+    assert client.post("/api/auth/signup", json={**base, "user_id": "한글아이디"}).status_code == 422
 
 
 def test_login_wrong_password(client, make_user):
-    make_user("a@example.com")
+    make_user("user01")
     response = client.post(
-        "/api/auth/login", json={"email": "a@example.com", "password": "wrong-password"}
+        "/api/auth/login", json={"user_id": "user01", "password": "wrong-password"}
     )
     assert response.status_code == 401
 
@@ -46,10 +54,8 @@ def test_me_requires_token(client):
 
 
 def test_login_sets_httponly_refresh_cookie_and_refresh_works(client, make_user):
-    make_user("a@example.com")
-    response = client.post(
-        "/api/auth/login", json={"email": "a@example.com", "password": "password123"}
-    )
+    make_user("user01")
+    response = client.post("/api/auth/login", json={"user_id": "user01", "password": "password123"})
     set_cookie = response.headers["set-cookie"]
     assert "meerkit_refresh=" in set_cookie
     assert "HttpOnly" in set_cookie
@@ -67,15 +73,15 @@ def test_refresh_without_cookie_fails(client):
 
 
 def test_logout_clears_refresh_cookie(client, make_user, login):
-    make_user("a@example.com")
-    login("a@example.com")
+    make_user("user01")
+    login("user01")
     assert client.post("/api/auth/logout").status_code == 204
     assert client.post("/api/auth/refresh").status_code == 401
 
 
 def test_access_token_cannot_be_used_as_refresh(client, make_user, login):
-    make_user("a@example.com")
-    headers = login("a@example.com")
+    make_user("user01")
+    headers = login("user01")
     client.cookies.clear()
     access = headers["Authorization"].removeprefix("Bearer ")
     client.cookies.set("meerkit_refresh", access, path="/api/auth")

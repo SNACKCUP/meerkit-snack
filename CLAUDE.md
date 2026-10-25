@@ -81,7 +81,7 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 ## 1. 위치 규칙
 
 - 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `src/app/`에는 킷을 연결하는 얇은 파일만 둔다.
-- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `llm`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
+- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `llm`, `mail`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
 
 | 만들 것             | 위치                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------- |
@@ -107,7 +107,9 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 
 - 사용량 관련 코드(`usage_logs`, 이용 이력, 한도, `/history`, `/admin/usage`)는 만들지 않는다. → [향후 확장](docs/future-extensions.md)
 - `llm/`은 사용량 기록과 연결하지 않는다.
-- 권한은 역할(`USER`, `ADMIN`)로만 검사한다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
+- 역할은 `MASTER`, `OWNER`, `VIEWER`, `WRITER` 4종이고 한 사람이 여러 역할을 가질 수 있다. 관리자 검사는 `permissions/roles.py`의 `ADMIN_ROLE`(`MASTER`) 하나로만 한다 (`require_admin`).
+- 역할별 세부 권한은 아직 정하지 않았다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
+- 메일은 `app.mail.send_mail`로만 보낸다. 라우터에서 `BackgroundTasks`로 넘기고, 인증번호·토큰·비밀번호를 로그에 남기지 않는다.
 
 ## 4. 상태 규칙 (프론트)
 

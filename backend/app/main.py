@@ -3,9 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.core.config import settings
+from app.core.logging import setup_logging
 
 
 def create_app() -> FastAPI:
+    setup_logging()
     app = FastAPI(title="MeerKit")
     app.add_middleware(
         CORSMiddleware,
