@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import AppError
 from app.core.security import hash_password, verify_password
 from app.permissions.roles import DEFAULT_ROLE
 from app.users import repository
@@ -13,12 +14,26 @@ from app.users.models import Role, Term, User
 RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 
 
-class UserError(Exception):
-    """서비스 규칙 위반. router에서 HTTP 오류로 바꿉니다."""
+# 오류 코드 → HTTP 상태. 전역 핸들러(core.exceptions)가 이 값으로 응답합니다.
+_STATUS = {
+    "USER_NOT_FOUND": 404,
+    "SELF_CHANGE_FORBIDDEN": 400,
+    "UNKNOWN_ROLE": 422,
+    "UNKNOWN_TERM": 422,
+    "TERMS_REQUIRED": 422,
+    "LOGIN_ID_TAKEN": 409,
+    "EMAIL_TAKEN": 409,
+    "NICKNAME_TAKEN": 409,
+    "INVALID_PASSWORD": 400,
+    "USER_DELETED": 409,
+}
+
+
+class UserError(AppError):
+    """회원 규칙 위반. 전역 핸들러가 HTTP 오류로 바꿉니다."""
 
     def __init__(self, code: str, message: str):
-        super().__init__(message)
-        self.code = code
+        super().__init__(code, message, status_code=_STATUS.get(code, 400))
 
 
 def is_login_id_available(db: Session, login_id: str) -> bool:

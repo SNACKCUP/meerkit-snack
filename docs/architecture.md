@@ -52,7 +52,10 @@ backend/
 │   │   ├── config.py      # pydantic-settings, .env 로딩
 │   │   ├── database.py    # engine, SessionLocal, Base, get_db
 │   │   ├── security.py    # 비밀번호 해시(argon2), JWT 발급/검증, 일회용 코드·토큰(HMAC 해시)
-│   │   ├── logging.py     # app.* 로거 설정
+│   │   ├── exceptions.py  # AppError와 하위 예외, 전역 예외 핸들러 (오류 응답 형식 통일)
+│   │   ├── middleware.py  # 요청 ID 발급, 접근 로그, 처리 못 한 예외 → 500 JSON
+│   │   ├── request_context.py  # 요청 ID(ContextVar)
+│   │   ├── logging.py     # app.* 로거 설정 (JSON/text, 모든 줄에 request_id)
 │   │   └── models.py      # TimestampMixin 등 공통 컬럼
 │   ├── users/             # 회원·역할·약관 (킷)
 │   │   ├── models.py      # User, Role, UserRole, Term, UserTermAgreement
@@ -222,9 +225,24 @@ frontend/
 - 모든 설정은 `app/core/config.py`의 `settings`를 통해 읽습니다. 코드에서 `os.environ`을 직접 읽지 않습니다.
 - 비밀값(API 키, JWT 키)은 `.env`에만 두고, `.env.example`에는 항목 이름만 둡니다.
 
-### 예외 처리
-- service는 업무 오류를 예외(`UserError`, `AuthError` 등)로 던지고, router가 HTTP 상태 코드로 바꿉니다.
-- 응답 형식: `{"detail": "사용자에게 보여 줄 문구"}` (FastAPI 기본 형식)
+### 예외 처리 (`core/exceptions.py`)
+- 모든 오류 응답은 한 가지 형식입니다: `{"detail": "사용자에게 보여 줄 문구", "code": "USER_NOT_FOUND", "request_id": "…"}`. 입력 오류(422)는 `errors: [{field, message, type}]`가 더 붙고, `detail`은 사람이 읽는 문장입니다.
+- service는 `AppError` 하위 예외(`NotFoundError` 404, `ConflictError` 409, `ForbiddenError` 403 등, 또는 모듈 예외 `UserError`/`AuthError`)만 던집니다. router에는 try/except로 HTTP 오류를 만드는 코드를 두지 않습니다. 전역 핸들러가 상태 코드와 형식을 정합니다.
+- 429는 `retry_after`를 주면 `Retry-After` 헤더가 붙습니다.
+- 처리하지 못한 예외는 500 `{"detail": "서버 오류가 발생했습니다.", "code": "INTERNAL_ERROR", "request_id"}`로 바뀌고, 내부 메시지는 응답에 넣지 않습니다. 스택은 같은 `request_id`로 로그(`app.error`)에 남습니다.
+- 기존 `HTTPException`도 같은 형식으로 감싸집니다(`code`는 상태 이름, 예: `NOT_FOUND`). 서비스 코드를 바로 옮기지 않아도 형식은 통일됩니다.
+
+### 로깅과 요청 ID (`core/logging.py`, `core/middleware.py`)
+- 요청마다 요청 ID를 발급해 응답 헤더 `X-Request-ID`로 돌려줍니다. 들어온 `X-Request-ID`가 안전한 모양(영숫자·`.`·`_`·`-`, 64자 이내)이면 이어 씁니다.
+- 모든 `app.*` 로그 줄에 `request_id`가 자동으로 붙습니다(응답 뒤에 도는 메일 발송 등 BackgroundTasks 포함).
+- 요청 1건당 접근 로그 1줄(`app.access`): method, path, status, duration_ms. 쿼리 문자열·본문·헤더(토큰)는 남기지 않습니다. uvicorn 기본 접근 로그는 끕니다.
+- `LOG_FORMAT=json`이면 한 줄에 JSON 하나(운영, 로그 수집용), `text`면 사람이 읽기 쉬운 형식입니다. 비우면 `APP_ENV=local`은 text, 그 밖은 json.
+- 장애 대응: 사용자가 받은 오류 응답의 `request_id`로 로그를 검색하면 그 요청의 접근 로그와 스택을 함께 찾을 수 있습니다.
+- 비밀번호·토큰·인증번호·업로드 문서 내용은 로그 메시지에 넣지 않습니다.
+
+### 상태 점검
+- `GET /health`: 프로세스가 살아 있는지(DB 확인 없음).
+- `GET /health/ready`: DB에 `SELECT 1`까지 확인. 실패하면 503 `DB_UNAVAILABLE`. 배포 후 스모크 테스트와 로드밸런서 준비 확인에 씁니다.
 
 ### LLM 호출
 - 기능 코드는 `llm.client.get_chat_model()`로만 모델을 얻습니다. 공급자를 바꿀 때 `llm/` 한 곳만 고치면 됩니다.

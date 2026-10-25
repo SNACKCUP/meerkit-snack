@@ -126,6 +126,7 @@ meerkit/
 | 변수 | 위치 | 설명 |
 |---|---|---|
 | `DATABASE_URL` | backend | PostgreSQL 접속 주소 |
+| `LOG_LEVEL`, `LOG_FORMAT` | backend | 로그 수준(기본 INFO)과 형식(`json`/`text`, 비우면 로컬 text·운영 json) |
 | `TEST_DATABASE_URL` | backend | pytest 전용 DB 주소 (이름이 `_test`로 끝나야 함, 비우면 `DATABASE_URL` 사용) |
 | `JWT_SECRET_KEY` | backend | JWT 서명 키, 32자 이상 (운영에서는 반드시 변경) |
 | `JWT_EXPIRE_MINUTES` | backend | 액세스 토큰 유효 시간(분, 기본 30) |
