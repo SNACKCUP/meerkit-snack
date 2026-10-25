@@ -51,9 +51,6 @@ class Settings(BaseSettings):
     mail_cooldown_seconds: int = 60
     mail_daily_limit: int = 10
 
-    llm_provider: str = "openai"
-    llm_model: str = "gpt-4o-mini"
-    openai_api_key: str = ""
 
     # 로컬 테스트용 관리자 시드 계정 (uv run python -m app.users.seed)
     seed_admin_user_id: str = "admin"

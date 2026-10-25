@@ -73,6 +73,17 @@ def client(db):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
+def fake_llm():
+    """API 키 없이 쓰는 가짜 LLM. fake_llm.responses 에 응답을 넣고, fake_llm.calls 로 들어간 메시지를 확인합니다."""
+    from app.llm import override_chat_model
+    from app.llm.testing import FakeChatModel
+
+    model = FakeChatModel()
+    with override_chat_model(model):
+        yield model
+
+
 @pytest.fixture(autouse=True)
 def mail_outbox():
     FakeBackend.outbox.clear()
