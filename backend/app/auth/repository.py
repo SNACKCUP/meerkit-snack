@@ -2,10 +2,11 @@
 
 from datetime import datetime
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.auth.models import EmailVerification, PasswordResetToken
+from app.users.models import User
 
 
 def add(db: Session, row: object) -> None:
@@ -72,5 +73,25 @@ def delete_email_verifications_before(db: Session, cutoff: datetime) -> int:
     return result.rowcount or 0
 
 
-def delete_reset_tokens_of(db: Session, user_id: int) -> None:
-    db.execute(delete(PasswordResetToken).where(PasswordResetToken.user_id == user_id))
+def _withdrawn_user_ids():
+    # 탈퇴(deactivated_at)했거나 개인정보를 지운(deleted_at) 회원
+    return select(User.id).where(or_(User.deactivated_at.is_not(None), User.deleted_at.is_not(None)))
+
+
+def count_reset_tokens_of_withdrawn(db: Session) -> int:
+    return db.scalar(
+        select(func.count(PasswordResetToken.id)).where(PasswordResetToken.user_id.in_(_withdrawn_user_ids()))
+    ) or 0
+
+
+def delete_reset_tokens_of_withdrawn(db: Session) -> int:
+    result = db.execute(
+        delete(PasswordResetToken).where(PasswordResetToken.user_id.in_(_withdrawn_user_ids()))
+    )
+    return result.rowcount or 0
+
+
+def count_email_verifications_before(db: Session, cutoff: datetime) -> int:
+    return db.scalar(
+        select(func.count(EmailVerification.id)).where(EmailVerification.created_at < cutoff)
+    ) or 0

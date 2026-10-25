@@ -15,9 +15,10 @@
 flowchart TB
     subgraph KIT["스타터킷 공통 기반 (재사용)"]
         core["core<br/>설정 · DB · 보안(해시·JWT)"]
-        users["users<br/>회원 · 역할 · 약관 · 멤버 관리 · 탈퇴/파기"]
-        auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정"]
-        perm["permissions<br/>require_roles · require_admin"]
+        users["users<br/>회원 데이터·규칙 · 역할 코드 · 약관 · 탈퇴/파기 (HTTP 없음)"]
+        auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정 · 인증 기록 정리"]
+        perm["permissions<br/>require_roles · require_admin · ADMIN_ROLE"]
+        account["account<br/>/api/users/me · /api/users (HTTP 연결 층)"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
         mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
     end
@@ -27,16 +28,25 @@ flowchart TB
     req --> perm
     req --> auth
     req --> llm
+    account --> perm
+    account --> auth
+    account --> users
     perm --> auth
+    perm --> users
     auth --> users
     auth --> mail
     users --> core
+    auth --> core
+    perm --> core
     mail --> core
     llm --> core
 ```
 
+- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`은 `core`만. 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
+- `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사(permissions)가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
+
 - 화살표는 "import 한다"는 뜻입니다.
-- **킷(`core`, `users`, `auth`, `permissions`, `llm`, `mail`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
+- **킷(`core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
 - `features/` 안의 기능끼리도 서로 import 하지 않습니다. 공통으로 필요해지면 공통 기반으로 올립니다.
 - 각 모듈 안에서는 `router → service → repository` 방향으로만 import 합니다.
 - 프론트엔드도 같습니다: 킷(`src/meerkit`)은 `src/app`(라우트·서비스 화면)을 import 하지 않고, `src/app`은 킷을 `@/meerkit`(공개 API)으로만 씁니다. ESLint가 검사합니다.
@@ -57,12 +67,12 @@ backend/
 │   │   ├── request_context.py  # 요청 ID(ContextVar)
 │   │   ├── logging.py     # app.* 로거 설정 (JSON/text, 모든 줄에 request_id)
 │   │   └── models.py      # TimestampMixin 등 공통 컬럼
-│   ├── users/             # 회원·역할·약관 (킷)
+│   ├── users/             # 회원 데이터와 규칙 (킷, HTTP 없음, core만 import)
 │   │   ├── models.py      # User, Role, UserRole, Term, UserTermAgreement
 │   │   ├── repository.py  # 쿼리 (멤버 검색·페이지 포함)
 │   │   ├── service.py     # 가입, 약관 확인, 내 정보, 탈퇴, 역할 변경, 활성/비활성, 개인정보 파기
-│   │   ├── schemas.py
-│   │   ├── router.py      # /api/users/me (본인), /api/users (관리자 전용)
+│   │   ├── schemas.py     # 응답·요청 모델, 선택 항목 규칙(OPTIONAL_PROFILE_FIELDS, blank_to_none)
+│   │   ├── roles.py       # 역할 코드 MASTER, OWNER, VIEWER, WRITER, DEFAULT_ROLE
 │   │   ├── purge.py       # 보관 기간이 지난 탈퇴 계정 개인정보 삭제 (매일 실행)
 │   │   └── seed.py        # 로컬 테스트용 관리자(MASTER) 계정 만들기
 │   ├── auth/              # 가입·로그인·토큰·이메일 인증·비밀번호 재설정 (킷)
@@ -71,10 +81,14 @@ backend/
 │   │   ├── router.py      # /api/auth/...
 │   │   ├── service.py     # 로그인 잠금, 인증번호, 재설정 토큰, 메일 횟수 제한
 │   │   ├── schemas.py
+│   │   ├── cleanup.py     # 탈퇴 회원의 재설정 토큰·오래된 인증번호 기록 정리 (purge 다음에 매일 실행)
 │   │   └── deps.py        # get_current_user
 │   ├── permissions/       # 권한 검사 (킷)
-│   │   ├── roles.py       # MASTER, OWNER, VIEWER, WRITER, ADMIN_ROLE, DEFAULT_ROLE
+│   │   ├── roles.py       # ADMIN_ROLE = MASTER (+ users.roles 역할 코드 다시 내보내기)
 │   │   └── deps.py        # require_roles(), require_admin
+│   ├── account/           # 회원 API(HTTP) 연결 층 (킷)
+│   │   ├── me_router.py   # /api/users/me: 내 정보 조회·수정, 비밀번호 변경, 탈퇴
+│   │   └── admin_router.py  # /api/users: 멤버 검색·역할·활성/비활성·삭제, /api/users/roles
 │   ├── mail/              # 메일 발송 (킷). 어디서든 send_mail 하나로 사용
 │   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
 │   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
@@ -125,7 +139,7 @@ backend/
 | 인증번호 | 6자리, 10분, 5회까지. DB에는 HMAC 해시만. 같은 이메일 60초 간격·하루 10회 |
 | 비밀번호 찾기 | 가입 여부와 관계없이 항상 같은 응답(202). 링크 토큰은 해시 저장, 30분, 한 번만, 새 링크를 보내면 이전 링크 무효 |
 | 탈퇴 | `is_active=false` + `deactivated_at` 기록(관리자 삭제도 같음). 아이디·이메일은 계속 점유 |
-| 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록. 행은 남김. `.github/workflows/account-purge.yml`이 매일 실행 |
+| 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `uv run python -m app.users.purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록(행은 남김). 이어서 `uv run python -m app.auth.cleanup`이 탈퇴 회원의 재설정 토큰과 `EMAIL_VERIFICATION_RETENTION_DAYS`(7일) 지난 인증번호 기록을 지움. 둘 다 `--dry-run` 지원, `.github/workflows/account-purge.yml`이 매일 차례로 실행 |
 | 메일 | `app.mail.send_mail`만 사용. 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 |
 
 ### 인증·회원 API (`/api` 아래)

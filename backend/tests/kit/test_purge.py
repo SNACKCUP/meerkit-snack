@@ -2,7 +2,6 @@
 
 from datetime import UTC, datetime, timedelta
 
-from app.auth.models import EmailVerification
 from app.core.config import settings
 from app.users.purge import purge
 
@@ -60,20 +59,3 @@ def test_purged_account_shows_as_deleted_and_cannot_be_restored(client, db, make
     assert listed["items"][0]["deleted_at"] is not None
     restore = client.patch(f"/api/users/{old.id}/active", json={"is_active": True}, headers=headers)
     assert restore.status_code == 409
-
-
-def test_purge_removes_old_email_verifications(db):
-    old = EmailVerification(
-        email="x@example.com",
-        code_hash="h",
-        expires_at=datetime.now(UTC),
-        created_at=datetime.now(UTC) - timedelta(days=settings.email_verification_retention_days + 1),
-    )
-    fresh = EmailVerification(
-        email="y@example.com", code_hash="h", expires_at=datetime.now(UTC), created_at=datetime.now(UTC)
-    )
-    db.add_all([old, fresh])
-    db.commit()
-    purge(db)
-    remaining = {row.email for row in db.query(EmailVerification).all()}
-    assert remaining == {"y@example.com"}

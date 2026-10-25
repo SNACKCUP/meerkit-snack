@@ -203,7 +203,7 @@ UI 부품은 `@/components/ui`(shadcn)를, 스타일은 Tailwind utility를 씁�
 
 ## 7. 체크리스트
 
-- [ ] 공통 기반(`core`, `users`, `auth`, `permissions`, `llm`, `src/meerkit`)에서 새 기능을 import 하지 않았다
+- [ ] 공통 기반(`core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`, `src/meerkit`)에서 새 기능을 import 하지 않았다
 - [ ] 수정한 공통 위치는 `api.py`, `alembic/env.py`, `src/app/(service)/<기능>/` 세 곳뿐이다
 - [ ] 새 환경 변수가 있다면 `.env.example`과 README 환경 변수 표에 추가했다
 - [ ] 테스트가 실제 LLM API를 호출하지 않는다

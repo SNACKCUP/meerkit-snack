@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppError
 from app.core.security import hash_password, verify_password
-from app.permissions.roles import DEFAULT_ROLE
 from app.users import repository
 from app.users.models import Role, Term, User
+from app.users.roles import DEFAULT_ROLE
 
 RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 

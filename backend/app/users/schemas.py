@@ -3,7 +3,22 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.auth.schemas import OPTIONAL_PROFILE_FIELDS, blank_to_none
+OPTIONAL_PROFILE_FIELDS = (
+    "nickname",
+    "phone",
+    "postcode",
+    "address",
+    "address_detail",
+    "birth_date",
+    "gender",
+)
+
+
+def blank_to_none(value):
+    """프론트는 비운 칸을 ""로 보냅니다. 선택 항목의 ""(공백만 있는 값 포함)는 "지움"(NULL)으로 받습니다."""
+    if isinstance(value, str) and not value.strip():
+        return None
+    return value
 
 
 class RoleRead(BaseModel):

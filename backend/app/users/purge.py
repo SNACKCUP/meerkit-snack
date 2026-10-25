@@ -7,6 +7,9 @@
 기준: 탈퇴 시각(deactivated_at)으로부터 ACCOUNT_RETENTION_DAYS 일이 지난 계정.
 계정 행은 남기고 이름·이메일·아이디 등을 지운 뒤 deleted_at 을 기록합니다.
 로그에는 건수와 계정 번호(id)만 남깁니다.
+
+users 의 데이터만 다룹니다. 인증 쪽 기록(재설정 토큰·이메일 인증번호) 정리는
+auth 모듈의 `uv run python -m app.auth.cleanup` 이 맡습니다 (워크플로에서 이어서 실행).
 """
 
 import argparse
@@ -16,7 +19,6 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-from app.auth import repository as auth_repository
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.logging import setup_logging
@@ -41,15 +43,9 @@ def purge(db: Session, *, dry_run: bool = False, now: datetime | None = None) ->
             break
         for user in users:
             service.anonymize(user)
-            auth_repository.delete_reset_tokens_of(db, user.id)
         db.commit()  # 배치마다 저장: 중간에 실패해도 처리한 만큼은 남고, 다시 실행하면 이어서 처리
         total += len(users)
         logger.info("개인정보 삭제 ids=%s", [u.id for u in users])
-
-    verification_cutoff = now - timedelta(days=settings.email_verification_retention_days)
-    removed = auth_repository.delete_email_verifications_before(db, verification_cutoff)
-    db.commit()
-    logger.info("오래된 이메일 인증 기록 삭제 %s건", removed)
     return total
 
 

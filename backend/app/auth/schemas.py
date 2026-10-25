@@ -10,30 +10,14 @@ from pydantic import (
     field_validator,
 )
 
+from app.users.schemas import OPTIONAL_PROFILE_FIELDS, blank_to_none
+
 # 로그인 아이디: 영문 소문자·숫자·밑줄 4~30자 (대문자로 보내도 소문자로 바꿔 저장)
 LoginId = Annotated[
     str,
     StringConstraints(strip_whitespace=True, to_lower=True, pattern=r"^[A-Za-z0-9_]{4,30}$"),
 ]
 Password = Annotated[str, Field(min_length=8, max_length=128)]
-
-OPTIONAL_PROFILE_FIELDS = (
-    "nickname",
-    "phone",
-    "postcode",
-    "address",
-    "address_detail",
-    "birth_date",
-    "gender",
-)
-
-
-def blank_to_none(value):
-    """프론트는 비운 칸을 ""로 보냅니다. 선택 항목의 ""(공백만 있는 값 포함)는 "지움"(NULL)으로 받습니다."""
-    if isinstance(value, str) and not value.strip():
-        return None
-    return value
-
 
 class ProfileFields(BaseModel):
     """가입·내 정보 수정에서 선택적으로 받는 항목 (프론트 signup.optionalFields)"""
