@@ -5,10 +5,10 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
+from app.core.security import hash_password, verify_password
 from app.permissions.roles import DEFAULT_ROLE
 from app.users import repository
-from app.users.models import Term, User
+from app.users.models import Role, Term, User
 
 RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 
@@ -82,8 +82,61 @@ def _check_terms(db: Session, agreed_codes: list[str]) -> list[Term]:
     return [current[code] for code in sorted(agreed)]
 
 
-def list_users(db: Session) -> list[User]:
-    return repository.list_all(db)
+def search_users(
+    db: Session, *, q: str | None, role_id: int | None, status: str | None, page: int, size: int
+) -> tuple[list[User], int]:
+    return repository.search(
+        db, q=(q or "").strip() or None, role_id=role_id, status=status, offset=(page - 1) * size, limit=size
+    )
+
+
+def list_roles(db: Session) -> list[Role]:
+    return repository.list_roles(db)
+
+
+# ---- 내 정보 ----
+
+
+def update_profile(
+    db: Session, user: User, changes: dict[str, Any], *, email_verified: bool = False
+) -> User:
+    """바꿀 항목만 받습니다. 선택 항목은 None 으로 보내면 지워집니다. 이메일을 바꾸면 인증 상태를 다시 정합니다."""
+    if "email" in changes:
+        email = changes["email"].strip().lower()
+        if email != user.email:
+            other = repository.get_by_email(db, email)
+            if other is not None and other.id != user.id:
+                raise UserError("EMAIL_TAKEN", "이미 가입된 이메일입니다.")
+            user.email = email
+            user.email_verified_at = datetime.now(UTC) if email_verified else None
+        changes = {k: v for k, v in changes.items() if k != "email"}
+    nickname = changes.get("nickname")
+    if nickname and nickname != user.nickname:
+        other = repository.get_by_nickname(db, nickname)
+        if other is not None and other.id != user.id:
+            raise UserError("NICKNAME_TAKEN", "이미 사용 중인 닉네임입니다.")
+    for field, value in changes.items():
+        setattr(user, field, value)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def _deactivate(user: User) -> None:
+    """탈퇴 처리: 계정을 막고 탈퇴 시각을 남깁니다. 개인정보는 보관 기간 뒤 purge 명령이 지웁니다."""
+    user.is_active = False
+    if user.deactivated_at is None:
+        user.deactivated_at = datetime.now(UTC)
+
+
+def withdraw(db: Session, user: User, password: str) -> None:
+    if not verify_password(password, user.hashed_password):
+        raise UserError("INVALID_PASSWORD", "비밀번호가 올바르지 않습니다.")
+    _deactivate(user)
+    db.commit()
+
+
+# ---- 관리자 ----
 
 
 def _get_other_user(db: Session, actor: User, user_id: int) -> User:
@@ -109,8 +162,22 @@ def update_roles(db: Session, actor: User, user_id: int, codes: list[str]) -> Us
 
 
 def update_active(db: Session, actor: User, user_id: int, is_active: bool) -> User:
+    """활성/비활성 전환. 로그인 잠금도 함께 풉니다. 탈퇴한 계정을 활성화하면 탈퇴가 취소됩니다."""
     user = _get_other_user(db, actor, user_id)
+    if user.deleted_at is not None:
+        raise UserError("USER_DELETED", "개인정보가 삭제된 계정은 바꿀 수 없습니다.")
     user.is_active = is_active
+    if is_active:
+        user.deactivated_at = None
+    user.failed_login_count = 0
+    user.locked_until = None
     db.commit()
     db.refresh(user)
     return user
+
+
+def delete_user(db: Session, actor: User, user_id: int) -> None:
+    """관리자 삭제 = 탈퇴 처리 (바로 지우지 않고 보관 기간 뒤 개인정보 삭제)"""
+    user = _get_other_user(db, actor, user_id)
+    _deactivate(user)
+    db.commit()

@@ -1,6 +1,6 @@
 """users 테이블 접근. SQL(쿼리)은 이 파일에만 둡니다."""
 
-from sqlalchemy import select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.users.models import Role, Term, User, UserTermAgreement
@@ -22,8 +22,43 @@ def get_by_nickname(db: Session, nickname: str) -> User | None:
     return db.scalar(select(User).where(User.nickname == nickname))
 
 
-def list_all(db: Session) -> list[User]:
-    return list(db.scalars(select(User).order_by(User.id)))
+def _like(q: str) -> str:
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def search(
+    db: Session,
+    *,
+    q: str | None,
+    role_id: int | None,
+    status: str | None,
+    offset: int,
+    limit: int,
+) -> tuple[list[User], int]:
+    """멤버 검색. status: active(사용 중) / inactive(관리자가 막음) / deleted(탈퇴). 최근 가입 순."""
+    stmt = select(User)
+    if q:
+        pattern = _like(q)
+        stmt = stmt.where(
+            or_(
+                User.login_id.ilike(pattern, escape="\\"),
+                User.name.ilike(pattern, escape="\\"),
+                User.email.ilike(pattern, escape="\\"),
+                User.nickname.ilike(pattern, escape="\\"),
+            )
+        )
+    if role_id is not None:
+        stmt = stmt.where(User.roles.any(Role.id == role_id))
+    if status == "active":
+        stmt = stmt.where(User.is_active.is_(True), User.deactivated_at.is_(None))
+    elif status == "inactive":
+        stmt = stmt.where(User.is_active.is_(False), User.deactivated_at.is_(None))
+    elif status == "deleted":
+        stmt = stmt.where(User.deactivated_at.is_not(None))
+    total = db.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    items = list(db.scalars(stmt.order_by(User.id.desc()).offset(offset).limit(limit)))
+    return items, total
 
 
 def list_roles(db: Session) -> list[Role]:

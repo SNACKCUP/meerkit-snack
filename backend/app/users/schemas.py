@@ -1,6 +1,7 @@
 from datetime import date, datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class RoleRead(BaseModel):
@@ -40,3 +41,33 @@ class RolesUpdate(BaseModel):
 
 class ActiveUpdate(BaseModel):
     is_active: bool
+
+
+class UserPage(BaseModel):
+    items: list[UserRead]
+    total: int
+    page: int
+    size: int
+
+
+MemberStatus = Literal["active", "inactive", "deleted"]
+
+
+class ProfileUpdate(BaseModel):
+    """내 정보 수정. 보낸 항목만 바꿉니다. 선택 항목은 null 로 보내면 지워집니다."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    email: EmailStr | None = None
+    # 이메일을 바꿀 때: 새 이메일로 /auth/email/send-code → verify-code 를 거쳐 받은 증표
+    email_verification_token: str | None = None
+    nickname: str | None = Field(default=None, min_length=1, max_length=30)
+    phone: str | None = Field(default=None, max_length=20)
+    postcode: str | None = Field(default=None, max_length=10)
+    address: str | None = Field(default=None, max_length=255)
+    address_detail: str | None = Field(default=None, max_length=255)
+    birth_date: date | None = None
+    gender: str | None = Field(default=None, max_length=10)
+
+
+class WithdrawRequest(BaseModel):
+    password: str  # 본인 확인
