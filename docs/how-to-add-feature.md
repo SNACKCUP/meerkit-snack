@@ -123,25 +123,67 @@ uv run alembic upgrade head
 
 ## 4. LLM을 쓴다면
 
-공통 `llm` 모듈로 모델을 얻습니다. 기능 코드에서 공급자 패키지를 직접 import 하지 않습니다.
+공통 `llm` 모듈의 `load_prompt`와 `invoke_structured`만 씁니다. 기능 코드에서 공급자 패키지(openai 등)를 직접 import 하지 않습니다.
+
+**1) 프롬프트 파일** `backend/app/features/meetings/prompts/summarize.md`
+
+```markdown
+## system
+너는 회의록을 정리하는 비서다. 회의록에 없는 내용은 지어내지 않는다.
+
+## user
+다음 회의록을 3문장 이내로 요약하고, 할 일(담당자·내용·기한)을 뽑아 줘.
+
+{notes}
+```
+
+변수는 `{이름}`, 중괄호 자체를 쓰려면 `{{ }}`입니다.
+
+**2) 응답 스키마와 service**
 
 ```python
+# backend/app/features/meetings/service.py
+from pathlib import Path
+
 from pydantic import BaseModel
 
-from app.llm.client import get_chat_model
-from app.llm.prompts import load_prompt
+from app.llm import invoke_structured, load_prompt
+
+PROMPT = Path(__file__).parent / "prompts" / "summarize.md"
+
+
+class ActionItem(BaseModel):
+    owner: str
+    task: str
+    due: str | None = None
 
 
 class MeetingSummary(BaseModel):
     summary: str
-    action_items: list[str]
+    action_items: list[ActionItem]
 
 
-def summarize(text: str) -> MeetingSummary:
-    model = get_chat_model().with_structured_output(MeetingSummary)
-    prompt = load_prompt("meetings/summarize.md").format(text=text)
-    return model.invoke(prompt)
+def summarize(notes: str) -> MeetingSummary:
+    # 형식이 틀리면 1번 다시 묻고, 실패·시간 초과·키 없음 등은 LLMError(AppError)로 올라가
+    # 전역 핸들러가 {"detail", "code", "request_id"}로 응답합니다. router 에 try/except 가 필요 없습니다.
+    return invoke_structured(load_prompt(PROMPT), MeetingSummary, {"notes": notes})
 ```
+
+**3) 테스트** — `fake_llm` 픽스처로 키 없이 돌립니다.
+
+```python
+def test_summarize(fake_llm):
+    fake_llm.responses.append(
+        {"summary": "배포 일정을 논의했다.", "action_items": [{"owner": "김미어", "task": "시안", "due": "금요일"}]}
+    )
+    result = summarize("10/24 회의 ...")
+    assert result.action_items[0].owner == "김미어"
+    assert "10/24 회의" in fake_llm.calls[0][-1].content  # 모델에 들어간 메시지 확인
+```
+
+- 로컬에서 키 없이 화면을 만들 때는 `.env`에 `LLM_PROVIDER=fake` (스키마 모양의 예시 값을 돌려줌, 운영에서는 시작이 막힘).
+- 실제 호출: `.env`에 `OPENAI_API_KEY`를 넣으면 같은 코드가 OpenAI로 호출됩니다.
+- 긴 입력은 `LLM_MAX_INPUT_CHARS`(기본 20,000자)를 넘으면 413 `LLM_INPUT_TOO_LONG`으로 막힙니다. 긴 문서는 나눠서 부르세요.
 
 ## 5. 테스트
 

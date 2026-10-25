@@ -140,7 +140,8 @@ meerkit/
 | `LOGIN_LOCK_MAX_ATTEMPTS`, `LOGIN_LOCK_MINUTES` | backend | 연속 실패 N회 → M분 로그인 잠금 (기본 5회, 5분, 0이면 끔) |
 | `ACCOUNT_RETENTION_DAYS` | backend | 탈퇴 후 개인정보를 지우기까지 기간(일, 기본 365) |
 | `CORS_ORIGINS` | backend | 허용할 프론트 주소, 여러 개면 쉼표로 구분 |
-| `LLM_PROVIDER`, `LLM_MODEL` | backend | 사용할 LLM 공급자와 모델 |
+| `LLM_PROVIDER`, `LLM_MODEL` | backend | 사용할 LLM 공급자(`openai`, 로컬·테스트용 `fake`)와 모델 |
+| `LLM_TEMPERATURE`, `LLM_TIMEOUT_SECONDS`, `LLM_MAX_RETRIES`, `LLM_OUTPUT_RETRIES`, `LLM_MAX_INPUT_CHARS` | backend | LLM 호출 설정 (`app/llm/config.py`) |
 | `OPENAI_API_KEY` | backend | OpenAI 키 |
 | `NEXT_PUBLIC_API_BASE_URL` | frontend | 브라우저가 호출할 API 기본 경로 (기본값 `/api`) |
 | `NEXT_PUBLIC_DOCS_URL` | frontend | 초기 화면의 "사용 설명서" 링크 |

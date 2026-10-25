@@ -8,6 +8,14 @@ from app.core.database import SessionLocal
 from app.core.exceptions import AppError, register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import RequestContextMiddleware
+from app.llm.config import production_problems as llm_production_problems
+
+
+def check_startup() -> None:
+    """공통 설정(core)과 LLM 설정의 운영 검사를 합쳐서, 고칠 목록이 있으면 시작을 멈춥니다."""
+    problems = settings.production_problems() + llm_production_problems()
+    if problems:
+        raise RuntimeError("운영 설정을 고친 뒤 다시 시작하세요.\n- " + "\n- ".join(problems))
 
 
 class ServiceUnavailableError(AppError):
@@ -16,7 +24,7 @@ class ServiceUnavailableError(AppError):
 
 def create_app() -> FastAPI:
     setup_logging()
-    settings.check_production()  # 운영(APP_ENV=production)에서 위험한 설정이면 시작하지 않음
+    check_startup()  # 운영(APP_ENV=production)에서 위험한 설정이면 시작하지 않음
     app = FastAPI(title="MeerKit")
     register_exception_handlers(app)
     # 나중에 추가한 미들웨어가 바깥을 감쌉니다. CORS 를 가장 바깥에 두어 500 응답에도 CORS 헤더가 붙게 합니다.

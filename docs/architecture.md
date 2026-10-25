@@ -93,10 +93,13 @@ backend/
 │   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
 │   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
 │   │   └── backends.py    # console / smtp / fake (MAIL_BACKEND)
-│   ├── llm/
-│   │   ├── client.py      # get_chat_model(): 설정값으로 모델 생성
-│   │   ├── prompts.py     # 프롬프트 파일 로더
-│   │   └── structured.py  # Pydantic 스키마로 구조화 출력 받기
+│   ├── llm/               # LLM 공통 모듈 (킷, core만 import)
+│   │   ├── config.py      # LLM 설정(LLM_PROVIDER, LLM_MODEL, OPENAI_API_KEY 등) + 운영 검사(fake 금지)
+│   │   ├── client.py      # get_chat_model(): 설정값으로 모델 생성, override_chat_model(): 테스트용 교체
+│   │   ├── prompts.py     # load_prompt(): 마크다운(## system / ## user) → ChatPromptTemplate
+│   │   ├── structured.py  # invoke_structured(): Pydantic 스키마로 답 받기 (형식 재시도·입력 상한·로그)
+│   │   ├── errors.py      # LLMError(AppError)와 공급자 오류 → 사용자 문구 변환
+│   │   └── testing.py     # FakeChatModel: 키 없이 정해 둔 응답 (테스트, LLM_PROVIDER=fake)
 │   └── features/
 │       └── requirements/
 │           ├── router.py
@@ -259,10 +262,16 @@ frontend/
 - `GET /health`: 프로세스가 살아 있는지(DB 확인 없음).
 - `GET /health/ready`: DB에 `SELECT 1`까지 확인. 실패하면 503 `DB_UNAVAILABLE`. 배포 후 스모크 테스트와 로드밸런서 준비 확인에 씁니다.
 
-### LLM 호출
-- 기능 코드는 `llm.client.get_chat_model()`로만 모델을 얻습니다. 공급자를 바꿀 때 `llm/` 한 곳만 고치면 됩니다.
-- 출력은 가능하면 Pydantic 스키마로 구조화해서 받습니다.
-- 테스트에서는 Fake 모델로 바꿔 끼워 실제 API를 호출하지 않습니다. 그래서 CI에 API 키가 필요 없습니다.
+### LLM 호출 (`app/llm`)
+- 킷은 "모델 얻기·프롬프트 읽기·정해진 형태로 답 받기"만 제공하고, 체인과 프롬프트 파일은 각 서비스 폴더에 둡니다. 기능 코드는 `from app.llm import invoke_structured, load_prompt` 만 쓰고 공급자 패키지(openai 등)를 직접 import 하지 않습니다.
+- `llm`은 `core`만 import 합니다. LLM 설정도 `app/llm/config.py`가 직접 읽습니다(환경 변수 이름은 `LLM_*`, `OPENAI_API_KEY`).
+- 응답은 Pydantic 스키마로 받습니다(`with_structured_output`). 형식이 다르면 `LLM_OUTPUT_RETRIES`(기본 1)번 다시 묻고, 그래도 다르면 502 `LLM_BAD_OUTPUT`.
+- 입력 문자열 합이 `LLM_MAX_INPUT_CHARS`(기본 20,000자)를 넘으면 호출하지 않고 413 `LLM_INPUT_TOO_LONG`.
+- 오류 코드: 키 없음·인증 실패 503 `LLM_NOT_CONFIGURED`/`LLM_AUTH_FAILED`, 시간 초과 504 `LLM_TIMEOUT`, 한도 429 `LLM_RATE_LIMITED`/`LLM_QUOTA_EXCEEDED`, 그 밖 502 `LLM_PROVIDER_ERROR`. 응답은 공통 형식 `{detail, code, request_id}`이고, 키와 공급자 원문 메시지는 넣지 않습니다.
+- 운영에서 키가 비어 있어도 서버는 시작합니다(LLM 기능만 503). `LLM_PROVIDER=fake`는 운영에서 시작을 막습니다(`llm.config.production_problems`, `main.py`가 core 검사와 합침).
+- 로그(`app.llm.structured`): 공급자·모델·소요 시간·결과·오류 코드만. 프롬프트·응답 내용·토큰 사용량은 남기지 않습니다(사용량 기록은 범위 밖, CLAUDE.md 3장).
+- 테스트는 `fake_llm` 픽스처(또는 FastAPI `dependency_overrides[get_chat_model]`)로 가짜 모델을 끼워 CI에 키가 필요 없습니다. 로컬에서 키 없이 화면을 만들 때는 `LLM_PROVIDER=fake`(스키마 모양의 예시 값).
+- 다른 공급자 추가(예: Anthropic): `uv add langchain-anthropic` → `.env`에 `LLM_PROVIDER=anthropic`, `LLM_MODEL`, `ANTHROPIC_API_KEY` → `llm/config.py`에 키 필드, `llm/client.py`의 `_api_key()`에 분기 추가. 기능 코드는 바꾸지 않습니다.
 
 ### DB
 - 테이블 변경은 반드시 Alembic 마이그레이션으로 합니다.
