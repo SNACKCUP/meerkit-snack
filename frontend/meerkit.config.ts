@@ -18,7 +18,7 @@ export default defineMeerkitConfig({
     // 닉네임(optionalFields에 "nickname")을 켰을 때: [자동 생성] 버튼 / 가입 폼 열 때 미리 채우기
     nickname: { generator: true, autoFill: false },
     // true면 이메일 인증번호 받기·확인 버튼을 보여 주고, 인증해야 가입할 수 있다
-    emailVerification: false,
+    emailVerification: true,
     // 가입 시 동의받을 약관. 빈 배열이면 약관 영역이 사라진다.
     terms: [
       { id: "terms", label: "이용약관 동의", required: true, href: "/terms" },

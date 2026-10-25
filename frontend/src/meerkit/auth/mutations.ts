@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/users";
 import { meerkitConfig } from "../config";
-import type { ChangePasswordInput, EmailCodeInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput } from "../types";
+import type { ChangePasswordInput, EmailCodeInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
 import { useAuthDialog } from "./dialog-store";
 import { useLockoutStore } from "./lockout";
 import { meKey } from "./queries";
@@ -103,5 +103,20 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: (input: ChangePasswordInput) => usersApi.changePassword(input),
     onSuccess: () => toast.success("비밀번호를 변경했습니다."),
+  });
+}
+
+// 탈퇴하면 서버가 리프레시 쿠키를 지운다. 브라우저 쪽 로그인 상태도 로그아웃처럼 정리한다.
+export function useWithdraw() {
+  const queryClient = useQueryClient();
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  return useMutation({
+    mutationFn: (input: WithdrawInput) => usersApi.withdraw(input),
+    onSuccess: () => {
+      setAccessToken(null);
+      setSessionHint(false);
+      queryClient.removeQueries({ queryKey: meKey });
+      toast.success("탈퇴했습니다. 이용해 주셔서 감사합니다.");
+    },
   });
 }

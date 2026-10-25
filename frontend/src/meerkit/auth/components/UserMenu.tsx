@@ -3,7 +3,6 @@
 import { ChevronDown, LogOut, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +14,9 @@ import {
 import { cn } from "@/lib/utils";
 
 import { meerkitConfig } from "../../config";
-import { ADMIN_ROLE } from "../../roles";
+import { isAdminUser } from "../../roles";
 import type { User } from "../../types";
+import { RoleBadges } from "./RoleBadges";
 import { UserAvatar, displayName } from "./UserAvatar";
 
 export interface UserMenuItem {
@@ -36,7 +36,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ user, onLogout, items = [], showName = true, align = "end" }: UserMenuProps) {
-  const isAdmin = user.role.name === ADMIN_ROLE;
+  const isAdmin = isAdminUser(user);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -59,7 +59,7 @@ export function UserMenu({ user, onLogout, items = [], showName = true, align = 
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold">{displayName(user)}</p>
             <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            <Badge variant="outline" className="mt-1.5">{user.role.name}</Badge>
+            <RoleBadges roles={user.roles} className="mt-1.5" />
           </div>
         </div>
         <DropdownMenuSeparator />
