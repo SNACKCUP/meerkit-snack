@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# backend/.env.example 의 예시 값. 운영에서 이 값 그대로면 시작을 막습니다.
+EXAMPLE_JWT_SECRET_KEY = "change-me-to-a-random-string-of-32-bytes-or-more"
+_LOCAL_HOSTS = ("localhost", "127.0.0.1")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -59,6 +63,31 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip(' "\'[]') for o in self.cors_origins.split(",") if o.strip(' "\'[]')]
+
+    def production_problems(self) -> list[str]:
+        """APP_ENV=production 에서 위험한 설정 목록. 값은 넣지 않고 무엇을 고칠지만 적습니다."""
+        if self.app_env != "production":
+            return []
+        problems = []
+        if len(self.jwt_secret_key) < 32 or self.jwt_secret_key == EXAMPLE_JWT_SECRET_KEY:
+            problems.append("JWT_SECRET_KEY: 32자 이상의 임의 값으로 바꾸세요 (예: openssl rand -hex 32)")
+        if not self.cookie_secure:
+            problems.append("COOKIE_SECURE: https 로 운영하므로 true 로 설정하세요")
+        origins = self.cors_origin_list
+        if not origins or any(host in o for o in origins for host in _LOCAL_HOSTS):
+            problems.append("CORS_ORIGINS: 운영 프론트 주소만 넣으세요 (localhost 제외)")
+        if self.mail_backend in ("console", "fake"):
+            problems.append("MAIL_BACKEND: smtp 로 설정하세요 (console·fake 는 메일이 실제로 나가지 않음)")
+        if any(host in self.frontend_base_url for host in _LOCAL_HOSTS):
+            problems.append("FRONTEND_BASE_URL: 운영 프론트 주소로 바꾸세요 (메일 속 링크에 쓰임)")
+        return problems
+
+    def check_production(self) -> None:
+        """웹 서버 시작 때 부릅니다. 운영에서 위험한 설정이면 고칠 목록을 보여 주고 시작을 멈춥니다.
+        (탈퇴 계정 정리 같은 배치 작업은 쿠키·CORS·메일을 쓰지 않으므로 부르지 않습니다)"""
+        problems = self.production_problems()
+        if problems:
+            raise RuntimeError("운영 설정을 고친 뒤 다시 시작하세요.\n- " + "\n- ".join(problems))
 
 
 settings = Settings()

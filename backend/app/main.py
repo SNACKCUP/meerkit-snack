@@ -8,6 +8,7 @@ from app.core.logging import setup_logging
 
 def create_app() -> FastAPI:
     setup_logging()
+    settings.check_production()  # 운영(APP_ENV=production)에서 위험한 설정이면 시작하지 않음
     app = FastAPI(title="MeerKit")
     app.add_middleware(
         CORSMiddleware,
