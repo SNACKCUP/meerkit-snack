@@ -15,8 +15,9 @@ import { useAuthDialog } from "../../auth/dialog-store";
 import { Badge } from "@/components/ui/badge";
 
 import type { AddressType, SignupOptionalField } from "../../define-config";
+import type { RoleName } from "../../roles";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
-import { demoAddressProvider, demoEmailHandlers, mockUsers, roleOf } from "./mock";
+import { demoAddressProvider, demoEmailHandlers, mockUsers } from "./mock";
 
 const noop = () => {};
 
@@ -531,7 +532,7 @@ export function MemberTableDoc() {
         <li>같은 모양의 목록을 내 서비스(예: 팀원 목록)에서 재사용하고 싶을 때. 데이터와 동작은 props로 주입합니다.</li>
       </UL>
       <H2>Preview</H2>
-      <PreviewWide code={`<MemberTable\n  members={data}\n  onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
+      <PreviewWide code={`<MemberTable\n  members={data}\n  onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
         <MemberTable members={mockUsers} onRoleChange={noop} onRemove={noop} />
       </PreviewWide>
       <Callout>
@@ -564,14 +565,14 @@ export function MemberTableDoc() {
           ["onRoleChange", "(id: number, roleId: number) => void", "역할 선택이 바뀌면 호출합니다.", true],
           ["onRemove", "(id: number) => void", "탈퇴 처리 버튼을 누르면 호출합니다.", true],
           ["roleEditor", '"dialog" | "inline"', "역할 변경 방식. 기본 dialog(확인 창), inline은 표 안의 선택 상자."],
-          ["currentUserId", "number", "로그인한 관리자의 id. 본인 권한을 낮추는 변경을 경고합니다."],
+          ["currentUserId", "number", "로그인한 관리자의 id. 본인 행은 역할 변경·탈퇴 처리를 잠급니다 (서버도 막음)."],
         ]}
       />
       <H2>Usage</H2>
       <P>데이터 조회와 변경은 훅이 맡고, 테이블은 표시만 합니다. 실제 관리자 페이지는 아래처럼 구성되어 있습니다.</P>
       <CodeBlock title="AdminMembersPage.tsx" code={`function Members() {
   const { data, isLoading, isError } = useMembers(query); // query: 검색·필터·페이지 조건
-  const updateRole = useUpdateRole();
+  const updateRoles = useUpdateRoles();
   const removeMember = useRemoveMember();
 
   if (isLoading) return <p>불러오는 중…</p>;
@@ -580,7 +581,7 @@ export function MemberTableDoc() {
     <MemberTable
       members={data.items}
       currentUserId={me.id}
-      onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}
+      onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}
       onRemove={(id) => removeMember.mutate(id)}
     />
   );
@@ -591,7 +592,7 @@ export function MemberTableDoc() {
       <DocTable
         head={["조건", "배지"]}
         rows={[
-          [<Ic key="1">deleted_at</Ic>, "삭제됨 (빨강). 역할 변경과 탈퇴 처리가 잠깁니다"],
+          [<Ic key="1">deactivated_at</Ic>, "삭제됨 (빨강). 탈퇴한 계정이라 역할 변경과 탈퇴 처리가 잠깁니다"],
           [<Ic key="2">is_active = true</Ic>, "활성 (파랑)"],
           [<Ic key="3">is_active = false</Ic>, "비활성 (회색)"],
         ]}
@@ -608,46 +609,47 @@ export function MemberTableDoc() {
 }
 
 export function RoleSelectDoc() {
-  const [role, setRole] = useState(4);
+  const [roles, setRoles] = useState<RoleName[]>(["VIEWER", "WRITER"]);
   return (
     <>
-      <DocLinks items={[links.component("select", "Select")]} />
+      <DocLinks items={[links.component("checkbox", "Checkbox")]} />
       <Callout>역할의 의미와 위험한 변경을 확인시켜 주는 창이 필요하다면 <Ic>RoleAssignDialog</Ic>를 쓰세요 (Role Manager 페이지).</Callout>
-      <P>역할 4종 중 하나를 고르는 선택 상자입니다. 값은 역할 이름이 아니라 <Ic>role_id</Ic> 숫자입니다.</P>
+      <P>역할 4종을 켜고 끄는 체크박스 묶음입니다. 한 사람이 여러 역할을 가질 수 있고, 값은 역할 이름 목록(<Ic>RoleName[]</Ic>)입니다. 마지막 하나는 끌 수 없습니다.</P>
       <H2>When to use</H2>
       <UL>
         <li>관리자 화면에서 한 사용자의 역할을 바꿀 때 (<Ic>MemberTable</Ic> 안에서 쓰입니다)</li>
         <li>초대, 사용자 생성 화면에서 역할을 고르게 할 때</li>
       </UL>
       <H2>Preview</H2>
-      <Preview code={`<RoleSelect value={user.role.id} onChange={(roleId) => update(roleId)} />`}>
-        <div className="flex items-center gap-3">
-          <RoleSelect value={role} onChange={setRole} />
-          <span className="text-sm text-muted-foreground">선택: {roleOf(role).name}</span>
+      <Preview code={`<RoleSelect value={["VIEWER", "WRITER"]} onChange={(roles) => update(roles)} />`}>
+        <div className="flex flex-wrap items-center gap-3">
+          <RoleSelect idPrefix="doc-role" value={roles} onChange={setRoles} />
+          <span className="text-sm text-muted-foreground">선택: {roles.join(", ")}</span>
         </div>
       </Preview>
       <H2>Disabled</H2>
       <Preview>
-        <RoleSelect value={1} onChange={noop} disabled />
+        <RoleSelect idPrefix="doc-role-off" value={["MASTER"]} onChange={noop} disabled />
       </Preview>
       <H2>Props</H2>
       <PropsTable
         rows={[
-          ["value", "number", "현재 선택된 role_id.", true],
-          ["onChange", "(roleId: number) => void", "선택이 바뀌면 새 role_id를 전달합니다.", true],
+          ["value", "RoleName[]", "현재 가진 역할 이름 목록.", true],
+          ["onChange", "(roles: RoleName[]) => void", "체크가 바뀌면 새 역할 목록을 전달합니다.", true],
           ["disabled", "boolean", "잠금 여부."],
+          ["idPrefix", "string", "체크박스 id 앞부분. 한 화면에 여러 개를 둘 때 겹치지 않게 합니다."],
         ]}
       />
       <P>선택지는 <Ic>src/meerkit/roles.ts</Ic>의 <Ic>ROLES</Ic>에서 만들어지므로, 역할이 바뀌면 그 파일만 고치면 됩니다.</P>
       <H2>Usage</H2>
       <CodeBlock title="tsx" code={`<RoleSelect
-  value={member.role.id}
-  disabled={!!member.deleted_at}
-  onChange={(roleId) => updateRole.mutate({ id: member.id, roleId })}
+  value={member.roles.map((r) => r.name)}
+  disabled={!!member.deactivated_at}
+  onChange={(roles) => updateRoles.mutate({ id: member.id, roles })}  // PUT /users/{id}/roles
 />`} />
       <H2>Options</H2>
       <DocTable
-        head={["value", "표시", "설명"]}
+        head={["id", "value(이름)", "설명"]}
         rows={[
           ["1", "MASTER", "시스템 전체 관리자"],
           ["2", "OWNER", "자신이 소유한 데이터 관리"],
@@ -656,8 +658,7 @@ export function RoleSelectDoc() {
         ]}
       />
       <H2>Customization</H2>
-      <P>기본은 브라우저 기본 <Ic>select</Ic>라 접근성과 모바일 대응이 좋습니다. 디자인을 더 다듬고 싶다면 shadcn <Ic>Select</Ic>로 바꿀 수 있습니다.</P>
-      <CodeBlock title="bash" code={"npx shadcn@latest add select"} />
+      <P>shadcn <Ic>Checkbox</Ic>로 만들었습니다. 역할 설명과 C·R·U·D를 함께 보여 주는 확인 창이 필요하면 <Ic>RoleAssignDialog</Ic>를 쓰세요.</P>
       <Callout>자기 자신의 역할을 낮추거나 마지막 관리자를 바꾸는 경우의 제한은 서버 정책으로 막는 것을 권장합니다.</Callout>
     </>
   );

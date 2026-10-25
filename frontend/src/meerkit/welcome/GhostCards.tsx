@@ -60,7 +60,7 @@ function MembersCard() {
               <p className="truncate text-[13px] font-medium leading-4">{u.name}</p>
               <p className="truncate text-xs text-muted-foreground">{u.user_id}</p>
             </div>
-            <Badge variant="outline">{u.role.name}</Badge>
+            <Badge variant="outline">{u.roles.map((r) => r.name).join(" · ")}</Badge>
             {status(u)}
           </div>
         ))}

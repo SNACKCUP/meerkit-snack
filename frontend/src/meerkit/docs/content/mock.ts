@@ -1,4 +1,4 @@
-import { ROLES } from "../../roles";
+import { ROLES, type RoleName } from "../../roles";
 import type { User } from "../../types";
 
 export const roleOf = (id: number) => {
@@ -6,13 +6,17 @@ export const roleOf = (id: number) => {
   return { id: r.id, name: r.name };
 };
 
+/** 역할 이름 목록 → 서버 응답과 같은 roles 배열 (ROLES 순서) */
+export const rolesOf = (names: readonly RoleName[]) =>
+  ROLES.filter((r) => names.includes(r.name)).map((r) => ({ id: r.id, name: r.name }));
+
 const at = (day: number) => `2026-10-${String(day).padStart(2, "0")}T09:00:00Z`;
 
 // docs 미리보기에서만 쓰는 목 데이터. 백엔드 없이도 화면이 열린다.
 export const mockUsers: User[] = [
-  { id: 1, user_id: "master01", email: "master@example.com", name: "김관리", role: roleOf(1), is_active: true, created_at: at(1), updated_at: at(1), deleted_at: null },
-  { id: 2, user_id: "writer01", email: "writer@example.com", name: "이작성", role: roleOf(4), is_active: true, created_at: at(5), updated_at: at(5), deleted_at: null },
-  { id: 3, user_id: "viewer01", email: "viewer@example.com", name: "박조회", role: roleOf(3), is_active: false, created_at: at(12), updated_at: at(12), deleted_at: null },
+  { id: 1, user_id: "master01", email: "master@example.com", name: "김관리", email_verified: true, roles: [roleOf(1)], is_active: true, created_at: at(1), updated_at: at(1), deactivated_at: null, deleted_at: null },
+  { id: 2, user_id: "writer01", email: "writer@example.com", name: "이작성", email_verified: true, roles: [roleOf(3), roleOf(4)], is_active: true, created_at: at(5), updated_at: at(5), deactivated_at: null, deleted_at: null },
+  { id: 3, user_id: "viewer01", email: "viewer@example.com", name: "박조회", email_verified: false, roles: [roleOf(3)], is_active: false, created_at: at(12), updated_at: at(12), deactivated_at: null, deleted_at: null },
 ];
 
 // 멤버 디렉터리 미리보기용 27명. 검색·필터·페이지네이션을 체험할 수 있다.
@@ -25,11 +29,14 @@ export const mockMembers: User[] = Array.from({ length: 27 }, (_, i) => {
     user_id: `user${String(n).padStart(2, "0")}`,
     email: `user${String(n).padStart(2, "0")}@example.com`,
     name: `사용자${String(n).padStart(2, "0")}`,
-    role: roleOf(roleId),
-    is_active: n % 5 !== 0,
+    email_verified: true,
+    roles: [roleOf(roleId)],
+    is_active: n % 5 !== 0 && n !== 7 && n !== 14,
     created_at: `2026-10-${day}T09:00:00Z`,
     updated_at: `2026-10-${day}T09:00:00Z`,
-    deleted_at: n === 7 || n === 14 ? "2026-10-20T09:00:00Z" : null,
+    // 탈퇴한 계정: 탈퇴 시각만 있고, 개인정보 삭제(deleted_at)는 1년 뒤
+    deactivated_at: n === 7 || n === 14 ? "2026-10-20T09:00:00Z" : null,
+    deleted_at: null,
   };
 });
 

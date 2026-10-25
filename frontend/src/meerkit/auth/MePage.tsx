@@ -1,6 +1,5 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -9,10 +8,12 @@ import { meerkitConfig } from "../config";
 import { ChangePasswordForm } from "./components/ChangePasswordForm";
 import { NicknameForm } from "./components/NicknameForm";
 import { ProfileForm } from "./components/ProfileForm";
+import { RoleBadges } from "./components/RoleBadges";
 import { UserAvatar, displayName } from "./components/UserAvatar";
+import { WithdrawForm } from "./components/WithdrawForm";
 import { RequireAuth } from "./guards/RequireAuth";
 import { useAuth } from "./hooks";
-import { useChangePassword, useUpdateNickname, useUpdateProfile } from "./mutations";
+import { useChangePassword, useSendEmailCode, useUpdateNickname, useUpdateProfile, useVerifyEmailCode, useWithdraw } from "./mutations";
 
 const date = (iso: string) => iso.slice(0, 10);
 
@@ -21,6 +22,9 @@ function MeContent() {
   const update = useUpdateProfile();
   const change = useChangePassword();
   const nick = useUpdateNickname();
+  const withdraw = useWithdraw();
+  const sendCode = useSendEmailCode();
+  const verifyCode = useVerifyEmailCode();
   if (!user) return null;
   const nicknameOn = meerkitConfig.signup.optionalFields.includes("nickname");
 
@@ -34,7 +38,7 @@ function MeContent() {
             <p className="truncate text-xl font-semibold">{displayName(user)}</p>
             <p className="truncate text-sm text-muted-foreground">{user.email}</p>
             <div className="mt-2 flex items-center gap-2">
-              <Badge variant="outline">{user.role.name}</Badge>
+              <RoleBadges roles={user.roles} />
               <span className="text-xs text-muted-foreground">가입일 {date(user.created_at)}</span>
             </div>
           </div>
@@ -57,6 +61,7 @@ function MeContent() {
         <TabsList>
           <TabsTrigger value="profile">프로필 수정</TabsTrigger>
           <TabsTrigger value="password">비밀번호 변경</TabsTrigger>
+          <TabsTrigger value="withdraw">탈퇴</TabsTrigger>
         </TabsList>
         <Card className="mt-3">
           <CardContent>
@@ -70,10 +75,21 @@ function MeContent() {
                 optionalFields={meerkitConfig.signup.optionalFields.filter((f) => f !== "nickname")}
                 addressType={meerkitConfig.signup.addressType}
                 addressSearch={meerkitConfig.signup.addressSearch}
+                emailVerification={
+                  meerkitConfig.signup.emailVerification
+                    ? {
+                        sendCode: (email) => sendCode.mutateAsync({ email }),
+                        verifyCode: async (email, code) => (await verifyCode.mutateAsync({ email, code })).token,
+                      }
+                    : undefined
+                }
               />
             </TabsContent>
             <TabsContent value="password" className="mk-swap">
               <ChangePasswordForm onSubmit={change.mutate} pending={change.isPending} error={errorMessage(change.error)} />
+            </TabsContent>
+            <TabsContent value="withdraw" className="mk-swap">
+              <WithdrawForm onSubmit={withdraw.mutate} pending={withdraw.isPending} error={errorMessage(withdraw.error)} />
             </TabsContent>
           </CardContent>
         </Card>

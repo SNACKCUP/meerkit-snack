@@ -13,9 +13,10 @@ import { NicknameForm } from "../../auth/components/NicknameForm";
 import { NicknameInput } from "../../auth/components/NicknameInput";
 import { generateNickname } from "../../auth/nickname";
 import { EmailVerificationField } from "../../auth/components/EmailVerificationField";
+import type { RoleName } from "../../roles";
 import type { User } from "../../types";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, Tree, UL } from "../ui";
-import { demoAddressProvider, demoEmailHandlers, mockUsers, roleOf } from "./mock";
+import { demoAddressProvider, demoEmailHandlers, mockUsers, rolesOf } from "./mock";
 
 /* ─────────────────────────── Role Manager ─────────────────────────── */
 
@@ -24,23 +25,23 @@ export function RoleManagerDoc() {
   const [open, setOpen] = useState(false);
   const [last, setLast] = useState<string | null>(null);
 
-  const change = (id: number, roleId: number) => {
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role: roleOf(roleId) } : u)));
+  const change = (id: number, names: RoleName[]) => {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, roles: rolesOf(names) } : u)));
     const who = users.find((u) => u.id === id);
-    setLast(`${who?.name}님의 역할을 ${roleOf(roleId).name}(으)로 변경 요청`);
+    setLast(`${who?.name}님의 역할을 ${names.join(", ")}(으)로 변경 요청`);
   };
 
   return (
     <>
-      <DocLinks items={[links.component("dialog", "Dialog"), links.component("radio-group", "Radio Group")]} />
+      <DocLinks items={[links.component("dialog", "Dialog"), links.component("checkbox", "Checkbox")]} />
       <P>
         <strong>관리자가 한 사용자에게 권한(역할)을 부여하거나 바꾸는</strong> 확인 창입니다. 단순한 선택 상자와 달리, 역할마다 <strong>무엇을 할 수 있는지(C·R·U·D)</strong>를 보여 주고,
-        위험한 변경(본인의 관리자 권한 해제, MASTER 부여)은 확인 전에 경고합니다.
+        한 사람에게 역할을 여러 개 줄 수 있습니다. 위험한 변경(MASTER 부여·해제)은 확인 전에 경고하고, 본인의 역할은 바꿀 수 없게 잠급니다(서버도 막습니다).
       </P>
 
       <H2>Preview</H2>
-      <P>표에서 사용자 옆의 <Ic>변경</Ic>을 눌러 보세요. 첫 번째 사용자(MASTER)는 &quot;현재 로그인한 관리자 본인&quot;으로 가정했습니다 — 이 사용자의 역할을 낮춰 보면 경고가 나옵니다.</P>
-      <PreviewWide code={`<MemberTable\n  members={members}\n  roleEditor="dialog"        // 기본값\n  currentUserId={me.id}      // 본인 권한 하향 경고용\n  onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
+      <P>표에서 사용자 옆의 <Ic>변경</Ic>을 눌러 보세요. 첫 번째 사용자(MASTER)는 &quot;현재 로그인한 관리자 본인&quot;으로 가정했습니다 — 이 사용자의 창을 열면 역할을 바꿀 수 없다는 안내가 나옵니다.</P>
+      <PreviewWide code={`<MemberTable\n  members={members}\n  roleEditor="dialog"        // 기본값\n  currentUserId={me.id}      // 본인 행 잠금용\n  onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
         <MemberTable members={users} currentUserId={1} onRoleChange={change} onRemove={() => {}} />
       </PreviewWide>
       {last && <p className="mk-swap text-xs text-muted-foreground">마지막 변경: {last}</p>}
@@ -86,10 +87,10 @@ export function RoleManagerDoc() {
 
       <H2>Use the dialog on its own</H2>
       <P>표 밖(사용자 상세 화면 등)에서도 단독으로 쓸 수 있습니다.</P>
-      <Preview code={`const [open, setOpen] = useState(false);\n\n<Button onClick={() => setOpen(true)}>역할 변경</Button>\n<RoleAssignDialog\n  user={user}\n  open={open}\n  onOpenChange={setOpen}\n  currentUserId={me.id}\n  pending={updateRole.isPending}\n  onSubmit={(roleId) => updateRole.mutate({ id: user.id, roleId })}\n/>`}>
+      <Preview code={`const [open, setOpen] = useState(false);\n\n<Button onClick={() => setOpen(true)}>역할 변경</Button>\n<RoleAssignDialog\n  user={user}\n  open={open}\n  onOpenChange={setOpen}\n  currentUserId={me.id}\n  pending={updateRoles.isPending}\n  onSubmit={(roles) => updateRoles.mutate({ id: user.id, roles })}  // 예: ["VIEWER", "WRITER"]\n/>`}>
         <div className="flex justify-center">
           <Button variant="outline" onClick={() => setOpen(true)}>역할 변경 열기</Button>
-          <RoleAssignDialog user={users[1]} open={open} onOpenChange={setOpen} currentUserId={1} onSubmit={(roleId) => change(users[1].id, roleId)} />
+          <RoleAssignDialog user={users[1]} open={open} onOpenChange={setOpen} currentUserId={1} onSubmit={(roles) => change(users[1].id, roles)} />
         </div>
       </Preview>
 
@@ -98,14 +99,15 @@ export function RoleManagerDoc() {
         선택지, 설명, C·R·U·D 칩은 모두 <Ic>src/meerkit/roles.ts</Ic>의 <Ic>ROLES</Ic>에서 만들어집니다. 역할을 추가하거나 설명을 바꾸면 이 창에 그대로 반영됩니다 (Add a role 가이드 참고).
       </P>
 
-      <H2>Server rules (planned)</H2>
+      <H2>Server rules</H2>
       <Tree>{`
-PATCH /users/{id}/role  { "role_id": 3 }
+PUT /users/{id}/roles  { "roles": ["VIEWER", "WRITER"] }
    │
    ├─ 요청자가 MASTER가 아님 ─────────────► 403
-   ├─ 대상이 없거나 role_id가 유효하지 않음 ► 404 / 422
-   ├─ 마지막 MASTER를 낮추려 함 ──────────► 409 (최소 1명 유지)
-   └─ 통과 ──────────────────────────────► 200 + 갱신된 User (+ 변경 기록)
+   ├─ 대상이 없음 ────────────────────────► 404
+   ├─ 없는 역할이 섞여 있음 ──────────────► 422
+   ├─ 자기 자신의 역할을 바꾸려 함 ────────► 400 (관리자가 사라지는 것 방지)
+   └─ 통과 ──────────────────────────────► 200 + 갱신된 User
 `}</Tree>
       <UL>
         <li>역할 변경 기록(누가, 누구를, 언제, 무엇에서 무엇으로)을 남기는 것을 권장합니다.</li>
