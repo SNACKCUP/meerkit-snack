@@ -1,11 +1,7 @@
-# 역할 코드. roles 테이블의 code 값과 같습니다 (초기 데이터는 마이그레이션에서 넣음).
-# 역할별 세부 권한은 아직 정하지 않았습니다. 지금은 이름만 있고, 관리자 검사만 ADMIN_ROLE로 합니다.
-MASTER = "MASTER"
-OWNER = "OWNER"
-VIEWER = "VIEWER"
-WRITER = "WRITER"
+# 권한 검사에 쓰는 역할 기준. 역할 코드 자체는 users/roles.py 에 있고, 여기서는 다시 내보내기만 합니다
+# (예전 import 경로 `from app.permissions import roles` 호환).
+from app.users.roles import ALL, DEFAULT_ROLE, MASTER, OWNER, VIEWER, WRITER
 
-ALL = (MASTER, OWNER, VIEWER, WRITER)
+ADMIN_ROLE = MASTER  # 관리자 API(멤버 관리)를 쓸 수 있는 역할. 관리자 검사는 이 값 하나로만 합니다.
 
-ADMIN_ROLE = MASTER  # 관리자 API(멤버 관리)를 쓸 수 있는 역할
-DEFAULT_ROLE = VIEWER  # 가입하면 받는 역할
+__all__ = ["ADMIN_ROLE", "ALL", "DEFAULT_ROLE", "MASTER", "OWNER", "VIEWER", "WRITER"]

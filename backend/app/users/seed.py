@@ -10,8 +10,7 @@ from datetime import UTC, datetime
 
 from app.core.config import settings
 from app.core.database import SessionLocal
-from app.permissions import roles
-from app.users import repository, service
+from app.users import repository, roles, service
 
 
 def main() -> int:
@@ -30,7 +29,7 @@ def main() -> int:
             email=settings.seed_admin_email,
             password=settings.seed_admin_password,
             name=settings.seed_admin_name,
-            roles=[roles.ADMIN_ROLE],
+            roles=[roles.MASTER],  # 관리자 역할 (permissions.roles.ADMIN_ROLE 과 같은 값)
         )
         user.email_verified_at = datetime.now(UTC)
         db.commit()
