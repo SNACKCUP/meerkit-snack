@@ -16,6 +16,7 @@ class ServiceUnavailableError(AppError):
 
 def create_app() -> FastAPI:
     setup_logging()
+    settings.check_production()  # 운영(APP_ENV=production)에서 위험한 설정이면 시작하지 않음
     app = FastAPI(title="MeerKit")
     register_exception_handlers(app)
     # 나중에 추가한 미들웨어가 바깥을 감쌉니다. CORS 를 가장 바깥에 두어 500 응답에도 CORS 헤더가 붙게 합니다.

@@ -224,6 +224,7 @@ frontend/
 ### 설정
 - 모든 설정은 `app/core/config.py`의 `settings`를 통해 읽습니다. 코드에서 `os.environ`을 직접 읽지 않습니다.
 - 비밀값(API 키, JWT 키)은 `.env`에만 두고, `.env.example`에는 항목 이름만 둡니다.
+- `APP_ENV=production`이면 웹 서버가 시작할 때 `settings.check_production()`이 위험한 설정을 막습니다: `JWT_SECRET_KEY`(32자 미만·예시 값), `COOKIE_SECURE=false`, `CORS_ORIGINS`·`FRONTEND_BASE_URL`의 localhost, `MAIL_BACKEND=console|fake`. 고칠 목록만 출력하고 값은 출력하지 않습니다. 배치 작업(탈퇴 계정 정리)은 검사하지 않습니다.
 
 ### 예외 처리 (`core/exceptions.py`)
 - 모든 오류 응답은 한 가지 형식입니다: `{"detail": "사용자에게 보여 줄 문구", "code": "USER_NOT_FOUND", "request_id": "…"}`. 입력 오류(422)는 `errors: [{field, message, type}]`가 더 붙고, `detail`은 사람이 읽는 문장입니다.
