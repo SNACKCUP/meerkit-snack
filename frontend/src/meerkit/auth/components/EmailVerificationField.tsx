@@ -20,11 +20,15 @@ interface EmailVerificationFieldProps {
   onVerifiedChange: (token: string | null) => void;
   sendCode: (email: string) => Promise<unknown>;
   verifyCode: (email: string, code: string) => Promise<string>;
-  /** 인증번호 유효 시간(초) */
+  /** 인증번호 유효 시간(초). 서버 EMAIL_CODE_EXPIRE_MINUTES(기본 10분)와 맞춘다 */
   expiresInSeconds?: number;
-  /** 재전송까지 기다리는 시간(초) */
+  /** 재전송까지 기다리는 시간(초). 서버 MAIL_COOLDOWN_SECONDS(기본 60초)와 맞춘다 */
   resendAfterSeconds?: number;
   id?: string;
+  /** true면 인증 버튼을 숨긴다. 내 정보 수정에서 이메일을 바꾸지 않았을 때 쓴다 */
+  skip?: boolean;
+  /** 인증 완료 옆에 보여 줄 안내 */
+  verifiedText?: string;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,9 +41,11 @@ export function EmailVerificationField({
   onVerifiedChange,
   sendCode,
   verifyCode,
-  expiresInSeconds = 180,
-  resendAfterSeconds = 30,
+  expiresInSeconds = 600,
+  resendAfterSeconds = 60,
   id = "signup-email",
+  skip = false,
+  verifiedText = "이 이메일로 가입합니다.",
 }: EmailVerificationFieldProps) {
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -107,7 +113,7 @@ export function EmailVerificationField({
             if (sent) setSent(false); // 인증번호는 보낸 이메일에만 유효하다
           }}
         />
-        {verified ? (
+        {skip ? null : verified ? (
           <Button type="button" variant="outline" className="shrink-0" onClick={changeEmail}>변경</Button>
         ) : (
           <Button type="button" variant="outline" className="shrink-0" disabled={busy !== null || (sent && resendIn > 0)} onClick={send}>
@@ -119,7 +125,7 @@ export function EmailVerificationField({
       {verified && (
         <p className="mk-swap flex items-center gap-1.5 text-xs">
           <Badge variant="brand"><BadgeCheck /> 인증 완료</Badge>
-          <span className="text-muted-foreground">이 이메일로 가입합니다.</span>
+          <span className="text-muted-foreground">{verifiedText}</span>
         </p>
       )}
 

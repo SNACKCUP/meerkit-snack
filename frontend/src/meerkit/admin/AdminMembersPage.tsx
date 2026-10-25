@@ -8,13 +8,13 @@ import { useAuth } from "../auth/hooks";
 import type { MemberQuery } from "../types";
 import { MemberDirectory } from "./components/MemberDirectory";
 import { defaultMemberQuery } from "./members-filter";
-import { useMembers, useRemoveMember, useUpdateRole } from "./queries";
+import { useMembers, useRemoveMember, useUpdateRoles } from "./queries";
 
 function Members() {
   const [query, setQuery] = useState<MemberQuery>(defaultMemberQuery);
   const onQueryChange = useCallback((patch: Partial<MemberQuery>) => setQuery((q) => ({ ...q, ...patch })), []);
   const { data, isFetching, isError } = useMembers(query);
-  const updateRole = useUpdateRole();
+  const updateRoles = useUpdateRoles();
   const removeMember = useRemoveMember();
   const { user } = useAuth();
 
@@ -27,7 +27,7 @@ function Members() {
         onQueryChange={onQueryChange}
         data={data}
         loading={isFetching}
-        onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}
+        onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}
         onRemove={(id) => removeMember.mutate(id)}
         currentUserId={user?.id}
       />

@@ -1,4 +1,4 @@
-import { ADMIN_ROLE } from "../roles";
+import { isAdminUser } from "../roles";
 import { useMe } from "./queries";
 import { useAuthStore } from "./store";
 
@@ -9,6 +9,6 @@ export function useAuth() {
     user,
     isAuthenticated: !!accessToken,
     isLoading: !!accessToken && isLoading,
-    isAdmin: user?.role.name === ADMIN_ROLE,
+    isAdmin: isAdminUser(user),
   };
 }

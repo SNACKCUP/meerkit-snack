@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Pagination } from "@/components/ui/pagination";
 
+import type { RoleName } from "../../roles";
 import type { MemberQuery, Page, User } from "../../types";
 import { SIZE_OPTIONS, defaultMemberQuery } from "../members-filter";
 import { LoadingOverlay, LoadingState } from "../../loading";
@@ -18,11 +19,11 @@ interface MemberDirectoryProps {
   /** 현재 조건에 맞는 한 페이지 분량과 전체 개수 */
   data?: Page<User>;
   loading?: boolean;
-  onRoleChange: (id: number, roleId: number) => void;
+  onRoleChange: (id: number, roles: RoleName[]) => void;
   onRemove: (id: number) => void;
   /** 역할 변경 방식. 기본은 확인 창("dialog"), "inline"이면 표 안의 선택 상자 */
   roleEditor?: "dialog" | "inline";
-  /** 지금 로그인한 관리자의 id (자기 권한 하향 경고용) */
+  /** 지금 로그인한 관리자의 id (본인 행의 역할·탈퇴 처리 잠금용) */
   currentUserId?: number;
 }
 
