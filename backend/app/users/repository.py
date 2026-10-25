@@ -3,7 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.users.models import Role, User
+from app.users.models import Role, Term, User, UserTermAgreement
 
 
 def get_by_id(db: Session, user_id: int) -> User | None:
@@ -38,3 +38,12 @@ def add(db: Session, user: User) -> User:
     db.add(user)
     db.flush()
     return user
+
+
+def list_current_terms(db: Session) -> list[Term]:
+    return list(db.scalars(select(Term).where(Term.is_active.is_(True)).order_by(Term.id)))
+
+
+def add_term_agreements(db: Session, user_id: int, term_ids: list[int]) -> None:
+    db.add_all(UserTermAgreement(user_id=user_id, term_id=term_id) for term_id in term_ids)
+    db.flush()

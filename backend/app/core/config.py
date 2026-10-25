@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 14  # 리프레시 토큰(httpOnly 쿠키) 유효 기간(일)
     cookie_secure: bool = False  # 배포(https)에서는 true
     cors_origins: str = "http://localhost:3000"  # 여러 개면 쉼표로 구분
+    # 로그인 잠금: 연속 N회 실패하면 M분 잠금 (프론트 meerkit.config.ts의 login과 같은 값). 0이면 끔
+    login_lock_max_attempts: int = 5
+    login_lock_minutes: int = 5
+
+    # 가입 이메일 인증: true면 인증번호 확인을 마쳐야 가입 가능 (프론트 signup.emailVerification도 true로)
+    signup_email_verification_required: bool = True
+    email_code_expire_minutes: int = 10
+    email_code_max_attempts: int = 5
+    email_verification_token_expire_minutes: int = 30  # 인증을 마친 뒤 가입을 끝내야 하는 시간
+
     # 메일 안의 링크가 여는 프론트 주소 (예: 비밀번호 재설정 화면)
     frontend_base_url: str = "http://localhost:3000"
 

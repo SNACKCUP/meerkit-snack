@@ -1,5 +1,6 @@
 """회원 관리 업무 규칙. HTTP는 모르고, DB 접근은 repository에 맡깁니다."""
 
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -7,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.permissions.roles import DEFAULT_ROLE
 from app.users import repository
-from app.users.models import User
+from app.users.models import Term, User
 
 RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 
@@ -36,8 +37,13 @@ def create_user(
     name: str,
     profile: dict[str, Any] | None = None,
     roles: list[str] | None = None,
+    agreed_terms: list[str] | None = None,
+    email_verified: bool = False,
 ) -> User:
-    """가입 규칙(중복 검사, 기본 역할). commit까지 합니다."""
+    """가입 규칙(중복 검사, 약관, 기본 역할). commit까지 합니다.
+
+    agreed_terms 가 None 이면 약관 검사를 하지 않습니다 (시드·테스트처럼 서버가 직접 만드는 계정).
+    """
     login_id = login_id.strip().lower()
     email = email.strip().lower()
     profile = {k: v for k, v in (profile or {}).items() if v is not None}
@@ -47,14 +53,33 @@ def create_user(
         raise UserError("EMAIL_TAKEN", "이미 가입된 이메일입니다.")
     if profile.get("nickname") and repository.get_by_nickname(db, profile["nickname"]):
         raise UserError("NICKNAME_TAKEN", "이미 사용 중인 닉네임입니다.")
+    terms = _check_terms(db, agreed_terms) if agreed_terms is not None else []
     user = User(
         login_id=login_id, email=email, hashed_password=hash_password(password), name=name, **profile
     )
+    if email_verified:
+        user.email_verified_at = datetime.now(UTC)
     user.roles = repository.get_roles_by_codes(db, roles or [DEFAULT_ROLE])
     repository.add(db, user)
+    repository.add_term_agreements(db, user.id, [term.id for term in terms])
     db.commit()
     db.refresh(user)
     return user
+
+
+def list_terms(db: Session) -> list[Term]:
+    return repository.list_current_terms(db)
+
+
+def _check_terms(db: Session, agreed_codes: list[str]) -> list[Term]:
+    """동의한 약관 code 목록을 확인하고, 동의 기록을 남길 약관(현재 버전)을 돌려줍니다."""
+    current = {term.code: term for term in repository.list_current_terms(db)}
+    agreed = set(agreed_codes)
+    if agreed - current.keys():
+        raise UserError("UNKNOWN_TERM", "존재하지 않는 약관이 있습니다.")
+    if any(term.is_required and code not in agreed for code, term in current.items()):
+        raise UserError("TERMS_REQUIRED", "필수 약관에 모두 동의해 주세요.")
+    return [current[code] for code in sorted(agreed)]
 
 
 def list_users(db: Session) -> list[User]:

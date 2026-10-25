@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field, StringConstraints
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
 # 로그인 아이디: 영문 소문자·숫자·밑줄 4~30자 (대문자로 보내도 소문자로 바꿔 저장)
 LoginId = Annotated[
@@ -28,6 +28,9 @@ class SignupRequest(ProfileFields):
     email: EmailStr
     password: Password
     name: str = Field(min_length=1, max_length=50)
+    agreed_terms: list[str] = Field(default_factory=list, examples=[["terms", "privacy"]])
+    # /auth/email/verify-code 가 돌려준 증표. 이메일 인증을 켠 경우(기본) 필수
+    email_verification_token: str | None = None
 
 
 class LoginRequest(BaseModel):
@@ -38,3 +41,29 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class LoginIdCheck(BaseModel):
+    available: bool
+
+
+class EmailCodeRequest(BaseModel):
+    email: EmailStr
+
+
+class VerifyEmailCodeRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=1, max_length=10)
+
+
+class VerifyEmailCodeResponse(BaseModel):
+    token: str
+
+
+class TermRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str = Field(validation_alias="code", examples=["terms"])  # 프론트 terms[].id
+    version: int
+    title: str
+    required: bool = Field(validation_alias="is_required")

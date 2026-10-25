@@ -1,19 +1,11 @@
-def test_signup_then_login_and_me(client, login):
-    response = client.post(
-        "/api/auth/signup",
-        json={
-            "user_id": "Writer01",
-            "email": "New@Example.com",
-            "password": "password123",
-            "name": "소영",
-            "nickname": "미어캣",
-        },
-    )
+def test_signup_then_login_and_me(client, signup, login):
+    response = signup("Writer01", email="New@Example.com", name="소영", nickname="미어캣")
     assert response.status_code == 201, response.text
     body = response.json()
     assert body["user_id"] == "writer01"
     assert body["email"] == "new@example.com"
     assert body["nickname"] == "미어캣"
+    assert body["email_verified"] is True
     assert body["roles"] == [{"id": 3, "name": "VIEWER"}]
     assert "hashed_password" not in body
 
@@ -23,21 +15,25 @@ def test_signup_then_login_and_me(client, login):
     assert me.json()["name"] == "소영"
 
 
-def test_signup_rejects_duplicate_login_id_and_email(client, make_user):
+def test_signup_rejects_duplicate_login_id(client, make_user, signup):
     make_user("dupuser")
-    base = {"password": "password123", "name": "x"}
-    same_id = client.post(
-        "/api/auth/signup", json={**base, "user_id": "dupuser", "email": "other@example.com"}
-    )
-    assert same_id.status_code == 409
-    same_email = client.post(
-        "/api/auth/signup", json={**base, "user_id": "other01", "email": "dupuser@example.com"}
-    )
-    assert same_email.status_code == 409
+    assert signup("dupuser", email="other@example.com").status_code == 409
+
+
+def test_send_code_rejects_registered_email(client, make_user):
+    make_user("dupuser")
+    response = client.post("/api/auth/email/send-code", json={"email": "dupuser@example.com"})
+    assert response.status_code == 409
 
 
 def test_signup_validates_fields(client):
-    base = {"user_id": "user01", "email": "a@example.com", "password": "password123", "name": "x"}
+    base = {
+        "user_id": "user01",
+        "email": "a@example.com",
+        "password": "password123",
+        "name": "x",
+        "agreed_terms": ["terms", "privacy"],
+    }
     assert client.post("/api/auth/signup", json={**base, "password": "short"}).status_code == 422
     assert client.post("/api/auth/signup", json={**base, "user_id": "ab"}).status_code == 422
     assert client.post("/api/auth/signup", json={**base, "user_id": "한글아이디"}).status_code == 422

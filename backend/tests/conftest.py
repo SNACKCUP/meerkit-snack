@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -99,6 +100,51 @@ def make_user(db):
         )
 
     return _make
+
+
+def _code_from(message) -> str:
+    return re.search(r"인증번호: (\d{6})", message.text).group(1)
+
+
+@pytest.fixture
+def last_code(mail_outbox):
+    """가장 최근 인증번호 메일의 번호"""
+    return lambda: _code_from(mail_outbox[-1])
+
+
+@pytest.fixture
+def email_token(client, mail_outbox):
+    """이메일 인증번호 발송 → 메일에서 번호 읽기 → 확인 → 가입용 증표"""
+
+    def _token(email: str) -> str:
+        assert client.post("/api/auth/email/send-code", json={"email": email}).status_code == 204
+        code = _code_from(mail_outbox[-1])
+        response = client.post("/api/auth/email/verify-code", json={"email": email, "code": code})
+        assert response.status_code == 200, response.text
+        return response.json()["token"]
+
+    return _token
+
+
+@pytest.fixture
+def signup(client, email_token):
+    """API로 가입. 기본값: 필수 약관 동의 + 이메일 인증 완료"""
+
+    def _signup(login_id: str, **overrides):
+        email = overrides.pop("email", f"{login_id}@example.com")
+        body = {
+            "user_id": login_id,
+            "email": email,
+            "password": PASSWORD,
+            "name": "가입자",
+            "agreed_terms": ["terms", "privacy"],
+            **overrides,
+        }
+        if "email_verification_token" not in body:
+            body["email_verification_token"] = email_token(email)
+        return client.post("/api/auth/signup", json=body)
+
+    return _signup
 
 
 @pytest.fixture
