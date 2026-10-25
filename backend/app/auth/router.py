@@ -16,9 +16,11 @@ from app.auth import service
 from app.auth.deps import get_current_user
 from app.auth.schemas import (
     EmailCodeRequest,
+    ForgotPasswordRequest,
     LoginIdCheck,
     LoginRequest,
     ProfileFields,
+    ResetPasswordRequest,
     SignupRequest,
     TermRead,
     TokenResponse,
@@ -47,6 +49,9 @@ _ERROR_STATUS = {
     "LOGIN_ID_TAKEN": status.HTTP_409_CONFLICT,
     "NICKNAME_TAKEN": status.HTTP_409_CONFLICT,
     "INVALID_CODE": status.HTTP_400_BAD_REQUEST,
+    "INVALID_RESET_TOKEN": status.HTTP_400_BAD_REQUEST,
+    "INVALID_PASSWORD": status.HTTP_400_BAD_REQUEST,
+    "SAME_PASSWORD": status.HTTP_400_BAD_REQUEST,
     "EMAIL_VERIFICATION_REQUIRED": status.HTTP_400_BAD_REQUEST,
     "UNKNOWN_TERM": status.HTTP_422_UNPROCESSABLE_CONTENT,
     "TERMS_REQUIRED": status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -76,7 +81,7 @@ def set_refresh_cookie(response: Response, token: str) -> None:
     )
 
 
-def _login_response(response: Response, user: User) -> TokenResponse:
+def login_response(response: Response, user: User) -> TokenResponse:
     access_token, refresh_token = service.issue_tokens(user)
     set_refresh_cookie(response, refresh_token)
     return TokenResponse(access_token=access_token)
@@ -152,7 +157,7 @@ def login(body: LoginRequest, response: Response, db: Session = Depends(get_db))
         user = service.authenticate(db, body.user_id, body.password)
     except service.AuthError as e:
         raise http_error(e) from e
-    return _login_response(response, user)
+    return login_response(response, user)
 
 
 @router.post(
@@ -171,7 +176,31 @@ def refresh(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="다시 로그인해 주세요."
         )
-    return _login_response(response, user)
+    return login_response(response, user)
+
+
+@router.post(
+    "/password/forgot",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="비밀번호 재설정 메일 요청 (가입 여부와 관계없이 항상 같은 응답)",
+)
+def forgot_password(
+    body: ForgotPasswordRequest, tasks: BackgroundTasks, db: Session = Depends(get_db)
+):
+    service.request_password_reset(db, tasks, body.email)
+    return {"detail": "가입된 이메일이면 비밀번호 재설정 메일을 보냈습니다."}
+
+
+@router.post(
+    "/password/reset",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="메일 링크의 토큰으로 새 비밀번호 설정 (30분, 한 번만)",
+)
+def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        service.reset_password(db, body.token, body.password)
+    except service.AuthError as e:
+        raise http_error(e) from e
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, summary="로그아웃")

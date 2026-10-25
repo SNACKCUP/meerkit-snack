@@ -3,6 +3,7 @@
 메일은 응답을 늦추지 않도록 BackgroundTasks 에 넣어 응답 뒤에 보냅니다.
 """
 
+import logging
 import math
 from datetime import UTC, datetime, timedelta
 
@@ -10,7 +11,7 @@ from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from app.auth import repository as auth_repository
-from app.auth.models import EmailVerification
+from app.auth.models import EmailVerification, PasswordResetToken
 from app.core.config import settings
 from app.core.security import (
     create_email_verification_token,
@@ -18,6 +19,8 @@ from app.core.security import (
     decode_email_verification_token,
     decode_token,
     generate_code,
+    generate_token,
+    hash_password,
     hash_secret,
     secrets_match,
     verify_dummy_password,
@@ -27,6 +30,8 @@ from app.mail import send_mail
 from app.users import repository
 from app.users import service as user_service
 from app.users.models import User
+
+logger = logging.getLogger(__name__)
 
 
 class AuthError(Exception):
@@ -194,3 +199,69 @@ def signup(db: Session, data: dict, *, verification_token: str | None) -> User:
         consume_email_verification(db, verification_token, data["email"])
         verified = True
     return user_service.create_user(db, **data, email_verified=verified)
+
+
+# ---- 비밀번호 찾기·재설정·변경 ----
+
+INVALID_RESET_MESSAGE = "링크가 만료되었거나 이미 사용되었습니다."
+
+
+def _set_password(db: Session, user: User, new_password: str) -> None:
+    now = _now()
+    user.hashed_password = hash_password(new_password)
+    user.password_changed_at = now  # 이전에 발급된 토큰(다른 기기 로그인)은 더 이상 통하지 않음
+    user.failed_login_count = 0
+    user.locked_until = None
+    auth_repository.expire_reset_tokens(db, user.id, now)
+
+
+def request_password_reset(db: Session, tasks: BackgroundTasks, email: str) -> None:
+    """가입 여부를 알려 주지 않도록 어떤 경우에도 조용히 끝납니다 (라우터는 항상 같은 응답)."""
+    user = repository.get_by_email(db, email.strip().lower())
+    if user is None or not user.is_active or user.deactivated_at is not None:
+        return
+    count, first, last = auth_repository.reset_tokens_since(db, user.id, _now() - timedelta(days=1))
+    if mail_retry_after(count, first, last) is not None:
+        logger.info("비밀번호 재설정 메일 제한으로 건너뜀 user_id=%s", user.id)
+        return
+
+    raw = generate_token()
+    now = _now()
+    auth_repository.expire_reset_tokens(db, user.id, now)  # 이전 링크는 무효
+    auth_repository.add(
+        db,
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_secret(raw),
+            expires_at=now + timedelta(minutes=settings.password_reset_expire_minutes),
+            created_at=now,
+        ),
+    )
+    db.commit()
+    link = f"{settings.frontend_base_url.rstrip('/')}/reset-password?token={raw}"
+    tasks.add_task(
+        send_mail,
+        user.email,
+        "password_reset",
+        {"name": user.name, "link": link, "expire_minutes": settings.password_reset_expire_minutes},
+    )
+
+
+def reset_password(db: Session, token: str, new_password: str) -> None:
+    row = auth_repository.get_reset_token_by_hash(db, hash_secret(token))
+    if row is None or row.used_at is not None or row.expires_at <= _now():
+        raise AuthError("INVALID_RESET_TOKEN", INVALID_RESET_MESSAGE)
+    user = repository.get_by_id(db, row.user_id)
+    if user is None or not user.is_active or user.deactivated_at is not None:
+        raise AuthError("INVALID_RESET_TOKEN", INVALID_RESET_MESSAGE)
+    _set_password(db, user, new_password)
+    db.commit()
+
+
+def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
+    if not verify_password(current_password, user.hashed_password):
+        raise AuthError("INVALID_PASSWORD", "현재 비밀번호가 올바르지 않습니다.")
+    if current_password == new_password:
+        raise AuthError("SAME_PASSWORD", "새 비밀번호가 현재 비밀번호와 같습니다.")
+    _set_password(db, user, new_password)
+    db.commit()

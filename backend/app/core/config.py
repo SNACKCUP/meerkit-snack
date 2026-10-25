@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     email_code_max_attempts: int = 5
     email_verification_token_expire_minutes: int = 30  # 인증을 마친 뒤 가입을 끝내야 하는 시간
 
+    password_reset_expire_minutes: int = 30  # 비밀번호 재설정 링크 유효 시간 (한 번만 사용)
+
     # 메일 안의 링크가 여는 프론트 주소 (예: 비밀번호 재설정 화면)
     frontend_base_url: str = "http://localhost:3000"
 

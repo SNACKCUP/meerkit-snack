@@ -67,3 +67,17 @@ class TermRead(BaseModel):
     version: int
     title: str
     required: bool = Field(validation_alias="is_required")
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(max_length=255)  # 형식이 틀려도 같은 응답을 주려고 검사하지 않습니다
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=1, max_length=200)
+    password: Password
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: Password
