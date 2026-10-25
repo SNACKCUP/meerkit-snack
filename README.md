@@ -161,6 +161,7 @@ meerkit/
 - [아키텍처](docs/architecture.md): 공통 기반과 서브 서비스를 나누는 규칙
 - [새 기능 추가하기](docs/how-to-add-feature.md): 이 킷을 Fork 해서 내 서비스를 만드는 순서
 - [향후 확장](docs/future-extensions.md): 이번 범위에서 제외한 항목
+- [테이블 명세서](docs/MeerKit_테이블명세서.xlsx): DB 테이블·컬럼·관계 (엑셀, 마이그레이션 5aeec7c9a772 기준)
 - [협업 규칙](CONTRIBUTING.md): 브랜치, 커밋, PR 규칙
 - [AI 작업 규칙](CLAUDE.md): Claude Code 등 AI 도구가 따르는 위치·의존·범위 규칙
 
