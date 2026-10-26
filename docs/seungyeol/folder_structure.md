@@ -137,7 +137,7 @@ backend/
 
 | 계획                               | 상태    |
 | ---------------------------------- | ------- |
-| `examples/` (샘플 서비스 분리)     | 미착수  |
+| `examples/` (서브 프로젝트 분리)     | 미착수  |
 | `scripts/setup/`, `packages/` CLI  | 미착수  |
 | `CLAUDE.md`, 설명서 사이트         | 미착수  |
 | 백엔드 auth/users/permissions      | 미착수  |

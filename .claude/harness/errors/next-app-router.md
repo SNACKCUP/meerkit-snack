@@ -8,6 +8,11 @@
 - Always: 브라우저 API(`window`, `localStorage`, `canvas`, `MediaRecorder`, `AudioContext`, gsap)를 쓰는 파일은 `"use client"`를 맨 위에 둔다. `window` 접근은 `useEffect` 안에서만 한다. (이유: 서버 렌더링 중에는 `window`가 없다)
 - Always: 레이아웃 props는 생성된 타입(`LayoutProps<"/">`)을 쓴다. `src/app/layout.tsx` 참고.
 
+## 동적 경로와 Cache Components
+
+- Always: 브라우저 데이터(localStorage 등)로만 그려지는 화면(동적 경로 `[id]`, `[token]`뿐 아니라 `/maemusae` 같은 정적 경로도)은 `page.tsx`를 서버 파일로 두고 `export const instant = false`를 내보낸 뒤, 화면은 같은 폴더의 `view.tsx`(`"use client"`)에서 그린다. (이유: 클라이언트 `page.tsx`나 상위 `layout.tsx`에 두면 개발 모드에서 "Could not validate that a segment has instant navigation" 에러가 계속 난다. 사례: `(sub)/maemusae/projects/[id]/`)
+- Always: `usePathname()`을 쓰는 클라이언트 컴포넌트를 레이아웃에서 감쌀 때는 `<Suspense>`로 감싼다. (이유: 동적 경로에서 `next build`가 CLIENT_HOOK_DYNAMIC 오류로 실패한다. 사례: 매무새 `Shell`)
+
 ## 서버 호출
 
 - Never: 마운트 때마다 `POST /auth/refresh`를 무조건 호출하지 않는다. "이 브라우저에서 로그인한 적이 있음" 표시(`localStorage` 키 `meerkit-session`)가 있을 때만 호출하고, 문서 전용 배포(`docsOnly`)에서는 건너뛴다. (이유: 백엔드가 없는 환경에서 모든 docs 페이지가 500/401 콘솔 에러를 냈다)

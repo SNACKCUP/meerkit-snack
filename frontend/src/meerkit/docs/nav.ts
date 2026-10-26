@@ -73,6 +73,7 @@ export const docGroups: DocGroup[] = [
       { slug: "address-field", title: "Address Field", description: "주소 검색 버튼으로 우편번호와 주소를 함께 입력하는 두 가지 주소 입력 방식입니다.", audience: "common" },
       { slug: "file-dropzone", title: "File Dropzone", description: "끌어다 놓거나 눌러서 첨부파일을 고르는 영역입니다.", audience: "common" },
       { slug: "loading", title: "Loading", description: "9가지 스타일의 로더와, 불러오는 중 화면에 공통으로 끼우는 모듈입니다.", audience: "common" },
+      { slug: "date", title: "Date", description: "기본 달력, 날짜 선택, 시작·종료일 연동, 기간 범위 선택 입력입니다.", audience: "common" },
       { slug: "route-guards", title: "Route Guards", description: "로그인과 역할로 화면을 보호합니다.", audience: "common" },
     ],
   },
