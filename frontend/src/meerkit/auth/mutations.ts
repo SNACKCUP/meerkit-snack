@@ -65,6 +65,11 @@ export function useForgotPassword() {
   return useMutation({ mutationFn: (input: ForgotPasswordInput) => authApi.forgotPassword(input) });
 }
 
+// 아이디 중복 확인 (버튼을 누를 때만 부르므로 mutation 으로 둔다)
+export function useCheckUserId() {
+  return useMutation({ mutationFn: (userId: string) => authApi.checkUserId(userId) });
+}
+
 export function useSendEmailCode() {
   return useMutation({ mutationFn: (input: EmailCodeInput) => authApi.sendEmailCode(input) });
 }
