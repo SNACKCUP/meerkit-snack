@@ -52,9 +52,9 @@ export default function MeetingsPage() {
                 onChange={(e) => { setQ(e.target.value); setPage(1); }}
                 placeholder="파일명 검색"
                 aria-label="파일명 검색"
-                className="h-10 min-w-48 flex-1 border-[3px] border-border bg-(--mk-px-edge) px-3 outline-none placeholder:text-muted-foreground focus-visible:border-(--mk-sky)"
+                className="h-10 min-w-48 flex-1 border-2 border-border bg-(--mk-px-edge) px-3 outline-none placeholder:text-muted-foreground focus-visible:border-(--mk-sky)"
               />
-              <NativeSelect aria-label="상태 필터" value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className="h-10 rounded-none border-[3px]">
+              <NativeSelect aria-label="상태 필터" value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className="h-10 border-2">
                 {FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
               </NativeSelect>
             </div>

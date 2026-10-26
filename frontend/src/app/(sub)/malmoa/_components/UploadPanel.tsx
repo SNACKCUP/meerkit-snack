@@ -77,7 +77,7 @@ export function UploadPanel() {
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)}
           onDrop={onDrop}
-          className={cn("grid justify-items-center gap-3 border-[3px] border-dashed px-4 py-8 text-center", drag ? "border-(--mk-mint) bg-muted" : "border-border bg-(--mk-px-edge)")}
+          className={cn("grid justify-items-center gap-3 border-2 border-dashed px-4 py-8 text-center", drag ? "border-(--mk-mint) bg-muted" : "border-border bg-(--mk-px-edge)")}
         >
           <PixelIcon name="upload" size={40} className="text-(--mk-sky)" />
           {file ? (
@@ -91,7 +91,7 @@ export function UploadPanel() {
           <input ref={fileRef} type="file" className="sr-only" aria-label="파일 선택" accept={[...AUDIO_EXT, ...IMAGE_EXT].join(",")} onChange={(e) => pick(e.target.files?.[0])} />
           <PxButton size="sm" variant="ghost" onClick={() => fileRef.current?.click()}>파일 선택</PxButton>
         </div>
-        {error ? <p role="alert" className="border-[3px] border-(--mk-pink) bg-muted p-3 text-sm">{error}</p> : null}
+        {error ? <p role="alert" className="border-2 border-(--mk-pink) bg-muted p-3 text-sm">{error}</p> : null}
         <input ref={photoRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-label="화이트보드 사진 찍기" onChange={(e) => pick(e.target.files?.[0])} />
         <PxButton variant="ghost" onClick={() => photoRef.current?.click()}><PixelIcon name="camera" size={18} />화이트보드 사진 찍기 · 올리기</PxButton>
         <div className="flex flex-wrap items-center justify-between gap-3">

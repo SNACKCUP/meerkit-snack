@@ -70,7 +70,7 @@ export default function ProfilePage() {
                 {ACHIEVEMENTS.map((a) => {
                   const ok = a.done(s);
                   return (
-                    <li key={a.id} className={cn("flex items-start gap-3 border-[3px] p-3", ok ? "border-(--mk-gold) bg-muted" : "border-border opacity-60")}>
+                    <li key={a.id} className={cn("flex items-start gap-3 border-2 p-3", ok ? "border-(--mk-gold) bg-muted" : "border-border opacity-60")}>
                       <span className={ok ? "text-(--mk-gold)" : "text-muted-foreground"}><PixelIcon name={ok ? a.icon : "lock"} size={28} label={ok ? "달성" : "잠김"} /></span>
                       <div><p className="font-pixel text-lg">{a.title}</p><p className="text-sm text-muted-foreground">{a.desc}</p></div>
                     </li>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { Spotlight } from "./_components/Spotlight";
 import { PixelIcon, PixelMeerkat, PxBadge, PxBar, PxCard, pxButtonClass, type PixelIconName } from "./_components/px";
 
 const STEPS: { icon: PixelIconName; title: string; body: string }[] = [
@@ -21,31 +22,39 @@ const FEATURES: { icon: PixelIconName; title: string; body: string }[] = [
 
 export default function MalmoaLanding() {
   return (
-    <div className="mx-auto grid max-w-6xl gap-16 px-5 py-12 sm:py-16">
-      <section className="grid items-center gap-10 md:grid-cols-[1.3fr_1fr]">
-        <div className="grid gap-5">
-          <PxBadge tone="gold" data-rise>NEW GAME · 회의 시작</PxBadge>
-          <h1 className="font-pixel text-4xl leading-tight sm:text-6xl" data-rise>
-            회의는 <span className="text-(--mk-mint)">말로!</span><br />기록은 <span className="text-(--mk-gold)">글로!</span><span className="mp-blink text-(--mk-pink)">_</span>
+    <div className="mx-auto grid max-w-6xl gap-24 px-5 py-10 sm:py-14">
+      <section className="relative grid items-center gap-12 py-6 md:grid-cols-[1.25fr_1fr] md:py-14">
+        <Spotlight />
+        <div className="grid gap-6">
+          <PxBadge tone="mint" className="w-fit" data-rise>회의를 기록할수록 자라는 서비스</PxBadge>
+          <h1 className="font-pixel text-[2.6rem] leading-[1.1] sm:text-6xl" data-rise>
+            회의는 <span className="text-(--mk-mint)">말로</span>,<br />기록은 <span className="text-(--mk-gold)">글로</span><span className="mp-blink text-(--mk-pink)">.</span>
           </h1>
-          <p className="max-w-xl text-lg leading-relaxed text-muted-foreground" data-rise>
+          <p className="max-w-lg text-base leading-relaxed text-muted-foreground sm:text-lg" data-rise>
             말을 글로 모아 AI가 회의록으로 만들어 줍니다. 회의를 할수록 경험치가 쌓이고, 레벨이 오르면 미어캣이 진화해요.
           </p>
           <div className="flex flex-wrap gap-3" data-rise>
-            <Link href="/malmoa/signup" className={pxButtonClass("mint", "lg")}><PixelIcon name="bolt" size={20} />게임 시작</Link>
-            <Link href="/malmoa/login" className={pxButtonClass("ghost", "lg")}>이어하기(로그인)</Link>
+            <Link href="/malmoa/signup" className={pxButtonClass("mint", "lg")}><PixelIcon name="bolt" size={18} />시작하기</Link>
+            <Link href="/malmoa/login" className={pxButtonClass("ghost", "lg")}>로그인</Link>
           </div>
+          <dl className="mt-4 flex flex-wrap gap-x-10 gap-y-3 border-t-2 border-border pt-6 text-sm" data-rise>
+            {[["10초", "마다 자동 저장"], ["8개 항목", "AI 회의록"], ["500MB", "까지 업로드"]].map(([k, v]) => (
+              <div key={k}><dt className="font-pixel text-xl">{k}</dt><dd className="text-muted-foreground">{v}</dd></div>
+            ))}
+          </dl>
         </div>
-        <PxCard title="내 캐릭터" action={<PxBadge tone="gold">Lv.1</PxBadge>} data-rise>
-          <div className="grid justify-items-center gap-4">
-            <PixelMeerkat level={1} size={160} bob label="새싹 서기 미어캣" />
-            <p className="font-pixel text-xl">새싹 서기</p>
-            <div className="grid w-full gap-1">
-              <PxBar value={60} label="경험치 예시" />
-              <p className="font-pixel text-right text-sm text-muted-foreground">EXP 60 / 100</p>
+        <div data-rise>
+          <PxCard title="내 캐릭터" action={<PxBadge tone="gold">Lv.1</PxBadge>} className="mx-auto max-w-sm">
+            <div className="grid justify-items-center gap-4">
+              <PixelMeerkat level={1} size={150} bob label="새싹 서기 미어캣" />
+              <p className="font-pixel text-xl">새싹 서기</p>
+              <div className="grid w-full gap-2">
+                <PxBar value={60} label="경험치 예시" />
+                <p className="text-right text-xs text-muted-foreground">EXP 60 / 100</p>
+              </div>
             </div>
-          </div>
-        </PxCard>
+          </PxCard>
+        </div>
       </section>
 
       <section className="grid gap-5" aria-labelledby="how">
@@ -55,7 +64,7 @@ export default function MalmoaLanding() {
             <li key={s.title} data-rise>
               <PxCard className="h-full">
                 <PixelIcon name={s.icon} size={40} className="text-(--mk-mint)" />
-                <h3 className="font-pixel mt-3 text-xl">{s.title}</h3>
+                <h3 className="mt-4 font-pixel text-xl">{s.title}</h3>
                 <p className="mt-1 text-muted-foreground">{s.body}</p>
               </PxCard>
             </li>
@@ -86,7 +95,7 @@ export default function MalmoaLanding() {
 
       <section className="grid gap-5" aria-labelledby="features">
         <h2 id="features" className="font-pixel text-3xl" data-rise>가진 기능</h2>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <li key={f.title} data-rise>
               <PxCard className="h-full">

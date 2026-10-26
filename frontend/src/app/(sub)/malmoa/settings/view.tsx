@@ -11,7 +11,7 @@ import { useMalmoa } from "../_lib/store";
 
 function Toggle({ id, label, desc, checked, onChange }: { id: string; label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label htmlFor={id} className="flex items-start gap-3 border-[3px] border-border p-3">
+    <label htmlFor={id} className="flex items-start gap-3 border-2 border-border p-3">
       <input id={id} type="checkbox" className="mt-1 size-5 accent-(--mk-mint)" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span><span className="font-pixel block text-lg">{label}</span><span className="text-sm text-muted-foreground">{desc}</span></span>
     </label>
@@ -40,7 +40,7 @@ export default function SettingsPage() {
           <div className="grid gap-4">
             <label className="grid gap-1">
               <span className="font-pixel text-lg">기본 마이크</span>
-              <NativeSelect aria-label="기본 마이크" value={prefs.deviceId} onChange={(e) => prefs.setDeviceId(e.target.value)} disabled={recording} className="h-10 rounded-none border-[3px]">
+              <NativeSelect aria-label="기본 마이크" value={prefs.deviceId} onChange={(e) => prefs.setDeviceId(e.target.value)} disabled={recording} className="h-10 border-2">
                 <option value="">시스템 기본 마이크</option>
                 {rec.devices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || "마이크"}</option>)}
               </NativeSelect>

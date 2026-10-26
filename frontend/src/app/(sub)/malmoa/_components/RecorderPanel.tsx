@@ -52,7 +52,7 @@ export function RecorderPanel() {
   return (
     <PxCard title="직접 녹음">
       <div className="grid gap-4">
-        <div className="grid justify-items-center gap-3 border-[3px] border-(--mk-px-edge) bg-(--mk-px-edge) px-4 py-6">
+        <div className="grid justify-items-center gap-3 border-2 border-(--mk-px-edge) bg-(--mk-px-edge) px-4 py-6">
           <p className="font-pixel text-5xl tabular-nums" aria-live="off" aria-label={`녹음 시간 ${formatClock(r.elapsed)}`}>
             {r.state === "recording" ? <span className="mp-blink mr-2 text-(--mk-pink)">●</span> : null}
             {formatClock(r.elapsed)}
@@ -63,11 +63,11 @@ export function RecorderPanel() {
           </p>
         </div>
 
-        {r.quiet ? <p role="alert" className="border-[3px] border-(--mk-gold) bg-muted p-3 text-sm">소리가 거의 들어오지 않습니다. 마이크가 가까이 있는지, 음소거가 아닌지 확인해 주세요.</p> : null}
-        {r.error ? <p role="alert" className="border-[3px] border-(--mk-pink) bg-muted p-3 text-sm">{REC_ERROR_TEXT[r.error]}</p> : null}
+        {r.quiet ? <p role="alert" className="border-2 border-(--mk-gold) bg-muted p-3 text-sm">소리가 거의 들어오지 않습니다. 마이크가 가까이 있는지, 음소거가 아닌지 확인해 주세요.</p> : null}
+        {r.error ? <p role="alert" className="border-2 border-(--mk-pink) bg-muted p-3 text-sm">{REC_ERROR_TEXT[r.error]}</p> : null}
 
         {r.recoverable && r.state === "idle" ? (
-          <div className="grid gap-2 border-[3px] border-(--mk-sky) bg-muted p-3">
+          <div className="grid gap-2 border-2 border-(--mk-sky) bg-muted p-3">
             <p className="text-sm">이전 녹음이 중간에 종료되었습니다. 저장된 부분을 불러올 수 있어요.</p>
             <div className="flex gap-2">
               <PxButton size="sm" variant="sky" onClick={() => void r.recover()}>이전 녹음 불러오기</PxButton>
@@ -81,7 +81,7 @@ export function RecorderPanel() {
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="grid gap-1 text-sm">
                 <span className="font-pixel">마이크</span>
-                <NativeSelect aria-label="마이크 선택" value={deviceId} onChange={(e) => useRecorderPrefs.getState().setDeviceId(e.target.value)} disabled={busy} className="h-10 rounded-none border-2">
+                <NativeSelect aria-label="마이크 선택" value={deviceId} onChange={(e) => useRecorderPrefs.getState().setDeviceId(e.target.value)} disabled={busy} className="h-10 border-2">
                   <option value="">시스템 기본 마이크</option>
                   {r.devices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || "마이크"}</option>)}
                 </NativeSelect>

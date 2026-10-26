@@ -13,7 +13,7 @@ export function RecordingDock() {
   const path = usePathname();
   if ((r.state !== "recording" && r.state !== "paused") || path === "/malmoa/home") return null;
   return (
-    <div role="status" aria-label="녹음 상태" className="fixed bottom-4 right-4 z-40 flex flex-wrap items-center gap-3 border-[3px] border-(--mk-px-edge) bg-card px-4 py-3 shadow-[4px_4px_0_0_var(--mk-px-edge)]">
+    <div role="status" aria-label="녹음 상태" className="fixed bottom-4 right-4 z-40 flex flex-wrap items-center gap-3 border-2 border-(--mk-px-edge) bg-card px-4 py-3 shadow-[4px_4px_0_0_var(--mk-px-edge)]">
       <span className="font-pixel flex items-center gap-2 text-lg">
         {r.state === "recording" ? <span className="mp-blink text-(--mk-pink)">●</span> : <span className="text-(--mk-gold)">Ⅱ</span>}
         {r.state === "recording" ? "녹음 중" : "일시정지"} {formatClock(r.elapsed)}

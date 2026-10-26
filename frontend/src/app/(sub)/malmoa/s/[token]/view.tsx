@@ -43,7 +43,7 @@ export default function SharedMinutes() {
       <div data-rise>
         <PxCard title="회의록" tone="paper"><MarkdownView markdown={doc.markdown} /></PxCard>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 border-[3px] border-border bg-card p-4" data-rise>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-2 border-border bg-card p-4" data-rise>
         <p className="font-pixel text-xl">말로 하고 글로 모으는 회의록, 말모아</p>
         <Link href="/malmoa/signup" className={pxButtonClass("mint", "md")}>나도 시작하기</Link>
       </div>

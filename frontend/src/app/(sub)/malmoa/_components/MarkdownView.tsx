@@ -20,7 +20,7 @@ export function MarkdownView({ markdown }: { markdown: string }) {
     if (line.startsWith("- ")) { list.push(line.slice(2)); continue; }
     flush();
     if (line.startsWith("# ")) blocks.push(<h2 key={blocks.length} className="font-pixel text-3xl">{inline(line.slice(2))}</h2>);
-    else if (line.startsWith("## ")) blocks.push(<h3 key={blocks.length} className="font-pixel mt-4 border-b-[3px] border-(--mk-px-edge) pb-1 text-xl">{inline(line.slice(3))}</h3>);
+    else if (line.startsWith("## ")) blocks.push(<h3 key={blocks.length} className="font-pixel mt-4 border-b-2 border-(--mk-px-edge) pb-1 text-xl">{inline(line.slice(3))}</h3>);
     else if (line.trim()) blocks.push(<p key={blocks.length}>{inline(line)}</p>);
   }
   flush();

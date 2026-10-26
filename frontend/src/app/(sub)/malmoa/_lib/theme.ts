@@ -32,10 +32,21 @@ export const THEME_VARS: Record<string, string> = {
   "--mk-sky": SKY,
   "--mk-paper": PAPER,
   "--mk-ink": INK,
+  // 더 작은 글자 크기: 해외 사이트처럼 차분한 위계 (Tailwind 글자 크기 변수를 말모아 안에서만 덮어쓴다)
+  "--text-sm": "0.8125rem",
+  "--text-base": "0.9375rem",
+  "--text-lg": "1.0625rem",
+  "--text-xl": "1.1875rem",
+  "--text-2xl": "1.4rem",
+  "--text-3xl": "1.7rem",
+  "--text-4xl": "2.05rem",
+  "--text-5xl": "2.5rem",
+  "--text-6xl": "3.1rem",
+  // 어두운 바탕 색(게이지·패널 안쪽)
   // 픽셀 테두리·그림자에 쓰는 가장 어두운 색
   "--mk-px-edge": "#0a0919",
   "--mk-radius": "0px",
-  "--mk-shadow-soft": "4px 4px 0 0 rgba(0, 0, 0, 0.45)",
+  "--mk-shadow-soft": "3px 3px 0 0 rgba(0, 0, 0, 0.45)",
 };
 
 export const THEME_STYLE = { ...THEME_VARS } as CSSProperties;

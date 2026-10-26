@@ -84,7 +84,7 @@ export default function MeetingResult() {
                 role="tab"
                 aria-selected={tab === k}
                 onClick={() => setTab(k)}
-                className={cn("font-pixel border-[3px] border-(--mk-px-edge) px-4 py-2 text-lg", tab === k ? "bg-(--mk-gold) text-(--mk-ink)" : "bg-card text-foreground")}
+                className={cn("font-pixel border-2 border-(--mk-px-edge) px-4 py-2 text-lg", tab === k ? "bg-(--mk-gold) text-(--mk-ink)" : "bg-card text-foreground")}
               >
                 {label}
               </button>
@@ -96,7 +96,7 @@ export default function MeetingResult() {
               <PxCard title="AI 회의록" tone="paper" action={doc.edited ? <PxBadge tone="sky">수정됨</PxBadge> : undefined}>
                 {editing ? (
                   <div className="grid gap-3">
-                    <textarea value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="회의록 편집" rows={20} className="w-full border-[3px] border-(--mk-px-edge) bg-white p-3 font-mono text-sm outline-none focus-visible:border-(--mk-sky)" />
+                    <textarea value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="회의록 편집" rows={20} className="w-full border-2 border-(--mk-px-edge) bg-white p-3 font-mono text-sm outline-none focus-visible:border-(--mk-sky)" />
                     <div className="flex gap-3">
                       <PxButton onClick={() => { save(meeting.id, draft); setEditing(false); }}>저장</PxButton>
                       <PxButton variant="ghost" className="text-(--mk-ink)" onClick={() => setEditing(false)}>취소</PxButton>

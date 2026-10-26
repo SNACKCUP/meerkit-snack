@@ -65,7 +65,7 @@ test("녹음: 시작하고 종료하면 변환 버튼이 나온다", async ({ pa
   await expect(page.getByRole("button", { name: "녹음 종료" })).toBeVisible();
   await page.waitForTimeout(1500);
   await page.getByRole("button", { name: "녹음 종료" }).click();
-  await expect(page.getByRole("button", { name: "텍스트로 변환" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "텍스트로 변환", exact: true })).toBeVisible();
 });
 
 test("예시 회의 결과 화면", async ({ page }) => {

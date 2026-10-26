@@ -20,7 +20,7 @@ export function ShareDialog({ meetingId, open, onOpenChange }: { meetingId: stri
     <PxDialog open={open} onOpenChange={onOpenChange} title="회의록 공유" description={`링크를 받은 사람은 로그인 없이 읽을 수 있고, ${SHARE_DAYS}일 뒤에 자동으로 닫힙니다.`}>
       {active ? (
         <div className="grid gap-3">
-          <input readOnly aria-label="공유 링크" value={url} onFocus={(e) => e.currentTarget.select()} className="h-10 w-full border-[3px] border-border bg-(--mk-px-edge) px-3 text-sm outline-none focus-visible:border-(--mk-sky)" />
+          <input readOnly aria-label="공유 링크" value={url} onFocus={(e) => e.currentTarget.select()} className="h-10 w-full border-2 border-border bg-(--mk-px-edge) px-3 text-sm outline-none focus-visible:border-(--mk-sky)" />
           <p className="text-sm text-muted-foreground">{formatWhen(share.expiresAt)}까지 열려 있어요. 읽기만 할 수 있고, 회의록을 고칠 수는 없습니다.</p>
           <p className="text-xs text-muted-foreground">지금은 화면용 목 데이터라 이 브라우저에서만 열립니다.</p>
           <div className="flex flex-wrap gap-3">

@@ -226,6 +226,8 @@
 :root[data-mk-motion="off"] .mp-bob,
 :root[data-mk-motion="off"] .mp-root [data-rise] {
   animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -250,22 +252,25 @@
   --font-pixel: "DungGeunMo", "Pretendard Variable", Pretendard, monospace;
 }
 
-/* 말모아 움직임: 부드럽게 보간하지 않고 steps()로 끊어서 움직인다 (픽셀 느낌) */
+/* 말모아 바탕: 은은한 빛 번짐 */
+.mp-root {
+  background-image:
+    radial-gradient(60rem 30rem at 85% -10%, rgb(76 201 240 / 0.10), transparent 60%),
+    radial-gradient(50rem 28rem at -10% 10%, rgb(61 220 151 / 0.07), transparent 60%);
+  background-repeat: no-repeat;
+}
+
+/* 말모아 움직임: 부드러운 곡선. 깜빡임·둥실은 천천히 */
 @keyframes mp-blink {
-  50% { opacity: 0; }
+  50% { opacity: 0.25; }
 }
 @keyframes mp-bob {
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-5px); }
 }
-.mp-blink { animation: mp-blink 1s steps(1, end) infinite; }
-.mp-bob { animation: mp-bob 1.2s steps(2, end) infinite; }
+.mp-blink { animation: mp-blink 1.6s ease-in-out infinite; }
+.mp-bob { animation: mp-bob 3.2s ease-in-out infinite; }
 
-/* 말모아 화면 진입: 서버에서 그린 HTML과 어긋나지 않도록 JS 없이 CSS로만 끊어서 나타낸다 */
-@keyframes mp-rise {
-  from { opacity: 0; transform: translateY(16px); }
+/* 스크롤 등장: 자바스크립트가 켜진 때만 처음에 숨기고, useReveal이 GSAP으로 나타낸다 (JS가 없거나 움직임이 꺼지면 그대로 보인다) */
+@media (scripting: enabled) {
+  .mp-root [data-rise]:not([data-in]) { opacity: 0; }
 }
-.mp-root [data-rise] { animation: mp-rise 0.5s steps(5, end) both; }
-.mp-root [data-rise]:nth-child(2) { animation-delay: 0.08s; }
-.mp-root [data-rise]:nth-child(3) { animation-delay: 0.16s; }
-.mp-root [data-rise]:nth-child(4) { animation-delay: 0.24s; }
-.mp-root [data-rise]:nth-child(n + 5) { animation-delay: 0.32s; }

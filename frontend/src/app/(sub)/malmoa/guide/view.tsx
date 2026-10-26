@@ -62,7 +62,7 @@ export default function GuideView() {
         </nav>
       </div>
 
-      <div role="note" className="border-[3px] border-(--mk-sky) bg-card p-4" data-rise>
+      <div role="note" className="border-2 border-(--mk-sky) bg-card p-4" data-rise>
         <PxBadge tone="sky">안내</PxBadge>
         <p className="mt-2">지금은 화면을 먼저 만든 단계라 음성 변환과 AI 회의록이 예시 내용으로 만들어집니다. 녹음, 업로드, 복사, 공유, 경험치 흐름은 실제처럼 동작해 볼 수 있습니다.</p>
       </div>
@@ -70,7 +70,7 @@ export default function GuideView() {
       <Section id="flow" title="전체 흐름" desc="녹음부터 회의록까지 다섯 단계로 진행됩니다.">
         <ol className="grid gap-3 sm:grid-cols-2">
           {FLOW.map((f) => (
-            <li key={f.title} className="flex gap-3 border-[3px] border-border p-3">
+            <li key={f.title} className="flex gap-3 border-2 border-border p-3">
               <PixelIcon name={f.icon} size={28} className="mt-1 shrink-0 text-(--mk-mint)" />
               <div><h3 className="font-pixel text-lg">{f.title}</h3><p className="text-sm text-muted-foreground">{f.body}</p></div>
             </li>
@@ -99,7 +99,7 @@ export default function GuideView() {
       <Section id="upload" title="파일 업로드" desc="휴대폰이나 다른 기기로 이미 녹음한 파일, 화이트보드 사진도 쓸 수 있습니다.">
         <ul className="grid gap-2 sm:grid-cols-3">
           {[["음성 형식", "MP3 · WAV · M4A · WEBM · MP4 · OGG"], ["사진 형식", "JPG · PNG · HEIC · WEBP"], ["최대 크기", "파일 하나당 500MB"]].map(([k, v]) => (
-            <li key={k} className="border-[3px] border-border p-3"><p className="text-sm text-muted-foreground">{k}</p><p className="font-pixel text-lg">{v}</p></li>
+            <li key={k} className="border-2 border-border p-3"><p className="text-sm text-muted-foreground">{k}</p><p className="font-pixel text-lg">{v}</p></li>
           ))}
         </ul>
         <p className="mt-3">파일을 업로드 영역으로 끌어다 놓거나 <b>파일 선택</b>을 누른 뒤 <b>업로드하고 텍스트로 변환</b>을 누릅니다. 휴대폰에서 <b>화이트보드 사진 찍기 · 올리기</b>를 누르면 카메라가 바로 열립니다. 인식 확신이 낮은 줄에는 ‘확인 필요’가 표시됩니다.</p>
@@ -130,7 +130,7 @@ export default function GuideView() {
             ["음성은 보내지 않습니다", "AI 회의록은 변환된 텍스트만 사용하도록 설계되었고, 음성 파일은 AI로 보내지 않습니다."],
             ["공유 링크는 읽기 전용", "링크를 아는 사람은 회의록을 볼 수만 있고, 7일 뒤 자동으로 닫힙니다. 언제든 끌 수 있습니다."],
           ].map(([k, v]) => (
-            <li key={k} className="border-[3px] border-border p-3"><h3 className="font-pixel text-lg">{k}</h3><p className="mt-1 text-sm text-muted-foreground">{v}</p></li>
+            <li key={k} className="border-2 border-border p-3"><h3 className="font-pixel text-lg">{k}</h3><p className="mt-1 text-sm text-muted-foreground">{v}</p></li>
           ))}
         </ul>
       </Section>
@@ -138,15 +138,15 @@ export default function GuideView() {
       <Section id="faq" title="문제 해결">
         <Accordion type="single" collapsible className="grid gap-2">
           {FAQ.map(([q, a], i) => (
-            <AccordionItem key={q} value={`q${i}`} className="rounded-none border-[3px] border-border bg-card">
-              <AccordionTrigger className="rounded-none text-base">{q}</AccordionTrigger>
+            <AccordionItem key={q} value={`q${i}`} className="border-2 border-border bg-card">
+              <AccordionTrigger className="text-base">{q}</AccordionTrigger>
               <AccordionContent><p className="px-4 pb-4 text-muted-foreground">{a}</p></AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
       </Section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-[3px] border-border bg-card p-4" data-rise>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-2 border-border bg-card p-4" data-rise>
         <p className="font-pixel text-xl">준비가 되었다면 퀘스트 보드에서 시작하세요!</p>
         <Link href="/malmoa/home" className={pxButtonClass("mint", "md")}><PixelIcon name="mic" size={18} />녹음하러 가기</Link>
       </div>

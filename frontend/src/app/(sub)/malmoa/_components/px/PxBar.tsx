@@ -15,7 +15,7 @@ export function PxBar({ value, max = 100, segments = 20, tone = "mint", label, c
       className={cn("flex h-5 gap-[2px] border-[3px] border-(--mk-px-edge) bg-(--mk-px-edge) p-[2px]", className)}
     >
       {Array.from({ length: segments }, (_, i) => (
-        <span key={i} className={cn("h-full flex-1", i < filled ? fill : "bg-muted")} />
+        <span key={i} className={cn("h-full flex-1 transition-colors duration-500", i < filled ? fill : "bg-muted")} />
       ))}
     </div>
   );
