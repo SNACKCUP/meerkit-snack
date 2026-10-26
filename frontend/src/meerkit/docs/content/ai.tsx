@@ -95,7 +95,7 @@ export function AiPromptInputDoc() {
         rows={[
           ["질문 입력", "입력창에 글을 쓰면 줄이 늘어납니다(최대 약 8줄까지, 그 이상은 안에서 스크롤)."],
           ["보내기", "Enter 또는 ↑ 버튼. 줄바꿈은 Shift + Enter."],
-          ["파일 첨부", "클립 버튼으로 파일을 고릅니다. 첨부한 파일은 입력창 위에 칩으로 나타나고 ✕로 뺄 수 있습니다."],
+          ["파일 첨부", "클립 버튼으로 고르거나 입력창에 파일을 끌어다 놓습니다. 첨부한 파일은 입력창 위에 칩으로 나타나고 ✕로 뺄 수 있습니다."],
           ["에이전트 선택", "알약 모양 버튼을 눌러 목록에서 고릅니다. 각 항목에 설명이 함께 나옵니다."],
           ["응답 중지", "응답을 기다리는 동안 ↑ 버튼이 ■ 중지 버튼으로 바뀝니다."],
           ["글자 수 확인", "최대 글자 수의 80%를 넘으면 오른쪽에 \"1650/2000\"이 나타납니다."],
@@ -116,7 +116,7 @@ export function AiPromptInputDoc() {
       </Preview>
       <UL>
         <li>첨부를 쓰지 않으면 <Ic>{"attachments={false}"}</Ic>로 버튼을 숨깁니다.</li>
-        <li>끌어다 놓기 방식의 큰 첨부 영역이 필요하다면 File Dropzone을 따로 쓰세요.</li>
+        <li>입력창 자체에 파일을 끌어다 놓을 수 있습니다. 끌어다 놓는 큰 첨부 영역이 따로 필요하다면 File Dropzone을 쓰세요.</li>
         <li><strong>브라우저의 검사는 편의일 뿐입니다.</strong> 서버가 형식·크기·내용을 다시 검사해야 합니다.</li>
       </UL>
 
@@ -156,6 +156,9 @@ export function AiPromptInputDoc() {
           ["maxLength", "number", "최대 글자 수. 기본 2000."],
           ["attachments", "boolean", "첨부 버튼 표시. 기본 true."],
           ["accept / maxFiles / maxSizeMB", "string / number / number", "첨부 형식, 최대 개수(기본 4), 파일당 최대 크기(기본 10MB)."],
+          ["minFiles", "number", "보내려면 첨부해야 하는 최소 파일 수. 못 채우면 보내기가 잠깁니다. 기본 0."],
+          ["requireText", "boolean", "false면 글 없이 파일만으로도 보낼 수 있습니다. 기본 true."],
+          ["submitLabel", "string", "보내기 버튼에 화살표 대신 보여 줄 글자. 예: \"분류 시작\"."],
           ["glow", "boolean", "컬러 글로우. 기본 true."],
           ["disabled / autoFocus / className", "boolean / boolean / string", "잠금, 자동 포커스, 추가 클래스."],
         ]}

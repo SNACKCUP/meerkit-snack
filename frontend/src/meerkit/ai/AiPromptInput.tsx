@@ -36,6 +36,12 @@ interface AiPromptInputProps {
   accept?: string;
   maxFiles?: number;
   maxSizeMB?: number;
+  /** 보내려면 첨부해야 하는 최소 파일 수. 못 채우면 보내기가 잠긴다. 기본 0 */
+  minFiles?: number;
+  /** false면 글 없이 파일만으로도 보낼 수 있다. 기본 true(글이 있어야 보낼 수 있음) */
+  requireText?: boolean;
+  /** 있으면 보내기 버튼이 화살표 대신 이 글자를 보여 준다. 예: "분류 시작" */
+  submitLabel?: string;
   /** 입력창 아래의 컬러 글로우. 포커스 중이거나 응답을 기다리는 동안 켜진다. 기본 true */
   glow?: boolean;
   /**
@@ -64,6 +70,9 @@ export function AiPromptInput({
   accept,
   maxFiles = 4,
   maxSizeMB = 10,
+  minFiles = 0,
+  requireText = true,
+  submitLabel,
   glow = true,
   voice,
   disabled,
@@ -74,6 +83,7 @@ export function AiPromptInput({
   const [files, setFiles] = useState<File[]>([]);
   const [focused, setFocused] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const areaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -101,7 +111,8 @@ export function AiPromptInput({
   }
 
   const current = agents?.find((a) => a.id === agent) ?? agents?.[0];
-  const canSend = text.trim().length > 0 && !pending && !disabled && !voiceBusy;
+  const hasContent = requireText ? text.trim().length > 0 : text.trim().length > 0 || files.length > 0;
+  const canSend = hasContent && files.length >= minFiles && !pending && !disabled && !voiceBusy;
   const nearLimit = text.length >= maxLength * 0.8;
 
   function resize() {
@@ -139,9 +150,22 @@ export function AiPromptInput({
       <div
         className={cn(
           "relative isolate grid gap-2 overflow-hidden rounded-3xl border bg-surface p-3 shadow-soft transition-[box-shadow,border-color] duration-300",
+          dragging && "border-brand bg-brand/5",
           focused && "border-brand/40 shadow-[0_0_0_3px_color-mix(in_srgb,var(--mk-brand)_12%,transparent),var(--mk-shadow-soft)]",
           disabled && "opacity-60",
         )}
+        onDragOver={(e) => {
+          if (!attachments || disabled || !e.dataTransfer.types.includes("Files")) return;
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          if (!attachments || disabled) return;
+          e.preventDefault();
+          setDragging(false);
+          addFiles(e.dataTransfer.files);
+        }}
       >
         {voice && <VoiceGlow levelRef={mic.levelRef} active={listening} className="absolute inset-x-0 bottom-0 -z-10" />}
 
@@ -250,8 +274,8 @@ export function AiPromptInput({
                 <Square className="fill-current" />
               </Button>
             ) : (
-              <Button type="button" size="icon" aria-label="보내기" disabled={!canSend} onClick={send} className="rounded-full">
-                <ArrowUp />
+              <Button type="button" size={submitLabel ? "default" : "icon"} aria-label={submitLabel ?? "보내기"} disabled={!canSend} onClick={send} className="rounded-full">
+                {submitLabel ?? <ArrowUp />}
               </Button>
             )}
           </span>

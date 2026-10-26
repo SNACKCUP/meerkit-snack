@@ -1,0 +1,172 @@
+"use client";
+
+import { useState, type FormEvent, type ReactNode } from "react";
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import { Btn, Pill } from "./ui";
+
+const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+/** 이메일을 하나씩 추가해 칩으로 모아 두는 입력 */
+export function EmailChips({ value, onChange, id }: { value: string[]; onChange: (v: string[]) => void; id: string }) {
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
+  function add() {
+    const t = text.trim();
+    if (!t) return;
+    if (!emailOk(t)) return setError("이메일 형식이 올바르지 않아요.");
+    if (value.some((v) => v.toLowerCase() === t.toLowerCase())) return setError("이미 추가한 이메일이에요.");
+    onChange([...value, t]);
+    setText("");
+    setError("");
+  }
+  return (
+    <div className="grid gap-2">
+      {value.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5">
+          {value.map((v) => (
+            <li key={v}>
+              <Pill tone="yellow" className="gap-1.5">
+                {v}
+                <button type="button" aria-label={`${v} 빼기`} className="text-[#111]/70 hover:text-[#111]" onClick={() => onChange(value.filter((x) => x !== v))}>✕</button>
+              </Pill>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex gap-2">
+        <Input id={id} type="email" value={text} placeholder="name@company.com" onChange={(e) => { setText(e.target.value); setError(""); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} className="h-10 rounded-full border-[#111] bg-white" />
+        <Btn size="sm" onClick={add}>추가</Btn>
+      </div>
+      {error && <p role="alert" className="text-xs text-[#b3261e]">{error}</p>}
+    </div>
+  );
+}
+
+export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (v: boolean) => void; onCreate: (v: { name: string; startDate: string; endDate: string; inviteEmails: string[] }) => void }) {
+  const [name, setName] = useState("");
+  const [startDate, setStart] = useState("");
+  const [endDate, setEnd] = useState("");
+  const [emails, setEmails] = useState<string[]>([]);
+  const [error, setError] = useState("");
+
+  function reset() {
+    setName(""); setStart(""); setEnd(""); setEmails([]); setError("");
+  }
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return setError("프로젝트명을 입력해 주세요.");
+    if (!startDate || !endDate) return setError("시작일과 종료일을 골라 주세요.");
+    if (endDate < startDate) return setError("종료일은 시작일 이후여야 해요.");
+    onCreate({ name: name.trim(), startDate, endDate, inviteEmails: emails });
+    reset();
+    onOpenChange(false);
+  }
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+      <DialogContent className="max-w-lg rounded-[28px] border-[1.5px] border-[#111]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-extrabold tracking-tight">프로젝트 등록</DialogTitle>
+          <DialogDescription>시작일, 종료일, 프로젝트명만 있으면 시작할 수 있어요. 팀 멤버는 나중에 초대해도 됩니다.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid gap-4" noValidate>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="시작일" htmlFor="pf-start"><Input id="pf-start" type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
+            <Field label="종료일" htmlFor="pf-end"><Input id="pf-end" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
+          </div>
+          <Field label="프로젝트명" htmlFor="pf-name"><Input id="pf-name" value={name} maxLength={50} placeholder="예: 쇼핑몰 리뉴얼" onChange={(e) => setName(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
+          <Field label="팀 멤버 추가 (선택)" htmlFor="pf-members"><EmailChips id="pf-members" value={emails} onChange={setEmails} /></Field>
+          <p className="text-xs text-[#6c6a62]">추가한 멤버에게는 초대장이 발송되고, 수락하면 일반 멤버가 됩니다. 프로젝트를 만든 분은 이 프로젝트의 관리자가 됩니다.</p>
+          {error && <p role="alert" className="text-sm font-medium text-[#b3261e]">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Btn onClick={() => { reset(); onOpenChange(false); }}>취소</Btn>
+            <Btn variant="primary" type="submit">등록</Btn>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={htmlFor} className="text-xs font-bold">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
+export function InviteDialog({ open, onOpenChange, onInvite }: { open: boolean; onOpenChange: (v: boolean) => void; onInvite: (email: string) => string | null }) {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    const err = onInvite(email);
+    if (err) return setError(err);
+    setEmail("");
+    setError("");
+    onOpenChange(false);
+  }
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) { setEmail(""); setError(""); } onOpenChange(v); }}>
+      <DialogContent className="max-w-md rounded-[28px] border-[1.5px] border-[#111]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-extrabold tracking-tight">멤버 초대</DialogTitle>
+          <DialogDescription>이메일로 초대장을 보내요. 가입하지 않은 분은 링크로 가입한 뒤 수락할 수 있고, 초대는 7일 동안 유효해요.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="grid gap-4" noValidate>
+          <Field label="이메일" htmlFor="inv-email"><Input id="inv-email" type="email" value={email} placeholder="name@company.com" autoFocus onChange={(e) => { setEmail(e.target.value); setError(""); }} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
+          {error && <p role="alert" className="text-sm font-medium text-[#b3261e]">{error}</p>}
+          <div className="flex justify-end gap-2">
+            <Btn onClick={() => onOpenChange(false)}>취소</Btn>
+            <Btn variant="primary" type="submit">초대장 보내기</Btn>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function ConfirmDialog({ open, onOpenChange, title, body, confirmLabel, danger, onConfirm }: { open: boolean; onOpenChange: (v: boolean) => void; title: string; body: ReactNode; confirmLabel: string; danger?: boolean; onConfirm: () => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md rounded-[28px] border-[1.5px] border-[#111]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-extrabold tracking-tight">{title}</DialogTitle>
+          <DialogDescription asChild><div className="text-sm text-[#6c6a62]">{body}</div></DialogDescription>
+        </DialogHeader>
+        <div className="flex justify-end gap-2">
+          <Btn onClick={() => onOpenChange(false)}>취소</Btn>
+          <Btn variant={danger ? "dark" : "primary"} onClick={() => { onConfirm(); onOpenChange(false); }}>{confirmLabel}</Btn>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** 히스토리 보기를 누르면 나오는 Pro 안내. 실제 결제는 없다. */
+export function ProDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg rounded-[28px] border-[1.5px] border-[#111]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-extrabold tracking-tight">히스토리는 Pro에서 볼 수 있어요</DialogTitle>
+          <DialogDescription>확정할 때마다 버전이 쌓이고, 이전 버전과 비교하거나 되돌릴 수 있어요.</DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="rounded-2xl border-[1.5px] border-[#111] p-4"><b className="block text-base">Free</b><ul className="mt-2 grid gap-1 text-[#6c6a62]"><li>프로젝트 3개</li><li>최신 버전만 보관</li></ul></div>
+          <div className="rounded-2xl border-[1.5px] border-[#111] bg-[#f2f69a] p-4"><b className="block text-base">Pro</b><ul className="mt-2 grid gap-1"><li>프로젝트 무제한</li><li>버전 히스토리와 비교</li></ul></div>
+        </div>
+        <p className="text-xs text-[#6c6a62]">데모 화면이라 실제 결제는 진행되지 않아요.</p>
+        <div className="flex justify-end gap-2">
+          <Btn onClick={() => onOpenChange(false)}>닫기</Btn>
+          <Btn variant="primary" onClick={() => onOpenChange(false)}>Pro로 업그레이드</Btn>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
