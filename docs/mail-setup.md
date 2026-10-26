@@ -111,6 +111,23 @@ MAIL_FROM=MeerKit <no-reply@mail.meerkit.dev>
 2. Gmail에서 메일을 열고 ⋮ → **원본 보기**를 누릅니다. **SPF, DKIM, DMARC가 모두 PASS**면 끝입니다.
 3. 오지 않으면 Resend → **Emails**에서 상태를 봅니다(Delivered / Bounced). 스팸함도 확인합니다.
 
+## 자주 막히는 곳
+
+| 증상 | 원인 | 해결 |
+| --- | --- | --- |
+| 메일이 안 나가고 백엔드 로그에만 본문이 찍힘 | `.env`에 키(`MAIL_SMTP_PASSWORD`)만 넣고 `MAIL_BACKEND=smtp` 등 나머지 `MAIL_*` 줄이 없음. 기본값 `console`로 동작 | 6장의 8줄을 모두 넣고 백엔드를 다시 시작 |
+| `SMTPNotSupportedError: STARTTLS extension not supported` | 위와 같은 이유로 `MAIL_SMTP_HOST`가 기본값 `localhost:1025`(Mailpit)를 가리킴 | `MAIL_SMTP_HOST=smtp.resend.com`, `MAIL_SMTP_PORT=587`, `MAIL_SMTP_STARTTLS=true` 확인 |
+| Resend에서 계속 Pending / Failed | Porkbun Host 칸에 전체 주소를 넣어 이름이 두 번 붙음(`…mail.meerkit.dev.meerkit.dev`), 또는 `[…]`로 줄어든 값을 그대로 복사 | Host는 앞부분만, 값은 전체 복사. `dig` 명령으로 확인 |
+| `SMTPAuthenticationError` | 키를 잘못 붙여 넣음(앞뒤 공백·따옴표)이거나, 이미 지운 키 | Resend에서 키를 새로 만들어 다시 붙여 넣기 |
+| 받은편지함 대신 스팸함 | DNS 기록 일부 누락, `MAIL_FROM` 주소가 인증한 도메인(`mail.<도메인>`)과 다름 | Gmail "원본 보기"에서 SPF·DKIM·DMARC가 모두 PASS인지 확인 |
+
+설정만 빠르게 점검하려면(키는 출력하지 않음):
+
+```bash
+cd backend
+uv run python -c "from app.core.config import settings as s; print(s.mail_backend, s.mail_smtp_host, s.mail_smtp_port, s.mail_from, 'key set:', bool(s.mail_smtp_password))"
+```
+
 ## 운영 배포(S3) 때 할 일
 
 - Resend에서 운영용 키 `meerkit-prod`(Sending access, `mail.<도메인>`)를 따로 만들어 Render 환경 변수에 넣습니다. 로컬 키는 운영에 쓰지 않습니다.
