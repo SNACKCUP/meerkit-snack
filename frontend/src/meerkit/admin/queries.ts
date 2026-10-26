@@ -1,5 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
+import { errorMessage } from "../api/error";
 import { usersApi } from "../api/users";
 import type { RoleName } from "../roles";
 import type { MemberQuery } from "../types";
@@ -20,6 +22,18 @@ export function useUpdateRoles() {
   return useMutation({
     mutationFn: ({ id, roles }: { id: number; roles: RoleName[] }) => usersApi.updateRoles(id, roles),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey }),
+  });
+}
+
+export function useUpdateActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) => usersApi.updateActive(id, isActive),
+    onSuccess: (user, { isActive }) => {
+      toast.success(isActive ? `${user.user_id} 계정을 활성화했습니다.` : `${user.user_id} 계정을 비활성화했습니다.`);
+      return queryClient.invalidateQueries({ queryKey: membersKey });
+    },
+    onError: (error) => toast.error(errorMessage(error) ?? "상태를 바꾸지 못했습니다."),
   });
 }
 

@@ -152,3 +152,20 @@ def test_roles_list(client, make_user, login):
     make_user("user01")
     roles = client.get("/api/users/roles", headers=login("user01")).json()
     assert [(r["id"], r["name"]) for r in roles] == [(1, "MASTER"), (2, "OWNER"), (3, "VIEWER"), (4, "WRITER")]
+
+
+def test_response_shows_lock_and_active_toggle_clears_it(client, db, make_user, login):
+    from datetime import UTC, datetime, timedelta
+
+    make_user("admin01", admin=True)
+    user = make_user("user01")
+    user.locked_until = datetime.now(UTC) + timedelta(minutes=5)
+    db.commit()
+    headers = login("admin01")
+
+    listed = client.get("/api/users", params={"q": "user01"}, headers=headers).json()["items"][0]
+    assert listed["locked_until"] is not None  # 관리자 화면의 "잠김" 표시에 씀
+
+    response = client.patch(f"/api/users/{user.id}/active", json={"is_active": True}, headers=headers)
+    assert response.status_code == 200
+    assert response.json()["locked_until"] is None

@@ -21,6 +21,8 @@ interface MemberDirectoryProps {
   loading?: boolean;
   onRoleChange: (id: number, roles: RoleName[]) => void;
   onRemove: (id: number) => void;
+  /** 활성/비활성 전환. 주면 표에 상태 버튼이 생긴다 */
+  onActiveChange?: (id: number, isActive: boolean) => void;
   /** 역할 변경 방식. 기본은 확인 창("dialog"), "inline"이면 표 안의 선택 상자 */
   roleEditor?: "dialog" | "inline";
   /** 지금 로그인한 관리자의 id (본인 행의 역할·탈퇴 처리 잠금용) */
@@ -29,7 +31,7 @@ interface MemberDirectoryProps {
 
 // 검색·필터·표·페이지네이션을 한 덩어리로 묶은 관리자 멤버 목록.
 // 데이터는 밖에서 주입한다 (서버 조회든 목 데이터든 상관없다).
-export function MemberDirectory({ query, onQueryChange, data, loading, onRoleChange, onRemove, roleEditor, currentUserId }: MemberDirectoryProps) {
+export function MemberDirectory({ query, onQueryChange, data, loading, onRoleChange, onRemove, onActiveChange, roleEditor, currentUserId }: MemberDirectoryProps) {
   const total = data?.total ?? 0;
   const pageCount = Math.max(1, Math.ceil(total / query.size));
   const from = total === 0 ? 0 : (query.page - 1) * query.size + 1;
@@ -50,7 +52,7 @@ export function MemberDirectory({ query, onQueryChange, data, loading, onRoleCha
           </div>
         ) : (
           <LoadingOverlay loading={!!loading}>
-            <MemberTable members={data!.items} onRoleChange={onRoleChange} onRemove={onRemove} roleEditor={roleEditor} currentUserId={currentUserId} />
+            <MemberTable members={data!.items} onRoleChange={onRoleChange} onRemove={onRemove} onActiveChange={onActiveChange} roleEditor={roleEditor} currentUserId={currentUserId} />
           </LoadingOverlay>
         )}
       </div>

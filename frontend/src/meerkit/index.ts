@@ -15,7 +15,7 @@ export { UserMenu } from "./auth/components/UserMenu";
 export { MemberTable } from "./admin/components/MemberTable";
 export { MemberDirectory } from "./admin/components/MemberDirectory";
 export { RoleAssignDialog } from "./admin/components/RoleAssignDialog";
-export { useMembers, useUpdateRoles, useRemoveMember } from "./admin/queries";
+export { useMembers, useUpdateRoles, useUpdateActive, useRemoveMember } from "./admin/queries";
 export { meerkitConfig } from "./config";
 export { api } from "./api/client";
 export { ROLES, ADMIN_ROLE, hasRole, isAdminUser } from "./roles";
