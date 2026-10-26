@@ -223,13 +223,14 @@
 :root[data-mk-motion="off"] .mk-menu,
 :root[data-mk-motion="off"] .mk-dialog,
 :root[data-mk-motion="off"] .mp-blink,
-:root[data-mk-motion="off"] .mp-bob {
+:root[data-mk-motion="off"] .mp-bob,
+:root[data-mk-motion="off"] .mp-root [data-rise] {
   animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [class*="mk-ld"], [class*="mk-ld"] *, .mk-skeleton,
-  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping, .mp-blink, .mp-bob {
+  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping, .mp-blink, .mp-bob, .mp-root [data-rise] {
     animation: none !important;
   }
 }
@@ -258,3 +259,13 @@
 }
 .mp-blink { animation: mp-blink 1s steps(1, end) infinite; }
 .mp-bob { animation: mp-bob 1.2s steps(2, end) infinite; }
+
+/* 말모아 화면 진입: 서버에서 그린 HTML과 어긋나지 않도록 JS 없이 CSS로만 끊어서 나타낸다 */
+@keyframes mp-rise {
+  from { opacity: 0; transform: translateY(16px); }
+}
+.mp-root [data-rise] { animation: mp-rise 0.5s steps(5, end) both; }
+.mp-root [data-rise]:nth-child(2) { animation-delay: 0.08s; }
+.mp-root [data-rise]:nth-child(3) { animation-delay: 0.16s; }
+.mp-root [data-rise]:nth-child(4) { animation-delay: 0.24s; }
+.mp-root [data-rise]:nth-child(n + 5) { animation-delay: 0.32s; }

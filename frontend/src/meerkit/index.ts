@@ -6,6 +6,7 @@ export { allDocs } from "./docs/nav";
 export { RequireAuth } from "./auth/guards/RequireAuth";
 export { RequireRole } from "./auth/guards/RequireRole";
 export { useAuth } from "./auth/hooks";
+export { useLogout } from "./auth/mutations";
 export { AiPromptInput, type AiAgent } from "./ai/AiPromptInput";
 export { ThinkingIndicator } from "./ai/ThinkingIndicator";
 export { ThinkingOrb, ORB_STATES, type OrbState } from "./ai/ThinkingOrb";
