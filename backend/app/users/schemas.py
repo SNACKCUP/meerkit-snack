@@ -48,6 +48,7 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    locked_until: datetime | None = None  # 로그인 잠금이 풀리는 시각 (연속 실패로 잠겼을 때)
     deactivated_at: datetime | None = None  # 탈퇴(또는 관리자 삭제) 시각
     deleted_at: datetime | None = None  # 보관 기간이 지나 개인정보를 지운 시각
 

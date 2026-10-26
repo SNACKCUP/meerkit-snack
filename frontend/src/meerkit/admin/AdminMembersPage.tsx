@@ -8,7 +8,7 @@ import { useAuth } from "../auth/hooks";
 import type { MemberQuery } from "../types";
 import { MemberDirectory } from "./components/MemberDirectory";
 import { defaultMemberQuery } from "./members-filter";
-import { useMembers, useRemoveMember, useUpdateRoles } from "./queries";
+import { useMembers, useRemoveMember, useUpdateActive, useUpdateRoles } from "./queries";
 
 function Members() {
   const [query, setQuery] = useState<MemberQuery>(defaultMemberQuery);
@@ -16,6 +16,7 @@ function Members() {
   const { data, isFetching, isError } = useMembers(query);
   const updateRoles = useUpdateRoles();
   const removeMember = useRemoveMember();
+  const updateActive = useUpdateActive();
   const { user } = useAuth();
 
   return (
@@ -29,6 +30,7 @@ function Members() {
         loading={isFetching}
         onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}
         onRemove={(id) => removeMember.mutate(id)}
+        onActiveChange={(id, isActive) => updateActive.mutate({ id, isActive })}
         currentUserId={user?.id}
       />
     </main>

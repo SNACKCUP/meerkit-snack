@@ -564,6 +564,7 @@ export function MemberTableDoc() {
           ["members", "User[]", "표시할 사용자 목록. 비어 있으면 안내 문구를 보여 줍니다.", true],
           ["onRoleChange", "(id: number, roleId: number) => void", "역할 선택이 바뀌면 호출합니다.", true],
           ["onRemove", "(id: number) => void", "탈퇴 처리 버튼을 누르면 호출합니다.", true],
+          ["onActiveChange", "(id: number, isActive: boolean) => void", "주면 상태에 맞는 버튼 하나가 생깁니다: 활성 → 비활성화, 비활성 → 활성화, 잠김 → 잠금 해제, 탈퇴 → 복구 (PATCH /users/{id}/active)."],
           ["roleEditor", '"dialog" | "inline"', "역할 변경 방식. 기본 dialog(확인 창), inline은 표 안의 선택 상자."],
           ["currentUserId", "number", "로그인한 관리자의 id. 본인 행은 역할 변경·탈퇴 처리를 잠급니다 (서버도 막음)."],
         ]}

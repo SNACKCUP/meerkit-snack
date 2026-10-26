@@ -19,6 +19,11 @@ interface MemberTableProps {
   onRoleChange: (id: number, roles: RoleName[]) => void;
   onRemove: (id: number) => void;
   /**
+   * 활성/비활성 전환 (PATCH /users/{id}/active). 주면 [비활성화]·[활성화]·[잠금 해제]·[복구] 버튼이 생긴다.
+   * 서버는 이때 로그인 잠금도 함께 풀고, 탈퇴 계정을 활성화하면 탈퇴를 취소한다.
+   */
+  onActiveChange?: (id: number, isActive: boolean) => void;
+  /**
    * "dialog": 역할 옆 [변경] 버튼 → 확인 창에서 역할 설명을 보고 선택 (기본)
    * "inline": 표 안의 선택 상자에서 바로 변경
    */
@@ -27,15 +32,40 @@ interface MemberTableProps {
   currentUserId?: number;
 }
 
+// 연속 로그인 실패로 잠긴 상태 (잠금 시각이 아직 지나지 않음)
+const isLocked = (u: User) => !!u.locked_until && new Date(u.locked_until).getTime() > Date.now();
+
 function StatusBadge({ user }: { user: User }) {
   if (user.deactivated_at) return <Badge variant="destructive">삭제됨</Badge>;
-  return user.is_active ? <Badge variant="brand">활성</Badge> : <Badge variant="secondary">비활성</Badge>;
+  return (
+    <span className="flex flex-wrap gap-1">
+      {user.is_active ? <Badge variant="brand">활성</Badge> : <Badge variant="secondary">비활성</Badge>}
+      {isLocked(user) && <Badge variant="outline">잠김</Badge>}
+    </span>
+  );
+}
+
+// 상태에 맞는 버튼 하나: 활성 → 비활성화, 비활성 → 활성화, 잠김 → 잠금 해제, 탈퇴 → 복구 (개인정보를 지운 계정은 없음)
+function ActiveButton({ user, disabled, onChange }: { user: User; disabled: boolean; onChange: (isActive: boolean) => void }) {
+  if (user.deleted_at) return null;
+  const [label, next] = user.deactivated_at
+    ? ["복구", true]
+    : isLocked(user)
+      ? ["잠금 해제", true]
+      : user.is_active
+        ? ["비활성화", false]
+        : ["활성화", true];
+  return (
+    <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onChange(next)}>
+      {label}
+    </Button>
+  );
 }
 
 const date = (iso: string) => iso.slice(0, 10);
 const roleNames = (u: User) => ROLES.filter((r) => u.roles.some((ur) => ur.id === r.id)).map((r) => r.name);
 
-export function MemberTable({ members, onRoleChange, onRemove, roleEditor = "dialog", currentUserId }: MemberTableProps) {
+export function MemberTable({ members, onRoleChange, onRemove, onActiveChange, roleEditor = "dialog", currentUserId }: MemberTableProps) {
   const [target, setTarget] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -92,9 +122,15 @@ export function MemberTable({ members, onRoleChange, onRemove, roleEditor = "dia
               <TableCell><StatusBadge user={m} /></TableCell>
               <TableCell className="text-muted-foreground">{date(m.created_at)}</TableCell>
               <TableCell>
-                <Button variant="outline" size="sm" disabled={locked} onClick={() => onRemove(m.id)}>
-                  탈퇴 처리
-                </Button>
+                <span className="flex items-center justify-end gap-1">
+                  {onActiveChange && (
+                    // 본인 계정은 서버가 막으므로 잠근다. 탈퇴 계정은 [복구]만 쓸 수 있다
+                    <ActiveButton user={m} disabled={m.id === currentUserId} onChange={(next) => onActiveChange(m.id, next)} />
+                  )}
+                  <Button variant="outline" size="sm" disabled={locked} onClick={() => onRemove(m.id)}>
+                    탈퇴 처리
+                  </Button>
+                </span>
               </TableCell>
             </TableRow>
             );
