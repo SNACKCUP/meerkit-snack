@@ -48,6 +48,7 @@ export function Hooks() {
           [<Ic key="2">useSignup()</Ic>, "mutate({ user_id, name, email, password })", "가입 후 자동 로그인"],
           [<Ic key="3">useLogout()</Ic>, "mutate()", "토큰 제거, 내 정보 캐시 삭제"],
           [<Ic key="4">useUpdateRoles()</Ic>, "mutate({ id, roles })", "멤버 목록 다시 불러오기 (PUT /users/{id}/roles)"],
+          [<Ic key="4b">useUpdateActive()</Ic>, "mutate({ id, isActive })", "활성/비활성·잠금 해제·탈퇴 취소 후 목록 다시 불러오기 (PATCH /users/{id}/active)"],
           [<Ic key="5">useRemoveMember()</Ic>, "mutate(id)", "멤버 목록 다시 불러오기"],
           [<Ic key="6">useForgotPassword()</Ic>, "mutate({ email })", "isSuccess가 true가 되면 안내 화면"],
           [<Ic key="a">useSendEmailCode()</Ic>, "mutate({ email })", "인증번호 발송 (이메일 인증 사용 시)"],
