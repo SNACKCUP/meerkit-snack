@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 
 import { UserMenu, useAuth, useLogout } from "@/meerkit";
 import { cn } from "@/lib/utils";
@@ -20,11 +20,14 @@ import { pxButtonClass } from "./px";
 const NAV: { href: string; label: string }[] = [
   { href: "/malmoa", label: "처음" },
   { href: "/malmoa/home", label: "퀘스트 보드" },
+  { href: "/malmoa/meetings", label: "회의 목록" },
 ];
 
 // 말모아 전체의 틀: 전용 색을 한 번만 입히고, 상단 바(로고·메뉴·계정)와 바닥글을 둔다.
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  // 동적 경로의 미리 그린 화면에서는 현재 경로를 알 수 없으므로, 메뉴 강조는 마운트 뒤에 계산한다 (하이드레이션 불일치 방지)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const { user, isAuthenticated, isLoading } = useAuth();
   const logout = useLogout();
 
@@ -55,11 +58,14 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
           <Link href="/malmoa" aria-label="말모아 처음으로"><Logo /></Link>
           <nav className="flex items-center gap-4" aria-label="주요 메뉴">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} aria-current={path === n.href ? "page" : undefined} className={cn("font-pixel text-lg hover:text-(--mk-gold)", path === n.href ? "text-(--mk-gold)" : "text-muted-foreground")}>
+            {NAV.map((n) => {
+              const here = mounted && (n.href === "/malmoa" ? path === n.href : path.startsWith(n.href));
+              return (
+              <Link key={n.href} href={n.href} aria-current={here ? "page" : undefined} className={cn("font-pixel text-lg hover:text-(--mk-gold)", here ? "text-(--mk-gold)" : "text-muted-foreground")}>
                 {n.label}
               </Link>
-            ))}
+              );
+            })}
           </nav>
           <div className="ml-auto flex items-center gap-3">
             {isLoading ? (

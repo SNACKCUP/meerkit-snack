@@ -5,8 +5,9 @@ import { persist } from "zustand/middleware";
 
 import { localDay } from "./format";
 import { levelOf } from "./levels";
-import { SEED_XP, seedMeetings, seedXpLog } from "./seed";
-import type { LevelUp, Meeting, MeetingSource, XpEntry } from "./types";
+import { SEED_XP, seedMeetings, seedMinutes, seedXpLog } from "./seed";
+import { minutesTemplate } from "./sample";
+import type { LevelUp, Meeting, MeetingSource, MinutesDoc, XpEntry } from "./types";
 
 /*
   말모아 목 데이터 저장소.
@@ -29,6 +30,7 @@ export interface NewMeeting {
 
 interface State {
   meetings: Meeting[];
+  minutes: Record<string, MinutesDoc>;
   xp: number;
   xpLog: XpEntry[];
   streak: number;
@@ -40,6 +42,8 @@ interface State {
 
   addMeeting: (input: NewMeeting) => string;
   retry: (id: string) => void;
+  generateMinutes: (id: string, force?: boolean) => void;
+  saveMinutes: (id: string, markdown: string) => void;
   dismissLevelUp: () => void;
   reset: () => void;
   finishHydration: () => void;
@@ -58,25 +62,54 @@ export const useMalmoa = create<State>()(
     (set, get) => {
       const patch = (id: string, p: Partial<Meeting>) => set((s) => ({ meetings: s.meetings.map((m) => (m.id === id ? { ...m, ...p } : m)) }));
 
+      // 경험치를 더하고, 레벨이 오르면 알림을 띄운다
+      function grant(amount: number, reason: string, extra: Partial<State> = {}) {
+        const { xp } = get();
+        const nextXp = xp + amount;
+        const from = levelOf(xp);
+        const to = levelOf(nextXp);
+        set((s) => ({
+          ...extra,
+          xp: nextXp,
+          xpLog: [{ id: uid(), at: nowIso(), amount, reason }, ...s.xpLog].slice(0, 50),
+          levelUp: to > from ? { from, to } : s.levelUp,
+        }));
+      }
+
+      // 변환 완료 보상: 기본 + 길이 보너스 + 연속 기록 보너스
       function award(m: Meeting) {
-        const { xp, streak, lastActiveDay } = get();
+        const { streak, lastActiveDay } = get();
         const today = localDay(new Date());
         const yesterday = localDay(new Date(Date.now() - 86_400_000));
         const nextStreak = lastActiveDay === today ? streak : lastActiveDay === yesterday ? streak + 1 : 1;
         const base = m.source === "image" ? 20 : 50;
         const lengthBonus = m.durationSec ? Math.floor(m.durationSec / 600) * 5 : 0;
         const streakBonus = lastActiveDay === today ? 0 : 5 * Math.min(nextStreak - 1, 7);
-        const amount = base + lengthBonus + streakBonus;
-        const nextXp = xp + amount;
-        const from = levelOf(xp);
-        const to = levelOf(nextXp);
-        set((s) => ({
-          xp: nextXp,
-          streak: nextStreak,
-          lastActiveDay: today,
-          xpLog: [{ id: uid(), at: nowIso(), amount, reason: m.source === "image" ? "사진 글자 읽기 완료" : "회의 변환 완료" }, ...s.xpLog].slice(0, 50),
-          levelUp: to > from ? { from, to } : s.levelUp,
-        }));
+        grant(base + lengthBonus + streakBonus, m.source === "image" ? "사진 글자 읽기 완료" : "회의 변환 완료", { streak: nextStreak, lastActiveDay: today });
+      }
+
+      function summarize(id: string) {
+        if (timers.has(id)) return;
+        patch(id, { status: "SUMMARIZING", progress: 0, stage: "회의록 작성 중", errorMessage: null });
+        let progress = 0;
+        const timer = setInterval(() => {
+          const m = get().meetings.find((x) => x.id === id);
+          if (!m) {
+            clearInterval(timer);
+            timers.delete(id);
+            return;
+          }
+          progress = Math.min(100, progress + 10);
+          if (progress < 100) return patch(id, { progress });
+          clearInterval(timer);
+          timers.delete(id);
+          const first = !m.minutesReady;
+          const doc: MinutesDoc = { markdown: minutesTemplate(m.fileName), generatedAt: nowIso(), model: "데모 모델", edited: false };
+          set((s) => ({ minutes: { ...s.minutes, [id]: doc } }));
+          patch(id, { status: "COMPLETED", progress: null, stage: null, minutesReady: true });
+          if (first) grant(30, "AI 회의록 생성");
+        }, TICK_MS);
+        timers.set(id, timer);
       }
 
       function run(id: string) {
@@ -106,6 +139,7 @@ export const useMalmoa = create<State>()(
 
       return {
         meetings: [],
+        minutes: {},
         xp: 0,
         xpLog: [],
         streak: 0,
@@ -125,22 +159,31 @@ export const useMalmoa = create<State>()(
           return id;
         },
         retry: (id) => run(id),
+        generateMinutes: (id, force = false) => {
+          const m = get().meetings.find((x) => x.id === id);
+          if (!m || !m.transcriptReady) return;
+          if (m.minutesReady && !force) return;
+          summarize(id);
+        },
+        saveMinutes: (id, markdown) => set((s) => (s.minutes[id] ? { minutes: { ...s.minutes, [id]: { ...s.minutes[id], markdown, edited: true } } } : s)),
         dismissLevelUp: () => set({ levelUp: null }),
         reset: () => {
           for (const t of timers.values()) clearInterval(t);
           timers.clear();
-          set({ meetings: seedMeetings(), xp: SEED_XP, xpLog: seedXpLog(), streak: 0, lastActiveDay: null, seeded: true, levelUp: null });
+          set({ meetings: seedMeetings(), minutes: seedMinutes(), xp: SEED_XP, xpLog: seedXpLog(), streak: 0, lastActiveDay: null, seeded: true, levelUp: null });
         },
         // 저장된 값을 불러온 뒤 한 번 부른다: 처음이면 예시 데이터를 채우고, 진행 중이던 작업은 실패로 바꾼다
         finishHydration: () => {
           if (!get().seeded) get().reset();
           set((s) => ({
             hydrated: true,
-            meetings: s.meetings.map((m) =>
-              m.status === "QUEUED" || m.status === "TRANSCRIBING" || m.status === "SUMMARIZING"
-                ? { ...m, status: "FAILED" as const, progress: null, stage: null, errorMessage: "페이지가 새로 고쳐져 중단되었습니다. 다시 시도하면 처음부터 변환합니다." }
-                : m,
-            ),
+            meetings: s.meetings.map((m) => {
+              const hasMinutes = !!s.minutes[m.id];
+              if (m.status === "QUEUED" || m.status === "TRANSCRIBING" || m.status === "SUMMARIZING") {
+                return { ...m, status: "FAILED" as const, progress: null, stage: null, minutesReady: m.minutesReady && hasMinutes, errorMessage: "페이지가 새로 고쳐져 중단되었습니다. 다시 시도하면 처음부터 진행합니다." };
+              }
+              return m.minutesReady && !hasMinutes ? { ...m, minutesReady: false } : m;
+            }),
           }));
         },
       };
@@ -148,7 +191,7 @@ export const useMalmoa = create<State>()(
     {
       name: "malmoa-mock",
       skipHydration: true,
-      partialize: (s) => ({ meetings: s.meetings, xp: s.xp, xpLog: s.xpLog, streak: s.streak, lastActiveDay: s.lastActiveDay, seeded: s.seeded }),
+      partialize: (s) => ({ meetings: s.meetings, minutes: s.minutes, xp: s.xp, xpLog: s.xpLog, streak: s.streak, lastActiveDay: s.lastActiveDay, seeded: s.seeded }),
     },
   ),
 );

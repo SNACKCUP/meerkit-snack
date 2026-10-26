@@ -27,3 +27,17 @@ export interface LevelUp {
   from: number;
   to: number;
 }
+
+export interface Segment {
+  start: number;
+  end: number;
+  text: string;
+  confidence?: number;
+}
+
+export interface MinutesDoc {
+  markdown: string;
+  generatedAt: string;
+  model: string;
+  edited: boolean;
+}
