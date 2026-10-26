@@ -5,6 +5,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DateRangePicker } from "@/meerkit";
 
 import { Btn, Pill } from "./ui";
 
@@ -39,7 +40,7 @@ export function EmailChips({ value, onChange, id }: { value: string[]; onChange:
       )}
       <div className="flex gap-2">
         <Input id={id} type="email" value={text} placeholder="name@company.com" onChange={(e) => { setText(e.target.value); setError(""); }} onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); add(); } }} className="h-10 rounded-full border-[#111] bg-white" />
-        <Btn size="sm" onClick={add}>추가</Btn>
+        <Btn size="sm" className="h-10 w-max shrink-0 whitespace-nowrap" onClick={add}>추가</Btn>
       </div>
       {error && <p role="alert" className="text-xs text-[#b3261e]">{error}</p>}
     </div>
@@ -59,7 +60,7 @@ export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: bool
   function submit(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return setError("프로젝트명을 입력해 주세요.");
-    if (!startDate || !endDate) return setError("시작일과 종료일을 골라 주세요.");
+    if (!startDate || !endDate) return setError("프로젝트 기간을 골라 주세요.");
     if (endDate < startDate) return setError("종료일은 시작일 이후여야 해요.");
     onCreate({ name: name.trim(), startDate, endDate, inviteEmails: emails });
     reset();
@@ -73,10 +74,9 @@ export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: bool
           <DialogDescription>시작일, 종료일, 프로젝트명만 있으면 시작할 수 있어요. 팀 멤버는 나중에 초대해도 됩니다.</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="grid gap-4" noValidate>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="시작일" htmlFor="pf-start"><Input id="pf-start" type="date" value={startDate} onChange={(e) => setStart(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
-            <Field label="종료일" htmlFor="pf-end"><Input id="pf-end" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEnd(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
-          </div>
+          <Field label="프로젝트 기간" htmlFor="pf-range">
+            <DateRangePicker id="pf-range" value={{ start: startDate, end: endDate }} onChange={(r) => { setStart(r.start); setEnd(r.end); }} placeholder="시작일 – 종료일" className="h-10 rounded-xl border-[#111] bg-white" />
+          </Field>
           <Field label="프로젝트명" htmlFor="pf-name"><Input id="pf-name" value={name} maxLength={50} placeholder="예: 쇼핑몰 리뉴얼" onChange={(e) => setName(e.target.value)} className="h-10 rounded-xl border-[#111] bg-white" /></Field>
           <Field label="팀 멤버 추가 (선택)" htmlFor="pf-members"><EmailChips id="pf-members" value={emails} onChange={setEmails} /></Field>
           <p className="text-xs text-[#6c6a62]">추가한 멤버에게는 초대장이 발송되고, 수락하면 일반 멤버가 됩니다. 프로젝트를 만든 분은 이 프로젝트의 관리자가 됩니다.</p>

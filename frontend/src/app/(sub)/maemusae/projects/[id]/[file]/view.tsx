@@ -16,7 +16,7 @@ export default function ComingSoonPage() {
       {() => (
         <div className={`${card} mx-auto grid max-w-lg justify-items-center gap-3 py-14 text-center`} data-rise>
           <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
-          <p className="text-sm text-[#6c6a62]">준비 중이에요. 요구사항정의서를 확정하면 이어서 만들 수 있게 열릴 예정이에요.</p>
+          <p className="text-sm text-[#6c6a62]">준비 중이에요.</p>
           <Btn href={`/maemusae/projects/${id}`} variant="dark" className="mt-3">프로젝트로 돌아가기</Btn>
         </div>
       )}

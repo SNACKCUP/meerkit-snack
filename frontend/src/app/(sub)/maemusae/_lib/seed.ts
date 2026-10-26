@@ -1,4 +1,4 @@
-import type { Candidate, DemoUser, Project, RequirementDoc } from "./types";
+import type { Candidate, ConfirmedDoc, DemoUser, Project, RequirementDoc } from "./types";
 
 export const DEMO_USERS: DemoUser[] = [
   { id: "u1", name: "김다나", email: "dana@example.com" },
@@ -9,7 +9,7 @@ export const DEMO_USERS: DemoUser[] = [
 
 const day = (d: number) => `2026-10-${String(d).padStart(2, "0")}T09:00:00Z`;
 
-export const emptyDoc = (): RequirementDoc => ({ status: "empty", prompt: "", files: [], candidates: [], notes: [], lastViewedId: null, savedAt: null, confirmedAt: null, pendingSince: null });
+export const emptyDoc = (): RequirementDoc => ({ status: "empty", prompt: "", files: [], candidates: [], notes: [], lastViewedId: null, savedAt: null, confirmedAt: null, confirmedBy: null, pendingSince: null });
 
 // AI가 문서에서 뽑았다고 가정한 요구사항 후보 (목 데이터)
 const POOL: Omit<Candidate, "id" | "code" | "answer" | "included">[] = [
@@ -63,7 +63,13 @@ export const SEED_PROJECTS: Project[] = [
   },
 ];
 
+const SEED_P2_ITEMS = makeCandidates(5);
+
 export const SEED_DOCS: Record<string, RequirementDoc> = {
   p1: { ...emptyDoc(), status: "ready", prompt: "결제와 주문 중심으로 정리해 줘", files: ["쇼핑몰_요청서.docx", "운영팀_메모.txt"], candidates: makeCandidates(8), savedAt: null },
-  p2: { ...emptyDoc(), status: "confirmed", prompt: "예약 흐름 중심", files: ["예약_요구사항.pdf"], candidates: makeCandidates(5), confirmedAt: day(20) },
+  p2: { ...emptyDoc(), status: "confirmed", prompt: "예약 흐름 중심", files: ["예약_요구사항.pdf"], candidates: SEED_P2_ITEMS, confirmedAt: day(20), confirmedBy: "이작성" },
+};
+
+export const SEED_HISTORY: Record<string, ConfirmedDoc[]> = {
+  p2: [{ id: "h-p2-1", projectId: "p2", title: "요구사항정의서", kind: "요구사항정의서", revision: 1, confirmedAt: day(20), confirmedBy: "이작성", items: SEED_P2_ITEMS }],
 };

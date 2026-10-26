@@ -7,6 +7,7 @@ import { Deployment, Installation, Introduction, ProjectStructure, Theming } fro
 import { LoginLockoutDoc, MemberDirectoryDoc, PasswordResetDoc, ProfileDoc, TermsAgreementDoc } from "./flows";
 import { VoiceDoc } from "./voice";
 import { LoadingDoc } from "./loading";
+import { DateDoc } from "./date";
 import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, NicknameDoc, RoleManagerDoc } from "./extras";
 import { AiPromptInputDoc, ThinkingIndicatorDoc } from "./ai";
 import { Faq, Hooks } from "./reference";
@@ -34,6 +35,7 @@ export const docContent: Record<string, ComponentType> = {
   "address-field": AddressFieldDoc,
   "file-dropzone": FileDropzoneDoc,
   loading: LoadingDoc,
+  date: DateDoc,
   voice: VoiceDoc,
   "terms-agreement": TermsAgreementDoc,
   "password-reset": PasswordResetDoc,

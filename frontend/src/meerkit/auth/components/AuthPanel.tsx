@@ -1,0 +1,68 @@
+"use client";
+
+import { useEffect } from "react";
+
+import { errorMessage } from "../../api/error";
+import { meerkitConfig } from "../../config";
+import { useLoginLockout } from "../lockout";
+import { useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
+import { LoginForm } from "./LoginForm";
+import { SignupForm } from "./SignupForm";
+
+interface AuthPanelProps {
+  mode: "login" | "signup";
+  /** 로그인(가입 뒤 자동 로그인 포함)에 성공하면 호출한다. 보통 다른 화면으로 보낸다 */
+  onSuccess?: () => void;
+  /** 비밀번호 찾기 링크를 보여 줄 때 누르면 호출한다 */
+  onForgotPassword?: () => void;
+}
+
+/** 로그인·가입 폼을 모달 없이 페이지에 바로 놓는 부품. 로직은 AuthDialog와 같고, 폼 모양은 LoginForm·SignupForm이 정한다 */
+export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps) {
+  const login = useLogin();
+  const signup = useSignup();
+  const lock = useLoginLockout();
+  const sendCode = useSendEmailCode();
+  const verifyCode = useVerifyEmailCode();
+
+  const done = login.isSuccess || signup.isSuccess;
+  useEffect(() => {
+    if (done) onSuccess?.();
+    // onSuccess가 바뀌어도 한 번만 부른다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
+
+  if (mode === "login") {
+    return (
+      <LoginForm
+        onSubmit={login.mutate}
+        pending={login.isPending}
+        error={errorMessage(login.error)}
+        lockedUntil={lock.lockedUntil}
+        attemptsLeft={lock.attemptsLeft}
+        onForgotPassword={onForgotPassword}
+      />
+    );
+  }
+  return (
+    <SignupForm
+      onSubmit={signup.mutate}
+      pending={signup.isPending}
+      error={errorMessage(signup.error)}
+      passwordConfirm={meerkitConfig.signup.passwordConfirm}
+      optionalFields={[...meerkitConfig.signup.optionalFields]}
+      terms={[...meerkitConfig.signup.terms]}
+      addressType={meerkitConfig.signup.addressType}
+      nickname={meerkitConfig.signup.nickname}
+      addressSearch={meerkitConfig.signup.addressSearch}
+      emailVerification={
+        meerkitConfig.signup.emailVerification
+          ? {
+              sendCode: (email) => sendCode.mutateAsync({ email }),
+              verifyCode: async (email, code) => (await verifyCode.mutateAsync({ email, code })).token,
+            }
+          : undefined
+      }
+    />
+  );
+}

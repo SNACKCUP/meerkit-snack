@@ -3,8 +3,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { DEMO_USERS, SEED_DOCS, SEED_PROJECTS, emptyDoc, makeCandidates } from "./seed";
-import type { Candidate, DemoUser, Member, Note, Project, ProjectRole, RequirementDoc } from "./types";
+import { DEMO_USERS, SEED_DOCS, SEED_HISTORY, SEED_PROJECTS, emptyDoc, makeCandidates } from "./seed";
+import type { Candidate, ConfirmedDoc, DemoUser, Member, Note, NoteField, Project, ProjectRole, RequirementDoc } from "./types";
 
 /*
   매무새 목 데이터 저장소.
@@ -34,6 +34,8 @@ const activeAdmins = (p: Project) => p.members.filter((m) => m.status === "activ
 interface State {
   projects: Project[];
   docs: Record<string, RequirementDoc>;
+  /** 프로젝트별 확정 문서 기록 (최신이 앞) */
+  history: Record<string, ConfirmedDoc[]>;
   currentUserId: string;
 
   setCurrentUser: (id: string) => void;
@@ -49,7 +51,7 @@ interface State {
   addCandidate: (projectId: string) => string;
   removeCandidate: (projectId: string, id: string) => void;
   setLastViewed: (projectId: string, id: string | null) => void;
-  addNote: (projectId: string, candidateId: string, text: string) => void;
+  addNote: (projectId: string, candidateId: string, field: NoteField, text: string) => void;
   saveDraft: (projectId: string) => void;
   confirm: (projectId: string) => Result;
   reopen: (projectId: string) => Result;
@@ -57,7 +59,7 @@ interface State {
   reset: () => void;
 }
 
-const initial = () => ({ projects: structuredClone(SEED_PROJECTS), docs: structuredClone(SEED_DOCS), currentUserId: "u1" });
+const initial = () => ({ projects: structuredClone(SEED_PROJECTS), docs: structuredClone(SEED_DOCS), history: structuredClone(SEED_HISTORY), currentUserId: "u1" });
 
 export const useMaemusae = create<State>()(
   persist(
@@ -80,7 +82,17 @@ export const useMaemusae = create<State>()(
           notes: refined ? d.notes : [],
           savedAt: null,
         }));
-      const afterConfirm = (pid: string) => patchDoc(pid, () => ({ status: "confirmed", pendingSince: null, confirmedAt: nowIso() }));
+      const afterConfirm = (pid: string) => {
+        const at = nowIso();
+        const doc = get().docs[pid] ?? emptyDoc();
+        const by = doc.confirmedBy ?? userName(me());
+        patchDoc(pid, () => ({ status: "confirmed", pendingSince: null, confirmedAt: at }));
+        set((s) => {
+          const prev = s.history[pid] ?? [];
+          const entry: ConfirmedDoc = { id: uid(), projectId: pid, title: "요구사항정의서", kind: "요구사항정의서", revision: prev.length + 1, confirmedAt: at, confirmedBy: by, items: structuredClone(doc.candidates.filter((c) => c.included)) };
+          return { history: { ...s.history, [pid]: [entry, ...prev] } };
+        });
+      };
 
       return {
         ...initial(),
@@ -156,21 +168,25 @@ export const useMaemusae = create<State>()(
         addCandidate: (pid) => {
           const id = uid();
           patchDoc(pid, (d) => ({
-            candidates: [...d.candidates, { id, code: `REQ-${String(d.candidates.length + 1).padStart(3, "0")}`, name: "새 요구사항", kind: "기능", priority: "중간", description: "", quote: "(직접 추가한 항목이라 근거 문장이 없어요)", question: null, answer: "", included: true }],
+            candidates: [...d.candidates, { id, code: `REQ-${String(d.candidates.length + 1).padStart(3, "0")}`, name: "새 요구사항", kind: "기능", priority: "중간", description: "", quote: "(직접 추가한 항목이라 근거 문장이 없어요)", question: null, answer: "", included: true, manual: true }],
           }));
           return id;
         },
         removeCandidate: (pid, id) => patchDoc(pid, (d) => ({ candidates: d.candidates.filter((c) => c.id !== id), notes: d.notes.filter((n) => n.candidateId !== id), lastViewedId: d.lastViewedId === id ? null : d.lastViewedId })),
         setLastViewed: (pid, id) => patchDoc(pid, () => ({ lastViewedId: id })),
-        addNote: (pid, candidateId, text) => {
-          const note: Note = { id: uid(), candidateId, text, author: userName(me()), at: nowIso() };
-          patchDoc(pid, (d) => ({ notes: [note, ...d.notes] }));
+        addNote: (pid, candidateId, field, text) => {
+          // 후보 하나에 입력 칸(설명, AI 질문 답변)마다 한 건씩만 둔다. 다시 고치면 그 항목을 최신 내용으로 바꾼다
+          const note: Note = { id: uid(), candidateId, field, text, author: userName(me()), at: nowIso() };
+          patchDoc(pid, (d) => {
+            const same = (n: Note) => n.candidateId === candidateId && n.field === field;
+            return { notes: d.notes.some(same) ? d.notes.map((n) => (same(n) ? { ...note, id: n.id } : n)) : [note, ...d.notes] };
+          });
         },
         saveDraft: (pid) => patchDoc(pid, () => ({ savedAt: nowIso() })),
 
         confirm: (pid) => {
           if (!meAdmin(pid)) return fail("요구사항 확정은 프로젝트 관리자만 할 수 있어요.");
-          patchDoc(pid, () => ({ status: "confirming", pendingSince: Date.now(), savedAt: nowIso() }));
+          patchDoc(pid, () => ({ status: "confirming", pendingSince: Date.now(), savedAt: nowIso(), confirmedBy: userName(me()) }));
           setTimeout(() => afterConfirm(pid), CONFIRM_MS);
           return { ok: true };
         },
@@ -191,9 +207,9 @@ export const useMaemusae = create<State>()(
       };
     },
     {
-      name: "maemusae-mock-v1",
+      name: "maemusae-mock-v3",
       skipHydration: true,
-      partialize: (s) => ({ projects: s.projects, docs: s.docs, currentUserId: s.currentUserId }),
+      partialize: (s) => ({ projects: s.projects, docs: s.docs, history: s.history, currentUserId: s.currentUserId }),
     },
   ),
 );

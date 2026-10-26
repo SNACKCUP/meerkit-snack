@@ -10,7 +10,7 @@
 
 ## 동적 경로와 Cache Components
 
-- Always: 브라우저 데이터(localStorage 등)로만 그려지는 동적 경로(`[id]`, `[token]`)는 `page.tsx`를 서버 파일로 두고 `export const instant = false`를 내보낸 뒤, 화면은 같은 폴더의 `view.tsx`(`"use client"`)에서 그린다. (이유: 클라이언트 `page.tsx`나 상위 `layout.tsx`에 두면 개발 모드에서 "Could not validate that a segment has instant navigation" 에러가 계속 난다. 사례: `(sub)/maemusae/projects/[id]/`)
+- Always: 브라우저 데이터(localStorage 등)로만 그려지는 화면(동적 경로 `[id]`, `[token]`뿐 아니라 `/maemusae` 같은 정적 경로도)은 `page.tsx`를 서버 파일로 두고 `export const instant = false`를 내보낸 뒤, 화면은 같은 폴더의 `view.tsx`(`"use client"`)에서 그린다. (이유: 클라이언트 `page.tsx`나 상위 `layout.tsx`에 두면 개발 모드에서 "Could not validate that a segment has instant navigation" 에러가 계속 난다. 사례: `(sub)/maemusae/projects/[id]/`)
 - Always: `usePathname()`을 쓰는 클라이언트 컴포넌트를 레이아웃에서 감쌀 때는 `<Suspense>`로 감싼다. (이유: 동적 경로에서 `next build`가 CLIENT_HOOK_DYNAMIC 오류로 실패한다. 사례: 매무새 `Shell`)
 
 ## 서버 호출

@@ -41,13 +41,19 @@ export interface Candidate {
   /** AI가 모호하다고 본 부분에 단 확인 질문. 답이 반영되면 null */
   question: string | null;
   answer: string;
+  /** 사용자가 직접 추가한 항목이면 true. AI가 만든 항목은 삭제할 수 없다 */
+  manual?: boolean;
   /** 체크를 해제하면 확정 대상에서 빠진다 */
   included: boolean;
 }
 
+export type NoteField = "description" | "answer";
+
 export interface Note {
   id: string;
   candidateId: string;
+  /** 어느 입력 칸에서 온 내용인지. 후보 하나에 칸마다 하나씩만 남는다 */
+  field: NoteField;
   text: string;
   author: string;
   at: string;
@@ -65,6 +71,8 @@ export interface RequirementDoc {
   lastViewedId: string | null;
   savedAt: string | null;
   confirmedAt: string | null;
+  /** 확정을 시작한 사람 이름 (확정 문서 기록에 남는다) */
+  confirmedBy: string | null;
   /** 오래 걸리는 작업을 시작한 시각 (새로고침 뒤 이어서 마무리하는 데 쓴다) */
   pendingSince: number | null;
 }
@@ -73,4 +81,17 @@ export interface DemoUser {
   id: string;
   name: string;
   email: string;
+}
+
+/** 확정할 때마다 쌓이는 문서 기록. 그 시점의 요구사항을 그대로 담는다 */
+export interface ConfirmedDoc {
+  id: string;
+  projectId: string;
+  title: string;
+  kind: "요구사항정의서";
+  /** 1이면 첫 확정, 2부터는 확정 뒤 수정해서 다시 확정한 것 */
+  revision: number;
+  confirmedAt: string;
+  confirmedBy: string;
+  items: Candidate[];
 }

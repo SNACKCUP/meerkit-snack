@@ -3,7 +3,7 @@
 > 상태: 제안 (팀 검수 전)
 > 작성일: 2026-10-20
 > 기준: 2026-10-20 main (PR #1~#4 머지 상태) + 소영님의 "수정 범위 정리" 반영
-> v2에서 바뀐 것: 명령 `npx meerkit setup` 확정, 샘플 서비스 `examples/` 분리, UI 모음 페이지(`/ui`) 추가, 현재 저장소 상태 반영, 진행 순서(PR A/B/C) 추가
+> v2에서 바뀐 것: 명령 `npx meerkit setup` 확정, 서브 프로젝트 `examples/` 분리, UI 모음 페이지(`/ui`) 추가, 현재 저장소 상태 반영, 진행 순서(PR A/B/C) 추가
 > 범위: 회원가입·로그인 UI, 관리자 멤버 관리·역할 부여 테스트, 생성/세팅 흐름
 > 제외: 사용량 관리 (향후 확장으로만 기록)
 
@@ -16,7 +16,7 @@
 | 프로젝트 생성 명령 | `npx create-meerkit <이름>` (폴더 구조 생성)                           |
 | 세팅 명령          | `npx meerkit setup` (docker, frontend, backend 세팅과 서버 실행)       |
 | 프론트 스택        | Next.js (App Router) + shadcn/ui + Tailwind + Zustand + TanStack Query |
-| 샘플 서비스        | 별도 `examples/`로 분리. 킷은 샘플을 모른다                            |
+| 서브 프로젝트        | 별도 `examples/`로 분리. 킷은 샘플을 모른다                            |
 | 사용량             | 이번 범위에서 제외 (문서에는 "향후 확장"으로 표기)                     |
 | 사용 설명서        | GitHub README에 퀵스타트만. 내용이 많아지면 docs 페이지를 따로 만든다  |
 | 브랜딩             | 로고 있음. 문구, 주색은 미정                                           |
@@ -30,7 +30,7 @@
 | 2   | 시드 관리자 계정                             | setup(또는 마이그레이션)에서 `.env` 값으로 생성                    | 로컬 테스트 전용 표시. 첫 가입자를 관리자로 만드는 방식은 비추천                                                        |
 | 3   | 템플릿 전달 방식                             | 개발 중 GitHub 내려받기, 제출 직전 버전 고정                       | npm 패키지에 템플릿을 같이 넣는 방식도 가능                                                                             |
 | 4   | `usePermission` / 권한 테이블                | 이번에는 역할(role) 기반만, 권한(permission) 테이블은 향후 확장    | 소영님이 permissions, role_permissions를 향후 확장으로 미룸. 넣는다면 `me` 응답에 permissions 배열 필요                 |
-| 5   | 샘플 서비스의 정확한 위치                    | `examples/<이름>/{backend,frontend}`                               | 아래 4-3 참고                                                                                                           |
+| 5   | 서브 프로젝트의 정확한 위치                    | `examples/<이름>/{backend,frontend}`                               | 아래 4-3 참고                                                                                                           |
 | 6   | 주색과 문구                                  | 미어캣 느낌의 모래색 계열 후보를 따로 제안                         | 로고는 이미 있음                                                                                                        |
 | 7   | 프론트 `(service)` vs 백엔드 `features` 이름 | `examples/`로 분리하면 백엔드 `features/`가 사라져 자연스럽게 해소 | 남기게 되면 문서에 한 줄 설명                                                                                           |
 
@@ -62,7 +62,7 @@
 meerkit/
 ├── backend/                    킷 백엔드
 ├── frontend/                   킷 프론트
-├── examples/                   샘플 서비스 (킷은 import하지 않음)
+├── examples/                   서브 프로젝트 (킷은 import하지 않음)
 ├── docker-compose.yml          로컬 DB
 ├── scripts/setup/              setup 로직 (CLI가 호출)
 ├── .github/workflows/          CI/CD
@@ -351,7 +351,7 @@ frontend/
 1. **위치**
    - 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `app/`에는 한 줄짜리 연결 파일만 둔다.
    - 백엔드 킷 코드는 `app/core`, `auth`, `users`, `permissions`, `llm`에 둔다.
-   - 샘플 서비스는 `examples/`에만 둔다.
+   - 서브 프로젝트는 `examples/`에만 둔다.
 2. **의존 방향**
    - 킷은 `examples/`와 `app/(service)/`를 import하지 않는다.
    - 프론트는 `components → hooks → api → client`, 백엔드는 `router → service → repository` 방향으로만 import한다.
@@ -381,7 +381,7 @@ frontend/
    | 킷 서버 호출 함수 | `src/meerkit/api/`                               |
    | 킷 라우트 연결    | `src/app/(meerkit)/`                             |
    | 서비스 화면       | `src/app/(service)/`                             |
-   | 샘플 서비스       | `examples/<이름>/`                               |
+   | 서브 프로젝트       | `examples/<이름>/`                               |
    | 백엔드 새 API     | 해당 모듈의 router, service, repository, schemas |
    | DB 모델 변경      | `models.py` 수정 후 Alembic 마이그레이션         |
 
@@ -393,6 +393,6 @@ frontend/
 1. **PR A: 프론트 구조 전환** — Tailwind·shadcn 설치, `src/meerkit` 뼈대, WelcomePage, `AuthDialog`와 폼, **`/ui` 페이지**, 문서 수정. 백엔드 없이 목 데이터로 확인 가능. 오늘 우선순위인 로그인·가입 UI가 여기에 해당
 2. **PR B: 백엔드 auth** — 로그인, 리프레시 쿠키, 내 정보, repository 계층
 3. **PR C: 관리자 기능** — 멤버 API와 화면, 9장 시나리오 검증
-4. **별도:** 샘플 서비스 `examples/` 이동, `npx meerkit setup` 스크립트, `create-meerkit`, CLAUDE.md, 설명서 사이트
+4. **별도:** 서브 프로젝트 `examples/` 이동, `npx meerkit setup` 스크립트, `create-meerkit`, CLAUDE.md, 설명서 사이트
 
 PR A와 B는 병렬 진행이 가능하다. 단, 1번 결정(토큰 방식)이 있어야 프론트의 `client.ts`와 백엔드의 refresh API가 맞물린다.

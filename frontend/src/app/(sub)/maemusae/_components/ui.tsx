@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export const card = "rounded-[28px] border-[1.5px] border-[#111] bg-white p-6";
-export const pill = "inline-flex items-center rounded-full border-[1.5px] border-[#111] px-3 py-1 text-xs font-medium";
+export const pill = "inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-[#111] px-3 py-1 text-xs font-medium";
 
 const btnBase = "inline-flex items-center justify-center gap-2 rounded-full border-[1.5px] border-[#111] font-semibold transition-transform enabled:hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40";
 const variants = {

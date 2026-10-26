@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { UserAvatar } from "@/meerkit";
 
+import { DocList } from "../../_components/DocList";
 import { ProjectGuard } from "../../_components/ProjectGuard";
 import { Btn, PageHead, Pill, card, fmtRange } from "../../_components/ui";
 import { DOC_STATUS, ROLE_LABEL } from "../../_lib/labels";
@@ -20,6 +21,7 @@ const OTHER_FILES = [
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const doc = useMaemusae((s) => s.docs[id]);
+  const history = useMaemusae((s) => s.history[id]);
   const st = DOC_STATUS[doc?.status ?? "empty"];
 
   return (
@@ -40,6 +42,8 @@ export default function ProjectPage() {
               ))}
             </div>
           </section>
+
+          {history && history.length > 0 && <DocList projectId={id} docs={history} />}
 
           <section aria-labelledby="members" className={`${card} grid gap-4`} data-rise>
             <div className="flex items-center justify-between">

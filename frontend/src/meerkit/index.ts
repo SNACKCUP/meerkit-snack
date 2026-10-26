@@ -30,3 +30,5 @@ export { Skeleton } from "@/components/ui/skeleton";
 export { VoiceGlow } from "./ai/VoiceGlow";
 export { VoiceButton } from "./ai/VoiceInput";
 export { useVoiceRecorder, type VoiceOptions, type VoiceStatus } from "./ai/use-voice-recorder";
+export { Calendar, DatePicker, DateRangeLinked, DateRangePicker } from "./date";
+export { AuthPanel } from "./auth/components/AuthPanel";
