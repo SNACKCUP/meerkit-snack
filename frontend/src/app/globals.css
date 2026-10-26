@@ -221,13 +221,15 @@
 :root[data-mk-motion="off"] .mk-accordion-content,
 :root[data-mk-motion="off"] .mk-pop,
 :root[data-mk-motion="off"] .mk-menu,
-:root[data-mk-motion="off"] .mk-dialog {
+:root[data-mk-motion="off"] .mk-dialog,
+:root[data-mk-motion="off"] .mp-blink,
+:root[data-mk-motion="off"] .mp-bob {
   animation: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [class*="mk-ld"], [class*="mk-ld"] *, .mk-skeleton,
-  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping {
+  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping, .mp-blink, .mp-bob {
     animation: none !important;
   }
 }
@@ -246,3 +248,13 @@
 @theme inline {
   --font-pixel: "DungGeunMo", "Pretendard Variable", Pretendard, monospace;
 }
+
+/* 말모아 움직임: 부드럽게 보간하지 않고 steps()로 끊어서 움직인다 (픽셀 느낌) */
+@keyframes mp-blink {
+  50% { opacity: 0; }
+}
+@keyframes mp-bob {
+  50% { transform: translateY(-4px); }
+}
+.mp-blink { animation: mp-blink 1s steps(1, end) infinite; }
+.mp-bob { animation: mp-bob 1.2s steps(2, end) infinite; }

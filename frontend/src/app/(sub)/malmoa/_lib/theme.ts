@@ -26,6 +26,14 @@ export const THEME_VARS: Record<string, string> = {
   "--mk-primary-foreground": INK,
   "--mk-brand": SKY,
   "--mk-destructive": PINK,
+  "--mk-mint": MINT,
+  "--mk-gold": GOLD,
+  "--mk-pink": PINK,
+  "--mk-sky": SKY,
+  "--mk-paper": PAPER,
+  "--mk-ink": INK,
+  // 픽셀 테두리·그림자에 쓰는 가장 어두운 색
+  "--mk-px-edge": "#0a0919",
   "--mk-radius": "0px",
   "--mk-shadow-soft": "4px 4px 0 0 rgba(0, 0, 0, 0.45)",
 };
