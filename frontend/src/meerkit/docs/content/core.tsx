@@ -108,7 +108,7 @@ POST /auth/signup
         <li>응답에 <Ic>password_hash</Ic>를 포함하지 않습니다.</li>
         <li>사용자 정보 수정은 본인 또는 허용된 관리자만 가능합니다. 서버에서 검증합니다.</li>
         <li>다른 사용자의 데이터를 조회하거나 삭제하지 못하도록 서버에서 권한을 확인합니다.</li>
-        <li>계정 탈퇴는 실제 삭제 대신 <Ic>deleted_at</Ic>을 기록하는 소프트 삭제를 권장합니다.</li>
+        <li>계정 탈퇴는 바로 지우지 않고 <Ic>deactivated_at</Ic>을 기록해 막습니다. 보관 기간(기본 1년)이 지나면 서버가 개인정보를 지우고 <Ic>deleted_at</Ic>을 기록합니다.</li>
         <li>시드 관리자 계정은 로컬 테스트 전용이며 <Ic>.env</Ic>는 커밋하지 않습니다.</li>
       </UL>
     </>
@@ -143,7 +143,7 @@ export function Roles() {
       <H2>How a check works</H2>
       <OL>
         <li>로그인하면 <Ic>GET /users/me</Ic>가 내 정보와 역할을 돌려줍니다.</li>
-        <li>프론트의 가드와 훅이 <Ic>user.role.name</Ic>을 보고 화면을 보여 줄지 정합니다.</li>
+        <li>프론트의 가드와 훅이 <Ic>user.roles</Ic>(여러 개일 수 있음)를 보고 화면을 보여 줄지 정합니다. <Ic>hasRole(user, &quot;MASTER&quot;)</Ic>, <Ic>isAdminUser(user)</Ic>를 쓰세요.</li>
         <li>데이터를 요청하면 <strong>서버가 같은 역할을 다시 검사</strong>하고 허용될 때만 응답합니다.</li>
       </OL>
       <P>1~2번은 사용자 경험을, 3번은 실제 보안을 담당합니다. 둘 중 하나만으로는 안전하지 않습니다.</P>
@@ -168,21 +168,22 @@ export function Roles() {
 export function DataModel() {
   return (
     <>
-      <P>가장 먼저 구현하는 두 테이블은 <Ic>users</Ic>와 <Ic>roles</Ic>입니다. 회원 정보와 권한 정보를 분리해 두면 역할이 늘어나도 users 테이블을 바꿀 필요가 없습니다.</P>
+      <P>가장 먼저 구현하는 테이블은 <Ic>users</Ic>, <Ic>roles</Ic>, 둘을 잇는 <Ic>user_roles</Ic>입니다. 한 사람이 여러 역할을 가질 수 있도록 연결 테이블로 나눴습니다. 전체 컬럼은 저장소의 <Ic>docs/MeerKit_테이블명세서.xlsx</Ic>를 보세요.</P>
       <H2>users</H2>
       <DocTable
         head={["컬럼", "타입 예시", "필수", "설명"]}
         rows={[
           [<Ic key="1">id</Ic>, "BIGINT", "필수", "사용자 고유 식별자 (PK). 자동 생성"],
-          [<Ic key="2">user_id</Ic>, "VARCHAR(50)", "필수", "로그인 ID. UNIQUE"],
-          [<Ic key="3">password_hash</Ic>, "VARCHAR(255)", "필수", "비밀번호 해시값"],
-          [<Ic key="4">email</Ic>, "VARCHAR(255)", "필수", "이메일"],
-          [<Ic key="5">name</Ic>, "VARCHAR(100)", "필수", "사용자 이름"],
-          [<Ic key="6">role_id</Ic>, "BIGINT", "필수", "roles.id 참조 (FK)"],
-          [<Ic key="7">is_active</Ic>, "BOOLEAN", "필수 권장", "계정 활성화 여부"],
+          [<Ic key="2">login_id</Ic>, "VARCHAR(30)", "필수", "로그인 ID. UNIQUE. API에서는 user_id 라는 이름으로 주고받음"],
+          [<Ic key="3">hashed_password</Ic>, "VARCHAR(255)", "필수", "비밀번호 해시값 (argon2). 응답에 넣지 않음"],
+          [<Ic key="4">email</Ic>, "VARCHAR(255)", "필수", "이메일. UNIQUE"],
+          [<Ic key="5">name</Ic>, "VARCHAR(50)", "필수", "사용자 이름"],
+          [<Ic key="7">is_active</Ic>, "BOOLEAN", "필수", "계정 활성화 여부"],
+          [<Ic key="11">email_verified_at</Ic>, "TIMESTAMPTZ", "선택", "이메일 인증 시각 (API: email_verified)"],
           [<Ic key="8">created_at</Ic>, "TIMESTAMPTZ", "필수", "회원가입 일시"],
           [<Ic key="9">updated_at</Ic>, "TIMESTAMPTZ", "필수", "마지막 정보 수정 일시"],
-          [<Ic key="10">deleted_at</Ic>, "TIMESTAMPTZ", "선택", "탈퇴·삭제 처리 일시 (소프트 삭제)"],
+          [<Ic key="12">deactivated_at</Ic>, "TIMESTAMPTZ", "선택", "탈퇴(관리자 삭제 포함) 시각. 값이 있으면 탈퇴한 계정"],
+          [<Ic key="10">deleted_at</Ic>, "TIMESTAMPTZ", "선택", "보관 기간이 지나 개인정보를 지운 시각"],
         ]}
       />
       <H3>id와 user_id의 차이</H3>
@@ -195,36 +196,35 @@ export function DataModel() {
         head={["컬럼", "타입 예시", "설명"]}
         rows={[
           [<Ic key="1">id</Ic>, "BIGINT", "PK"],
-          [<Ic key="2">name</Ic>, "VARCHAR(30)", "역할 이름"],
-          [<Ic key="3">description</Ic>, "TEXT", "역할 설명"],
+          [<Ic key="2">code</Ic>, "VARCHAR(30)", "역할 이름 (MASTER 등). API에서는 name"],
+          [<Ic key="3">name</Ic>, "VARCHAR(50)", "화면 표시용 설명"],
+        ]}
+      />
+      <H2>user_roles</H2>
+      <DocTable
+        head={["컬럼", "타입 예시", "설명"]}
+        rows={[
+          [<Ic key="1">user_id</Ic>, "INTEGER", "users.id (PK, FK)"],
+          [<Ic key="2">role_id</Ic>, "INTEGER", "roles.id (PK, FK)"],
         ]}
       />
       <H2>Relationship</H2>
       <Tree>{`
-┌──────────────────┐
-│      roles       │
-│ id (PK)          │
-│ name             │
-│ description      │
-└────────┬─────────┘
-         │ 1 : N
-┌────────▼─────────┐
-│      users       │
-│ id (PK)          │
-│ user_id (UNIQUE) │
-│ password_hash    │
-│ email, name      │
-│ role_id (FK)     │
-│ is_active        │
-│ created_at       │
-│ updated_at       │
-│ deleted_at       │
-└──────────────────┘
+┌───────────────────┐        ┌──────────────┐        ┌──────────────┐
+│       users       │ 1    N │  user_roles  │ N    1 │    roles     │
+│ id (PK)           ├────────┤ user_id (FK) ├────────┤ id (PK)      │
+│ login_id (UNIQUE) │        │ role_id (FK) │        │ code         │
+│ hashed_password   │        └──────────────┘        │ name         │
+│ email, name       │                                └──────────────┘
+│ is_active         │
+│ deactivated_at    │
+│ deleted_at        │
+└───────────────────┘
 `}</Tree>
-      <P>역할 하나에 여러 사용자가 연결됩니다. Viewer가 100명이어도 <Ic>roles</Ic>에는 VIEWER가 한 번만 있고, 사용자들이 그것을 참조합니다.</P>
+      <P>사용자와 역할은 다대다입니다. 한 사람이 VIEWER와 WRITER를 함께 가질 수 있고, VIEWER가 100명이어도 <Ic>roles</Ic>에는 VIEWER가 한 번만 있습니다.</P>
       <H2>Frontend type</H2>
-      <P>API가 돌려주는 사용자는 역할이 객체로 펼쳐진 형태입니다. <Ic>password_hash</Ic>는 포함되지 않습니다.</P>
-      <CodeBlock title="src/meerkit/types.ts" code={`export interface User {\n  id: number;\n  user_id: string;\n  email: string;\n  name: string;\n  role: { id: number; name: RoleName };\n  is_active: boolean;\n  created_at: string;\n  updated_at: string;\n  deleted_at: string | null;\n}`} />
+      <P>API가 돌려주는 사용자는 역할이 배열로 펼쳐진 형태입니다. 비밀번호 해시는 포함되지 않습니다.</P>
+      <CodeBlock title="src/meerkit/types.ts" code={`export interface User {\n  id: number;\n  user_id: string;\n  email: string;\n  name: string;\n  email_verified: boolean;\n  roles: { id: number; name: RoleName }[];  // 여러 개일 수 있음\n  is_active: boolean;\n  created_at: string;\n  updated_at: string;\n  deactivated_at: string | null;  // 탈퇴 시각\n  deleted_at: string | null;      // 개인정보 파기 시각\n}`} />
       <H2>Optional columns</H2>
       <P>가입 폼의 선택 항목(Signup Form 참고)을 켜면 <Ic>users</Ic>에 같은 컬럼이 필요합니다. 기본 스키마에는 포함되어 있지 않습니다.</P>
       <DocTable
@@ -320,10 +320,12 @@ export function ApiReference() {
           [<Badge key="5" variant="outline">GET</Badge>, <Ic key="e">/users/me</Ic>, "내 정보 조회", "로그인"],
           [<Badge key="6" variant="outline">PATCH</Badge>, <Ic key="f">/users/me</Ic>, "내 정보 수정", "로그인"],
           [<Badge key="13" variant="outline">PATCH</Badge>, <Ic key="m">/users/me/password</Ic>, "비밀번호 변경", "로그인"],
+          [<Badge key="14" variant="outline">DELETE</Badge>, <Ic key="n">/users/me</Ic>, "탈퇴 (비밀번호 확인)", "로그인"],
           [<Badge key="7" variant="outline">GET</Badge>, <Ic key="g">/users</Ic>, "사용자 목록 (검색·필터·페이지)", "관리자"],
-          [<Badge key="8" variant="outline">GET</Badge>, <Ic key="h">/users/&#123;id&#125;</Ic>, "특정 사용자 조회", "관리자 등"],
-          [<Badge key="9" variant="outline">PATCH</Badge>, <Ic key="i">/users/&#123;id&#125;/role</Ic>, "역할 변경", "관리자"],
-          [<Badge key="10" variant="outline">DELETE</Badge>, <Ic key="j">/users/&#123;id&#125;</Ic>, "삭제·탈퇴 처리", "정책에 따름"],
+          [<Badge key="8" variant="outline">GET</Badge>, <Ic key="h">/users/roles</Ic>, "역할 목록", "로그인"],
+          [<Badge key="9" variant="outline">PUT</Badge>, <Ic key="i">/users/&#123;id&#125;/roles</Ic>, "역할 변경 (여러 개)", "관리자"],
+          [<Badge key="15" variant="outline">PATCH</Badge>, <Ic key="o">/users/&#123;id&#125;/active</Ic>, "활성/비활성, 잠금 해제", "관리자"],
+          [<Badge key="10" variant="outline">DELETE</Badge>, <Ic key="j">/users/&#123;id&#125;</Ic>, "탈퇴 처리 (바로 지우지 않음)", "관리자"],
         ]}
       />
       <H2>Sign up</H2>
@@ -334,18 +336,17 @@ export function ApiReference() {
       <DocTable
         head={["Status", "의미", "화면 동작"]}
         rows={[
-          ["401 / 400", "아이디·비밀번호 틀림", "실패 횟수 +1, 남은 시도 안내"],
-          ["429 / 423", "서버가 잠금 (Retry-After 초)", "그 시간만큼 폼 잠금"],
-          ["403", "비활성·삭제된 계정", "오류 문구 표시 (실패로 세지 않음)"],
+          ["401", "아이디·비밀번호 틀림, 비활성·탈퇴한 계정", "실패 횟수 +1, 서버 문구 표시"],
+          ["429", "서버가 잠금 (연속 5회 실패 → 5분, Retry-After 초)", "그 시간만큼 폼 잠금"],
           ["5xx / 네트워크", "서버 문제", "오류 표시 (실패로 세지 않음)"],
         ]}
       />
       <H2>Member list</H2>
       <CodeBlock title="GET /users" code={`GET /users?q=kim&role_id=3&status=active&page=2&size=10\n\n// response 200\n{ "items": [ ...User ], "total": 27, "page": 2, "size": 10 }`} />
       <H2>Current user</H2>
-      <CodeBlock title="GET /users/me" code={`// response 200\n{\n  "id": 2,\n  "user_id": "writer01",\n  "email": "writer@example.com",\n  "name": "이작성",\n  "role": { "id": 4, "name": "WRITER" },\n  "is_active": true,\n  "created_at": "2026-10-05T09:00:00Z",\n  "updated_at": "2026-10-05T09:00:00Z",\n  "deleted_at": null\n}`} />
-      <H2>Change role</H2>
-      <CodeBlock title="PATCH /users/{id}/role" code={`// request (관리자만)\n{ "role_id": 3 }\n\n// response 200 → 갱신된 User`} />
+      <CodeBlock title="GET /users/me" code={`// response 200\n{\n  "id": 2,\n  "user_id": "writer01",\n  "email": "writer@example.com",\n  "name": "이작성",\n  "email_verified": true,\n  "roles": [{ "id": 3, "name": "VIEWER" }, { "id": 4, "name": "WRITER" }],\n  "is_active": true,\n  "created_at": "2026-10-05T09:00:00Z",\n  "updated_at": "2026-10-05T09:00:00Z",\n  "deactivated_at": null,\n  "deleted_at": null\n}`} />
+      <H2>Change roles</H2>
+      <CodeBlock title="PUT /users/{id}/roles" code={`// request (MASTER만) — 역할 코드 목록, 하나 이상\n{ "roles": ["VIEWER", "WRITER"] }\n\n// response 200 → 갱신된 User\n// 400 자기 자신의 역할은 바꿀 수 없음 | 422 없는 역할`} />
       <H2>Errors</H2>
       <DocTable
         head={["Status", "의미", "프론트 동작"]}
@@ -353,15 +354,17 @@ export function ApiReference() {
           ["400 / 422", "입력값 오류", "폼 아래에 detail 메시지 표시"],
           ["401", "인증 필요 또는 만료", "토큰 자동 갱신 후 재시도, 실패 시 로그아웃 상태"],
           ["403", "권한 없음", "접근 권한이 없습니다 표시"],
-          ["409", "아이디·이메일 중복", "폼 아래에 메시지 표시"],
+          ["409", "아이디·이메일·닉네임 중복", "폼 아래에 메시지 표시"],
+          ["429", "요청이 너무 잦음 (로그인 잠금, 인증번호 재전송)", "Retry-After 초만큼 기다리게 함"],
         ]}
       />
       <H2>Profile &amp; password</H2>
-      <CodeBlock title="PATCH /users/me" code={`// request (바꿀 항목만 또는 전체)\n{ "name": "김관리자", "email": "master@example.com" }\n\n// response 200 → 갱신된 User`} />
+      <CodeBlock title="PATCH /users/me" code={`// request (바꿀 항목만 또는 전체). 빈 문자열("")로 보낸 선택 항목은 지워짐\n{ "name": "김관리자", "email": "new@example.com", "email_verification_token": "..." }  // 이메일을 바꿀 때만 증표 필요\n\n// response 200 → 갱신된 User`} />
+      <CodeBlock title="DELETE /users/me" code={`// request — 본인 확인\n{ "password": "..." }\n// 204 (리프레시 쿠키 삭제) | 400 { "detail": "비밀번호가 올바르지 않습니다." }`} />
       <CodeBlock title="PATCH /users/me/password" code={`{ "current_password": "...", "new_password": "..." }\n// 204 | 400 { "detail": "현재 비밀번호가 올바르지 않습니다." }`} />
       <H2>Client functions</H2>
       <P>서비스의 API 주소 규칙이 다르다면 <Ic>src/meerkit/api/</Ic>의 함수만 고치면 됩니다. 화면 코드는 바꾸지 않아도 됩니다.</P>
-      <CodeBlock title="src/meerkit/api/users.ts" code={`export const usersApi = {\n  list: () => api.get<User[]>("/users").then((r) => r.data),\n  updateRole: (id: number, role_id: number) =>\n    api.patch<User>(\`/users/\${id}/role\`, { role_id }).then((r) => r.data),\n  remove: (id: number) => api.delete(\`/users/\${id}\`),\n};`} />
+      <CodeBlock title="src/meerkit/api/users.ts" code={`export const usersApi = {\n  list: (query: MemberQuery) => api.get<Page<User>>("/users", { params }).then((r) => r.data),\n  updateRoles: (id: number, roles: RoleName[]) =>\n    api.put<User>(\`/users/\${id}/roles\`, { roles }).then((r) => r.data),\n  remove: (id: number) => api.delete(\`/users/\${id}\`),\n  withdraw: (input: { password: string }) => api.delete("/users/me", { data: input }),\n};`} />
     </>
   );
 }

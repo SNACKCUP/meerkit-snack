@@ -48,7 +48,7 @@ export function Security() {
         <li>모든 보호 API는 요청의 토큰에서 사용자를 확인하고, 역할이 허용되는지 검사합니다.</li>
         <li>사용자 정보를 돌려줄 때 <Ic>password_hash</Ic>를 절대 포함하지 않습니다.</li>
         <li>일반 사용자가 자신의 역할을 바꾸거나 다른 사용자의 데이터를 읽지 못하게 합니다.</li>
-        <li>계정 삭제는 <Ic>deleted_at</Ic>을 기록하는 소프트 삭제를 우선 검토합니다.</li>
+        <li>계정 삭제는 바로 지우지 않고 <Ic>deactivated_at</Ic>을 기록해 막고, 보관 기간 뒤 개인정보만 지웁니다(<Ic>deleted_at</Ic>).</li>
       </UL>
 
       <H2>Before going live</H2>

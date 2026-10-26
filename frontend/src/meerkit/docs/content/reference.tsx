@@ -47,7 +47,7 @@ export function Hooks() {
           [<Ic key="1">useLogin()</Ic>, "mutate({ user_id, password })", "토큰 저장, 모달 닫기"],
           [<Ic key="2">useSignup()</Ic>, "mutate({ user_id, name, email, password })", "가입 후 자동 로그인"],
           [<Ic key="3">useLogout()</Ic>, "mutate()", "토큰 제거, 내 정보 캐시 삭제"],
-          [<Ic key="4">useUpdateRole()</Ic>, "mutate({ id, roleId })", "멤버 목록 다시 불러오기"],
+          [<Ic key="4">useUpdateRoles()</Ic>, "mutate({ id, roles })", "멤버 목록 다시 불러오기 (PUT /users/{id}/roles)"],
           [<Ic key="5">useRemoveMember()</Ic>, "mutate(id)", "멤버 목록 다시 불러오기"],
           [<Ic key="6">useForgotPassword()</Ic>, "mutate({ email })", "isSuccess가 true가 되면 안내 화면"],
           [<Ic key="a">useSendEmailCode()</Ic>, "mutate({ email })", "인증번호 발송 (이메일 인증 사용 시)"],
@@ -130,7 +130,7 @@ const FAQ_ITEMS: { id: string; category: FaqCategory; q: string; a: React.ReactN
   { id: "nickname-auto", category: "signup", q: "닉네임을 자동으로 만들어 줄 수 있나요?", a: <>네. 닉네임을 켜면 입력칸 옆에 [자동 생성] 버튼이 생기고(<Ic>용감한미어캣482</Ic> 형태), <Ic>signup.nickname.autoFill: true</Ic>이면 가입 폼을 열 때 미리 채워 둡니다.</> },
   { id: "email-verify", category: "signup", q: "이메일 인증을 켜고 끄려면?", a: <><Ic>meerkit.config.ts</Ic>의 <Ic>signup.emailVerification</Ic>을 true/false로 바꾸세요. 켜면 이메일 옆에 [인증번호 받기]가 생기고, 인증해야 가입할 수 있습니다. 서비스마다 필요 여부가 달라서 기본은 꺼져 있습니다.</> },
 
-  { id: "multi-role", category: "admin", q: "한 사용자가 여러 역할을 가질 수 있나요?", a: "기본은 하나입니다(users.role_id). 여러 개가 필요하면 연결 테이블을 도입해야 합니다." },
+  { id: "multi-role", category: "admin", q: "한 사용자가 여러 역할을 가질 수 있나요?", a: "네. users와 roles를 user_roles 연결 테이블로 이어서 여러 역할을 가질 수 있습니다. 화면에서는 user.roles 배열을 보고, 변경은 PUT /users/{id}/roles로 역할 코드 목록을 보냅니다." },
   { id: "add-role", category: "admin", q: "역할을 하나 더 만들고 싶어요.", a: <>Add a role 가이드를 따라 <Ic>roles.ts</Ic>와 서버를 함께 고치세요.</> },
   { id: "role-change", category: "admin", q: "관리자가 역할을 바꾸는 화면은 어떻게 생겼나요?", a: <>멤버 표의 역할 옆 [변경]을 누르면 확인 창이 열립니다. 역할별로 할 수 있는 일(C·R·U·D)을 보고 고르며, 본인의 관리자 권한을 내리거나 MASTER를 부여할 때는 경고가 나옵니다 (Role Manager 참고).</> },
   { id: "admin-slow", category: "admin", q: "관리자 목록이 느려요 / 멤버가 많아요.", a: "검색·필터·페이지 나누기를 서버에서 처리하세요. 화면은 GET /users의 q, role_id, status, page, size를 그대로 보냅니다." },

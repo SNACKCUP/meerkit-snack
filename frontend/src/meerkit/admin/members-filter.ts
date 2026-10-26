@@ -11,7 +11,8 @@ export const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
 
 export const SIZE_OPTIONS = [10, 20, 50] as const;
 
-export const statusOf = (u: User): Exclude<MemberStatus, "all"> => (u.deleted_at ? "deleted" : u.is_active ? "active" : "inactive");
+// 서버와 같은 기준: 탈퇴 시각(deactivated_at)이 있으면 삭제됨
+export const statusOf = (u: User): Exclude<MemberStatus, "all"> => (u.deactivated_at ? "deleted" : u.is_active ? "active" : "inactive");
 
 /**
  * 서버가 하는 일을 브라우저에서 흉내 낸다. 문서 미리보기, 테스트, 서버 없이 화면을 볼 때 쓴다.
@@ -21,7 +22,7 @@ export function filterMembers(all: User[], query: MemberQuery): Page<User> {
   const q = query.q.trim().toLowerCase();
   const matched = all.filter((u) => {
     if (q && ![u.user_id, u.name, u.email].some((v) => v.toLowerCase().includes(q))) return false;
-    if (query.roleId !== null && u.role.id !== query.roleId) return false;
+    if (query.roleId !== null && !u.roles.some((r) => r.id === query.roleId)) return false;
     if (query.status !== "all" && statusOf(u) !== query.status) return false;
     return true;
   });

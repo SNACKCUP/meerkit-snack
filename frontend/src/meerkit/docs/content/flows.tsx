@@ -496,7 +496,7 @@ export function MemberDirectoryDoc() {
 
       <H2>Preview</H2>
       <P>27명의 목 데이터로 직접 시험해 보세요. 검색어를 입력하고, 역할·상태를 고르고, 페이지를 넘겨 보세요.</P>
-      <PreviewWide code={`<MemberDirectory\n  query={query}\n  onQueryChange={(patch) => setQuery((q) => ({ ...q, ...patch }))}\n  data={data}            // { items, total, page, size }\n  loading={isFetching}\n  onRoleChange={(id, roleId) => updateRole.mutate({ id, roleId })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
+      <PreviewWide code={`<MemberDirectory\n  query={query}\n  onQueryChange={(patch) => setQuery((q) => ({ ...q, ...patch }))}\n  data={data}            // { items, total, page, size }\n  loading={isFetching}\n  onRoleChange={(id, roles) => updateRoles.mutate({ id, roles })}\n  onRemove={(id) => removeMember.mutate(id)}\n/>`}>
         <div className="p-3">
           <MemberDirectory
             query={query}

@@ -20,10 +20,16 @@ export interface User {
   address_detail?: string | null;
   birth_date?: string | null;
   gender?: string | null;
-  role: Role;
+  /** 이메일 인증을 마쳤는지 */
+  email_verified: boolean;
+  /** 가진 역할 목록. 한 사람이 여러 역할을 가질 수 있다 (가입하면 VIEWER) */
+  roles: Role[];
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  /** 탈퇴(또는 관리자 삭제) 시각. 값이 있으면 탈퇴한 계정이다 */
+  deactivated_at: string | null;
+  /** 탈퇴 후 보관 기간이 지나 개인정보를 지운 시각 */
   deleted_at: string | null;
 }
 
@@ -71,6 +77,11 @@ export interface ResetPasswordInput {
   password: string;
 }
 
+export interface WithdrawInput {
+  /** 본인 확인용 현재 비밀번호 */
+  password: string;
+}
+
 export interface ChangePasswordInput {
   current_password: string;
   new_password: string;
@@ -79,6 +90,8 @@ export interface ChangePasswordInput {
 export interface UpdateProfileInput {
   name: string;
   email: string;
+  /** 이메일을 바꿀 때 새 이메일로 인증을 마치고 받은 증표 */
+  email_verification_token?: string;
   nickname?: string;
   phone?: string;
   postcode?: string;
