@@ -22,6 +22,8 @@ const NAV: { href: string; label: string }[] = [
   { href: "/malmoa/home", label: "퀘스트 보드" },
   { href: "/malmoa/meetings", label: "회의 목록" },
   { href: "/malmoa/profile", label: "내 캐릭터" },
+  { href: "/malmoa/guide", label: "사용 안내" },
+  { href: "/malmoa/settings", label: "설정" },
 ];
 
 // 말모아 전체의 틀: 전용 색을 한 번만 입히고, 상단 바(로고·메뉴·계정)와 바닥글을 둔다.
@@ -41,6 +43,19 @@ export function Shell({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // 설정의 "움직임 끄기": 말모아 화면에 있는 동안만 전체 애니메이션을 끈다
+  const reduceMotion = useRecorderPrefs((s) => s.reduceMotion);
+  useEffect(() => {
+    if (!reduceMotion) return;
+    const root = document.documentElement;
+    const before = root.dataset.mkMotion;
+    root.dataset.mkMotion = "off";
+    return () => {
+      if (before === undefined) delete root.dataset.mkMotion;
+      else root.dataset.mkMotion = before;
+    };
+  }, [reduceMotion]);
+
   // 저장해 둔 목 데이터·녹음 설정을 불러온다 (서버가 그린 화면과 어긋나지 않게 마운트 뒤에 한다)
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +70,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <RecorderProvider>
     <div style={THEME_STYLE} className="mp-root flex min-h-screen flex-col bg-background text-foreground antialiased">
+      <a href="#malmoa-main" className="font-pixel sr-only z-50 bg-(--mk-gold) px-4 py-2 text-(--mk-ink) focus:not-sr-only focus:fixed focus:left-3 focus:top-3">본문으로 건너뛰기</a>
       <header className="border-b-[3px] border-border bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-5 py-3">
           <Link href="/malmoa" aria-label="말모아 처음으로"><Logo /></Link>
@@ -82,7 +98,7 @@ export function Shell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <div key={path} className="flex-1">{children}</div>
+      <main id="malmoa-main" tabIndex={-1} key={path} className="flex-1 outline-none">{children}</main>
       <footer className="mt-auto border-t-[3px] border-border bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-5 py-4 text-sm text-muted-foreground">
           <p>말모아 — Meerkit 위에 얹은 서브 프로젝트 · 지금은 화면용 목 데이터로 동작합니다</p>

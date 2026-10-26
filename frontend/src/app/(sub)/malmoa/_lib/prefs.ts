@@ -7,8 +7,10 @@ import { persist } from "zustand/middleware";
 interface Prefs {
   deviceId: string;
   meetingRoom: boolean;
+  reduceMotion: boolean;
   setDeviceId: (id: string) => void;
   setMeetingRoom: (on: boolean) => void;
+  setReduceMotion: (on: boolean) => void;
 }
 
 export const useRecorderPrefs = create<Prefs>()(
@@ -16,8 +18,10 @@ export const useRecorderPrefs = create<Prefs>()(
     (set) => ({
       deviceId: "",
       meetingRoom: true,
+      reduceMotion: false,
       setDeviceId: (deviceId) => set({ deviceId }),
       setMeetingRoom: (meetingRoom) => set({ meetingRoom }),
+      setReduceMotion: (reduceMotion) => set({ reduceMotion }),
     }),
     { name: "malmoa-recorder", skipHydration: true },
   ),
