@@ -7,7 +7,7 @@ import { localDay } from "./format";
 import { levelOf } from "./levels";
 import { SEED_XP, seedMeetings, seedMinutes, seedXpLog } from "./seed";
 import { minutesTemplate } from "./sample";
-import type { LevelUp, Meeting, MeetingSource, MinutesDoc, XpEntry } from "./types";
+import type { LevelUp, Meeting, MeetingSource, MinutesDoc, Share, XpEntry } from "./types";
 
 /*
   말모아 목 데이터 저장소.
@@ -18,6 +18,7 @@ import type { LevelUp, Meeting, MeetingSource, MinutesDoc, XpEntry } from "./typ
 */
 
 const TICK_MS = 450;
+export const SHARE_DAYS = 7;
 const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Math.random()).slice(2));
 const nowIso = () => new Date().toISOString();
 
@@ -31,6 +32,7 @@ export interface NewMeeting {
 interface State {
   meetings: Meeting[];
   minutes: Record<string, MinutesDoc>;
+  shares: Record<string, Share>; // 회의 id → 공유
   xp: number;
   xpLog: XpEntry[];
   streak: number;
@@ -44,6 +46,8 @@ interface State {
   retry: (id: string) => void;
   generateMinutes: (id: string, force?: boolean) => void;
   saveMinutes: (id: string, markdown: string) => void;
+  createShare: (meetingId: string) => Share | null;
+  revokeShare: (meetingId: string) => void;
   dismissLevelUp: () => void;
   reset: () => void;
   finishHydration: () => void;
@@ -140,6 +144,7 @@ export const useMalmoa = create<State>()(
       return {
         meetings: [],
         minutes: {},
+        shares: {},
         xp: 0,
         xpLog: [],
         streak: 0,
@@ -166,11 +171,28 @@ export const useMalmoa = create<State>()(
           summarize(id);
         },
         saveMinutes: (id, markdown) => set((s) => (s.minutes[id] ? { minutes: { ...s.minutes, [id]: { ...s.minutes[id], markdown, edited: true } } } : s)),
+        // 공유 링크를 만든다(이미 있으면 다시 켠다). 회의록이 있는 회의만 공유할 수 있고, 처음 공유할 때 +10 EXP
+        createShare: (meetingId) => {
+          const m = get().meetings.find((x) => x.id === meetingId);
+          if (!m || !m.minutesReady) return null;
+          const prev = get().shares[meetingId];
+          const share: Share = {
+            token: prev?.token ?? uid().replaceAll("-", "").slice(0, 24),
+            meetingId,
+            createdAt: nowIso(),
+            expiresAt: new Date(Date.now() + SHARE_DAYS * 86_400_000).toISOString(),
+            revoked: false,
+          };
+          if (prev) set((s) => ({ shares: { ...s.shares, [meetingId]: share } }));
+          else grant(10, "회의록 공유", { shares: { ...get().shares, [meetingId]: share } });
+          return share;
+        },
+        revokeShare: (meetingId) => set((s) => (s.shares[meetingId] ? { shares: { ...s.shares, [meetingId]: { ...s.shares[meetingId], revoked: true } } } : s)),
         dismissLevelUp: () => set({ levelUp: null }),
         reset: () => {
           for (const t of timers.values()) clearInterval(t);
           timers.clear();
-          set({ meetings: seedMeetings(), minutes: seedMinutes(), xp: SEED_XP, xpLog: seedXpLog(), streak: 0, lastActiveDay: null, seeded: true, levelUp: null });
+          set({ meetings: seedMeetings(), minutes: seedMinutes(), shares: {}, xp: SEED_XP, xpLog: seedXpLog(), streak: 0, lastActiveDay: null, seeded: true, levelUp: null });
         },
         // 저장된 값을 불러온 뒤 한 번 부른다: 처음이면 예시 데이터를 채우고, 진행 중이던 작업은 실패로 바꾼다
         finishHydration: () => {
@@ -191,7 +213,7 @@ export const useMalmoa = create<State>()(
     {
       name: "malmoa-mock",
       skipHydration: true,
-      partialize: (s) => ({ meetings: s.meetings, minutes: s.minutes, xp: s.xp, xpLog: s.xpLog, streak: s.streak, lastActiveDay: s.lastActiveDay, seeded: s.seeded }),
+      partialize: (s) => ({ meetings: s.meetings, minutes: s.minutes, shares: s.shares, xp: s.xp, xpLog: s.xpLog, streak: s.streak, lastActiveDay: s.lastActiveDay, seeded: s.seeded }),
     },
   ),
 );

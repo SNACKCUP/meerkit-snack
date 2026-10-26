@@ -21,6 +21,7 @@
 
 - Always: docs처럼 Cache Components가 이전 페이지를 숨겨 둔 채 남기는 화면에서는 DOM 조회(목차, 앵커)를 현재 `article` ref 안으로 한정한다. (이유: 숨겨진 이전 페이지의 제목이 목차에 섞였다)
 - Always: 제목 id는 실행 중에 중복을 제거한다. 중복이면 React "같은 key" 에러와 목차 이중 활성화가 생긴다. (사례: `Pagination`이 두 번 나온 문서)
+- Always: `usePathname()`으로 정하는 값(메뉴 강조, `aria-current`)은 마운트 뒤에만 계산한다. `useSyncExternalStore(() => () => {}, () => true, () => false)`로 `mounted`를 만들어 `mounted && ...`로 쓴다. (이유: 동적 경로 `[id]`의 미리 그린 HTML에서는 현재 경로를 알 수 없어 "aria-current/className 불일치" 하이드레이션 에러가 난다. 사례: 말모아 `Shell`의 메뉴)
 - Never: 렌더 중에 ref를 쓰지 않는다. 최신 값 동기화는 `useEffect`에서 한다. (이유: `react-hooks` 규칙이 막는다)
 
 ## 애니메이션(gsap)

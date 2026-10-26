@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CopyButton } from "../../_components/CopyButton";
 import { MarkdownView } from "../../_components/MarkdownView";
 import { PixelIcon, PxBadge, PxBar, PxButton, PxCard, pxButtonClass } from "../../_components/px";
+import { ShareDialog } from "../../_components/ShareDialog";
 import { StatusBadge } from "../../_components/StatusBadge";
 import { downloadText, markdownToPlain } from "../../_lib/clipboard";
 import { formatBytes, formatClock, formatDuration, formatWhen } from "../../_lib/format";
@@ -29,6 +30,7 @@ export default function MeetingResult() {
   const [tab, setTab] = useState<Tab>("minutes");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   if (!hydrated) return <div className="h-[60vh]" aria-busy />;
   if (!meeting) {
@@ -107,6 +109,7 @@ export default function MeetingResult() {
                       <PxButton variant="sky" onClick={() => { setDraft(doc.markdown); setEditing(true); }}>편집</PxButton>
                       <PxButton variant="ghost" className="text-(--mk-ink) bg-white" onClick={() => downloadText(`${baseName}_회의록.md`, doc.markdown, "text/markdown")}>MD 받기</PxButton>
                       <PxButton variant="ghost" className="text-(--mk-ink) bg-white" onClick={() => downloadText(`${baseName}_회의록.txt`, markdownToPlain(doc.markdown))}>TXT 받기</PxButton>
+                      <PxButton variant="mint" onClick={() => setSharing(true)}><PixelIcon name="share" size={16} />공유</PxButton>
                       <PxButton variant="gold" disabled={active} onClick={() => { if (window.confirm("회의록을 새로 만들면 지금 내용이 바뀝니다. 계속할까요?")) generate(meeting.id, true); }}>다시 만들기</PxButton>
                     </div>
                     <p className="text-xs text-(--mk-ink)/70">{doc.model} · {formatWhen(doc.generatedAt)}에 작성{doc.edited ? " · 직접 수정함" : ""}. 원문에 없는 내용은 지어내지 않고 ‘확인 필요’로 표시합니다.</p>
@@ -146,6 +149,7 @@ export default function MeetingResult() {
           )}
         </div>
       ) : null}
+      {meeting.minutesReady ? <ShareDialog meetingId={meeting.id} open={sharing} onOpenChange={setSharing} /> : null}
     </div>
   );
 }

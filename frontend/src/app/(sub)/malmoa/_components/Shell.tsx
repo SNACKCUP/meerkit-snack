@@ -21,6 +21,7 @@ const NAV: { href: string; label: string }[] = [
   { href: "/malmoa", label: "처음" },
   { href: "/malmoa/home", label: "퀘스트 보드" },
   { href: "/malmoa/meetings", label: "회의 목록" },
+  { href: "/malmoa/profile", label: "내 캐릭터" },
 ];
 
 // 말모아 전체의 틀: 전용 색을 한 번만 입히고, 상단 바(로고·메뉴·계정)와 바닥글을 둔다.

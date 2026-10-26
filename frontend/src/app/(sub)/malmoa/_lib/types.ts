@@ -41,3 +41,12 @@ export interface MinutesDoc {
   model: string;
   edited: boolean;
 }
+
+// 회의 하나당 공유 링크 하나. 끄면 revoked, 다시 켜면 같은 주소가 되살아난다.
+export interface Share {
+  token: string;
+  meetingId: string;
+  createdAt: string;
+  expiresAt: string;
+  revoked: boolean;
+}
