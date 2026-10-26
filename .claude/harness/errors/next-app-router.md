@@ -27,6 +27,7 @@
 
 - Always: `gsap.registerPlugin(ScrollTrigger)`는 모듈 맨 위에서 한 번만, 애니메이션은 `gsap.context(..., scopeRef)` 안에서 만들고 cleanup에서 `ctx.revert()`를 부른다. (이유: 라우트 이동과 개발 중 재마운트에서 트리거가 쌓인다)
 - Always: 설정의 움직임 끄기(`document.documentElement.dataset.mkMotion === "off"`)와 `prefers-reduced-motion`을 지킨다. 이때는 완성된 화면을 그대로 보여 준다.
+- Never: 서버가 그린 화면(랜딩처럼 SEO가 필요한 곳)의 진입 효과를 gsap `from()`으로 만들지 않는다. (이유: 하이드레이션 전에 인라인 스타일이 먼저 붙어 "A tree hydrated but some attributes..." 에러가 난다) CSS `@keyframes`로 만들고 "움직임 끄기"·`prefers-reduced-motion` 목록에 등록한다. 사례: 말모아 `.mp-root [data-rise]`. (매무새는 `ready` 뒤에만 화면을 그려 피했지만, 그러면 서버 HTML이 비어 SEO에 불리하다)
 
 ## 폰트
 

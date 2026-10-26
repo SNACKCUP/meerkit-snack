@@ -20,7 +20,7 @@ export default function Page() {
       </div>
       <p className="text-muted-foreground" data-rise>아이디와 비밀번호를 입력하세요.</p>
       <PxCard data-rise>
-        <AuthPanel mode="login" onSuccess={() => router.push("/malmoa")} />
+        <AuthPanel mode="login" onSuccess={() => router.push("/malmoa/home")} />
       </PxCard>
       <p className="text-center text-sm text-muted-foreground" data-rise>
         계정이 없으신가요? <Link href="/malmoa/signup" className="font-pixel text-base text-(--mk-gold) underline underline-offset-4">가입하기</Link>
