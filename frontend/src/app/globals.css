@@ -231,3 +231,18 @@
     animation: none !important;
   }
 }
+
+/* ── 말모아(서브 프로젝트) 전용 픽셀 글꼴: 둥근모꼴. 제목·버튼·HUD에만 쓴다 ── */
+@font-face {
+  font-family: "DungGeunMo";
+  src:
+    url("/malmoa/fonts/DungGeunMo.woff2") format("woff2"),
+    url("/malmoa/fonts/DungGeunMo.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-pixel: "DungGeunMo", "Pretendard Variable", Pretendard, monospace;
+}
