@@ -43,6 +43,12 @@ export const mockMembers: User[] = Array.from({ length: 27 }, (_, i) => {
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 미리보기용 이메일 인증 핸들러. 인증번호는 항상 123456 이다.
+// 미리보기용 아이디 중복 확인. admin, master01 은 이미 있는 아이디로 친다.
+export const demoCheckUserId = async (userId: string) => {
+  await delay(400);
+  return !["admin", "master01"].includes(userId);
+};
+
 export const demoEmailHandlers = {
   sendCode: async () => {
     await delay(600);

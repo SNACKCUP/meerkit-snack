@@ -6,6 +6,9 @@ export const authApi = {
   login: (input: LoginInput) => api.post<TokenResponse>("/auth/login", input).then((r) => r.data),
   logout: () => api.post("/auth/logout"),
   me: () => api.get<User>("/users/me").then((r) => r.data),
+  // 아이디를 쓸 수 있는지(중복·예약어). 형식이 틀리면 서버가 422를 준다
+  checkUserId: (userId: string) =>
+    api.get<{ available: boolean }>("/auth/check-user-id", { params: { user_id: userId } }).then((r) => r.data.available),
   // 가입된 이메일인지 알려 주지 않도록, 서버는 항상 같은 응답을 준다.
   forgotPassword: (input: ForgotPasswordInput) => api.post("/auth/password/forgot", input),
   resetPassword: (input: ResetPasswordInput) => api.post("/auth/password/reset", input),
