@@ -4,13 +4,15 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parents[1] / "app"
 
 # 공통 기반(킷)의 층. 각 패키지는 오른쪽에 적은 패키지만 import 할 수 있습니다.
-# 의존 방향: core ← users ← auth ← permissions ← account,  mail·llm 은 core 만.
+# 의존 방향: core ← users ← auth ← permissions ← account,  mail·llm·storage 는 core 만.
+# users 는 프로필 이미지 파일을 위해 storage 를 씁니다 (auth 가 mail 을 쓰는 것과 같은 방식).
 # 이 표를 바꾸려면 팀과 먼저 협의합니다 (공통 모듈은 서로 최대한 독립).
 ALLOWED_KIT_IMPORTS: dict[str, set[str]] = {
     "core": set(),
     "mail": {"core"},
     "llm": {"core"},
-    "users": {"core"},
+    "storage": {"core"},
+    "users": {"core", "storage"},
     "auth": {"core", "users", "mail"},
     "permissions": {"core", "users", "auth"},
     "account": {"core", "users", "auth", "permissions"},

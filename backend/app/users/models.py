@@ -67,7 +67,8 @@ class User(TimestampMixin, Base):
     address_detail: Mapped[str | None] = mapped_column(String(255))
     birth_date: Mapped[date | None] = mapped_column(Date)
     gender: Mapped[str | None] = mapped_column(String(10))
-    avatar_url: Mapped[str | None] = mapped_column(String(500))
+    avatar_url: Mapped[str | None] = mapped_column(String(500))  # 브라우저에서 여는 공개 주소 (app.storage)
+    avatar_key: Mapped[str | None] = mapped_column(String(200))  # 저장소 안의 파일 key (교체·삭제할 때 씀)
 
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # 이메일 인증을 마친 시각
     # 로그인 잠금: 연속 실패 횟수와 잠금이 풀리는 시각

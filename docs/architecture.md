@@ -21,6 +21,7 @@ flowchart TB
         account["account<br/>/api/users/me · /api/users (HTTP 연결 층)"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
         mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
+        storage["storage<br/>get_storage · S3 호환(Supabase Storage)/memory"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
         req["features/requirements<br/>업로드 · 분류 · 확정 · 기능정의서 · Excel"]
@@ -35,18 +36,20 @@ flowchart TB
     perm --> users
     auth --> users
     auth --> mail
+    users --> storage
     users --> core
     auth --> core
     perm --> core
     mail --> core
     llm --> core
+    storage --> core
 ```
 
-- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`은 `core`만. 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
+- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
 - `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사(permissions)가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
 
 - 화살표는 "import 한다"는 뜻입니다.
-- **킷(`core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
+- **킷(`core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`, `storage`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
 - `features/` 안의 기능끼리도 서로 import 하지 않습니다. 공통으로 필요해지면 공통 기반으로 올립니다.
 - 각 모듈 안에서는 `router → service → repository` 방향으로만 import 합니다.
 - 프론트엔드도 같습니다: 킷(`src/meerkit`)은 `src/app`(라우트·서비스 화면)을 import 하지 않고, `src/app`은 킷을 `@/meerkit`(공개 API)으로만 씁니다. ESLint가 검사합니다.
@@ -87,12 +90,15 @@ backend/
 │   │   ├── roles.py       # ADMIN_ROLE = MASTER (+ users.roles 역할 코드 다시 내보내기)
 │   │   └── deps.py        # require_roles(), require_admin
 │   ├── account/           # 회원 API(HTTP) 연결 층 (킷)
-│   │   ├── me_router.py   # /api/users/me: 내 정보 조회·수정, 비밀번호 변경, 탈퇴
+│   │   ├── me_router.py   # /api/users/me: 내 정보 조회·수정, 프로필 이미지 올리기·삭제, 비밀번호 변경, 탈퇴
 │   │   └── admin_router.py  # /api/users: 멤버 검색·역할·활성/비활성·삭제, /api/users/roles
 │   ├── mail/              # 메일 발송 (킷). 어디서든 send_mail 하나로 사용
 │   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
 │   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
 │   │   └── backends.py    # console / smtp / fake (MAIL_BACKEND)
+│   ├── storage/           # 파일 저장소 (킷, core만 import). 설정 순서는 storage-setup.md
+│   │   ├── config.py      # STORAGE_* 설정 + 운영 검사(memory 금지, localhost 주소 금지)
+│   │   └── backends.py    # get_storage(): s3(Supabase Storage·S3·R2) / memory(테스트), override_storage()
 │   ├── llm/               # LLM 공통 모듈 (킷, core만 import)
 │   │   ├── config.py      # LLM 설정(LLM_PROVIDER, LLM_MODEL, OPENAI_API_KEY 등) + 운영 검사(fake 금지)
 │   │   ├── client.py      # get_chat_model(): 설정값으로 모델 생성, override_chat_model(): 테스트용 교체
