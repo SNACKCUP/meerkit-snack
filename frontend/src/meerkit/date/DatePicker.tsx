@@ -23,10 +23,12 @@ interface DatePickerProps {
   "aria-label"?: string;
   "aria-invalid"?: boolean;
   className?: string;
+  /** 달력 제목을 연·월 선택 상자로 (생년월일처럼 먼 날짜를 고를 때) */
+  yearMonthSelect?: boolean;
 }
 
 // 날짜 하나를 고르는 입력. 눌러서 달력을 열고, 고르면 닫힌다.
-export function DatePicker({ value, onChange, placeholder = "날짜 선택", min, max, disabled, id, className, ...aria }: DatePickerProps) {
+export function DatePicker({ value, onChange, placeholder = "날짜 선택", min, max, disabled, id, className, yearMonthSelect, ...aria }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -36,7 +38,7 @@ export function DatePicker({ value, onChange, placeholder = "날짜 선택", min
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content align="start" sideOffset={6} className={panelCls}>
-          <Calendar value={value} min={min} max={max} onSelect={(d) => { onChange(d); setOpen(false); }} />
+          <Calendar value={value} min={min} max={max} yearMonthSelect={yearMonthSelect} onSelect={(d) => { onChange(d); setOpen(false); }} />
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

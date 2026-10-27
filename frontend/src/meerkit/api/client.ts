@@ -18,7 +18,7 @@ api.interceptors.request.use((config) => {
 // 401이 동시에 여러 건 와도 갱신은 한 번만 한다.
 let refreshing: Promise<string | null> | null = null;
 
-async function refreshAccessToken(): Promise<string | null> {
+async function requestRefresh(): Promise<string | null> {
   try {
     const { data } = await axios.post<{ access_token: string }>(
       `${meerkitConfig.apiBaseUrl}/auth/refresh`,
@@ -27,11 +27,20 @@ async function refreshAccessToken(): Promise<string | null> {
     );
     useAuthStore.getState().setAccessToken(data.access_token);
     return data.access_token;
-  } catch {
+  } catch (error) {
     useAuthStore.getState().setAccessToken(null);
-    setSessionHint(false);
+    // 세션이 끝났을 때만 표시를 지운다. 서버가 잠깐 꺼진 경우에는 다음에 다시 복원해 볼 수 있게 남겨 둔다
+    if (axios.isAxiosError(error) && error.response?.status === 401) setSessionHint(false);
     return null;
   }
+}
+
+/** 세션 복원과 401 재시도가 같은 갱신 요청을 함께 쓴다 (개발 모드의 effect 두 번 실행도 한 번만 나간다) */
+export function refreshAccessToken(): Promise<string | null> {
+  refreshing ??= requestRefresh().finally(() => {
+    refreshing = null;
+  });
+  return refreshing;
 }
 
 type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
@@ -43,10 +52,7 @@ api.interceptors.response.use(undefined, async (error) => {
     return Promise.reject(error);
   }
   original._retried = true;
-  refreshing ??= refreshAccessToken().finally(() => {
-    refreshing = null;
-  });
-  const token = await refreshing;
+  const token = await refreshAccessToken();
   if (!token) return Promise.reject(error);
   original.headers.Authorization = `Bearer ${token}`;
   return api(original);

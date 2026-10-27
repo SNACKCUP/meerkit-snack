@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "../meerkit/styles/tokens.css";
 
+/* Tailwind의 dark: 변형을 <html data-theme="dark"> 기준으로 쓴다 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @layer base {
   * {
     @apply border-border;

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/users";
 import { meerkitConfig } from "../config";
-import type { ChangePasswordInput, EmailCodeInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
+import type { ChangePasswordInput, EmailCodeInput, ForgotIdInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
 import { useAuthDialog } from "./dialog-store";
 import { useLockoutStore } from "./lockout";
 import { meKey } from "./queries";
@@ -61,6 +61,10 @@ export function useLogout() {
   });
 }
 
+export function useForgotId() {
+  return useMutation({ mutationFn: (input: ForgotIdInput) => authApi.forgotId(input) });
+}
+
 export function useForgotPassword() {
   return useMutation({ mutationFn: (input: ForgotPasswordInput) => authApi.forgotPassword(input) });
 }
@@ -100,6 +104,28 @@ export function useUpdateNickname() {
     onSuccess: (user) => {
       queryClient.setQueryData(meKey, user);
       toast.success("닉네임을 저장했습니다.");
+    },
+  });
+}
+
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => usersApi.uploadAvatar(file),
+    onSuccess: (user) => {
+      queryClient.setQueryData(meKey, user);
+      toast.success("프로필 이미지를 바꿨습니다.");
+    },
+  });
+}
+
+export function useRemoveAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: usersApi.removeAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(meKey, user);
+      toast.success("프로필 이미지를 삭제했습니다.");
     },
   });
 }

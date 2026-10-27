@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, ExternalLink, Info, TriangleAlert } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 import { useState } from "react";
@@ -76,7 +77,7 @@ function CopyButton({ text }: { text: string }) {
 export function CodeBlock({ code, title }: { code: string; title?: string }) {
   const text = code.replace(/^\n|\n$/g, "");
   return (
-    <div className="overflow-hidden rounded-2xl bg-primary text-[#e8e9ef]">
+    <div className="overflow-hidden rounded-2xl bg-[#12141a] text-[#e8e9ef] dark:border dark:border-white/10">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
         <span className="font-mono text-xs text-white/50">{title ?? ""}</span>
         <CopyButton text={text} />
@@ -99,7 +100,7 @@ export function PkgTabs({ command }: { command: string }) {
   const runner = managers.find(([name]) => name === active)![1];
   const text = command.replace(/^npx/, runner);
   return (
-    <div className="overflow-hidden rounded-2xl bg-primary text-[#e8e9ef]">
+    <div className="overflow-hidden rounded-2xl bg-[#12141a] text-[#e8e9ef] dark:border dark:border-white/10">
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
         <div className="flex gap-1">
           {managers.map(([name]) => (
@@ -194,6 +195,28 @@ export function LinkCards({ items }: { items: { href: string; title: string; des
         <Link key={it.href} href={it.href} className="rounded-2xl border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:bg-surface">
           <p className="text-sm font-medium">{it.title}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</p>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** 킷 위에 만든 서브 프로젝트를 화면 캡처와 함께 카드로 보여 준다. 누르면 해당 프로젝트로 이동한다 */
+export function SubProjectCards({ items }: { items: { href: string; title: string; desc: string; image: string }[] }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {items.map((it) => (
+        <Link key={it.href} href={it.href} className="group overflow-hidden rounded-2xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:bg-surface">
+          <div className="relative aspect-[16/10] overflow-hidden border-b bg-muted">
+            <Image src={it.image} alt={`${it.title} 메인 화면`} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]" />
+          </div>
+          <div className="flex items-start justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-semibold">{it.title}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</p>
+            </div>
+            <ExternalLink className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" aria-hidden />
+          </div>
         </Link>
       ))}
     </div>

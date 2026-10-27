@@ -37,6 +37,15 @@ export interface MeerkitUserConfig {
     passwordConfirm?: boolean;
     /** 가입 폼에 추가로 받을 선택 항목. */
     optionalFields?: SignupOptionalField[];
+    /** 이름 글자 수 제한. 가입·내 정보 수정 입력칸에 함께 적용된다. 기본 2~10자 */
+    name?: { min?: number; max?: number };
+    /**
+     * 전화번호 입력 방식 (optionalFields에 "phone"을 넣었을 때). 기본 "single"
+     * "single": 칸 하나에 숫자만 입력하면 하이픈이 붙는다 (최대 13자)
+     * "split": 칸 3개로 나눠 입력하고, 칸을 채우면 다음 칸으로 넘어간다
+     * 어느 쪽이든 서버로는 "010-1234-5678" 형식으로 보낸다.
+     */
+    phoneInput?: "single" | "split";
     /** 가입 시 동의받을 약관 목록. 빈 배열이면 약관 영역을 숨긴다. */
     terms?: TermsItem[];
     /** optionalFields에 "address"를 넣었을 때 쓰는 주소 입력 방식. 기본 "basic" */

@@ -1,13 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 
 import { errorMessage } from "../api/error";
 import { LogoMark } from "../brand/LogoMark";
+import { meerkitConfig } from "../config";
 import { ResetPasswordForm } from "./components/ResetPasswordForm";
 import { useAuthDialog } from "./dialog-store";
+import { useAuth } from "./hooks";
 import { useResetPassword } from "./mutations";
 
 // 메일의 링크(/reset-password?token=...)로 들어오는 화면
@@ -15,6 +18,13 @@ export function ResetPasswordPage() {
   const token = useSearchParams().get("token");
   const reset = useResetPassword();
   const openDialog = useAuthDialog((s) => s.openDialog);
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+
+  // 재설정을 마치고 이 화면에서 로그인하면 웰컴 화면으로 보낸다
+  useEffect(() => {
+    if (reset.isSuccess && isAuthenticated) router.replace(meerkitConfig.routes.home);
+  }, [reset.isSuccess, isAuthenticated, router]);
 
   return (
     <div className="flex min-h-screen flex-col">

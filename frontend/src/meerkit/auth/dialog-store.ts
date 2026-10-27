@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type AuthDialogMode = "login" | "signup" | "forgot";
+export type AuthDialogMode = "login" | "signup" | "forgot" | "findId";
 
 interface AuthDialogState {
   open: boolean;

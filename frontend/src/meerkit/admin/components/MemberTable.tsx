@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { RoleBadges } from "../../auth/components/RoleBadges";
@@ -56,7 +57,7 @@ function ActiveButton({ user, disabled, onChange }: { user: User; disabled: bool
         ? ["비활성화", false]
         : ["활성화", true];
   return (
-    <Button variant="ghost" size="sm" disabled={disabled} onClick={() => onChange(next)}>
+    <Button variant="outline" size="sm" disabled={disabled} onClick={() => onChange(next)}>
       {label}
     </Button>
   );
@@ -68,6 +69,8 @@ const roleNames = (u: User) => ROLES.filter((r) => u.roles.some((ur) => ur.id ==
 export function MemberTable({ members, onRoleChange, onRemove, onActiveChange, roleEditor = "dialog", currentUserId }: MemberTableProps) {
   const [target, setTarget] = useState<User | null>(null);
   const [open, setOpen] = useState(false);
+  // 탈퇴 처리와 복구는 되돌리기 어려우므로 한 번 더 물어본 뒤 실행한다
+  const [confirm, setConfirm] = useState<{ kind: "remove" | "restore"; user: User } | null>(null);
 
   if (members.length === 0) {
     return <p className="p-6 text-center text-sm text-muted-foreground">멤버가 없습니다.</p>;
@@ -125,9 +128,13 @@ export function MemberTable({ members, onRoleChange, onRemove, onActiveChange, r
                 <span className="flex items-center justify-end gap-1">
                   {onActiveChange && (
                     // 본인 계정은 서버가 막으므로 잠근다. 탈퇴 계정은 [복구]만 쓸 수 있다
-                    <ActiveButton user={m} disabled={m.id === currentUserId} onChange={(next) => onActiveChange(m.id, next)} />
+                    <ActiveButton
+                      user={m}
+                      disabled={m.id === currentUserId}
+                      onChange={(next) => (m.deactivated_at ? setConfirm({ kind: "restore", user: m }) : onActiveChange(m.id, next))}
+                    />
                   )}
-                  <Button variant="outline" size="sm" disabled={locked} onClick={() => onRemove(m.id)}>
+                  <Button variant="outline" size="sm" disabled={locked} onClick={() => setConfirm({ kind: "remove", user: m })}>
                     탈퇴 처리
                   </Button>
                 </span>
@@ -137,6 +144,31 @@ export function MemberTable({ members, onRoleChange, onRemove, onActiveChange, r
           })}
         </TableBody>
       </Table>
+      <Dialog open={!!confirm} onOpenChange={(next) => !next && setConfirm(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{confirm?.kind === "remove" ? "탈퇴 처리할까요?" : "계정을 복구할까요?"}</DialogTitle>
+            <DialogDescription>
+              {confirm?.kind === "remove"
+                ? `${confirm.user.user_id} 계정을 탈퇴 처리합니다. 이 계정은 로그인할 수 없게 되고, 보관 기간이 지나면 개인정보가 삭제됩니다.`
+                : confirm && `${confirm.user.user_id} 계정의 탈퇴를 취소하고 다시 활성 상태로 되돌립니다.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setConfirm(null)}>취소</Button>
+            <Button
+              variant={confirm?.kind === "remove" ? "destructive" : "default"}
+              onClick={() => {
+                if (confirm?.kind === "remove") onRemove(confirm.user.id);
+                else if (confirm) onActiveChange?.(confirm.user.id, true);
+                setConfirm(null);
+              }}
+            >
+              {confirm?.kind === "remove" ? "탈퇴 처리" : "복구"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       {roleEditor === "dialog" && (
         <RoleAssignDialog
           user={target}

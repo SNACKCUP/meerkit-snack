@@ -23,6 +23,13 @@ export const usersApi = {
   updateActive: (id: number, is_active: boolean) =>
     api.patch<User>(`/users/${id}/active`, { is_active }).then((r) => r.data),
   updateMe: (input: Partial<UpdateProfileInput>) => api.patch<User>("/users/me", input).then((r) => r.data),
+  // 프로필 이미지: multipart(file)로 올리면 서버가 저장하고 avatar_url이 채워진 내 정보를 돌려준다 (서버 구현 필요)
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api.post<User>("/users/me/avatar", form).then((r) => r.data);
+  },
+  removeAvatar: () => api.delete<User>("/users/me/avatar").then((r) => r.data),
   changePassword: (input: ChangePasswordInput) => api.patch("/users/me/password", input),
   // 탈퇴: 계정이 막히고, 보관 기간이 지나면 개인정보가 지워진다
   withdraw: (input: WithdrawInput) => api.delete("/users/me", { data: input }),

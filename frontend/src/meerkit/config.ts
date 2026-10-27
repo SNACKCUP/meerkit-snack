@@ -16,6 +16,8 @@ export const meerkitConfig = {
   signup: {
     passwordConfirm: userConfig.signup?.passwordConfirm ?? false,
     optionalFields: userConfig.signup?.optionalFields ?? [],
+    name: { min: userConfig.signup?.name?.min ?? 2, max: userConfig.signup?.name?.max ?? 10 },
+    phoneInput: userConfig.signup?.phoneInput ?? "single",
     terms: userConfig.signup?.terms ?? [],
     addressType: userConfig.signup?.addressType ?? "basic",
     addressSearch: userConfig.signup?.addressSearch ?? "popup",

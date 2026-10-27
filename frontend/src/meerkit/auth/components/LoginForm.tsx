@@ -20,9 +20,11 @@ interface LoginFormProps {
   attemptsLeft?: number | null;
   /** 있으면 "비밀번호를 잊으셨나요?" 링크를 보여 준다 */
   onForgotPassword?: () => void;
+  /** 있으면 "아이디를 잊으셨나요?" 링크를 보여 준다 */
+  onFindId?: () => void;
 }
 
-export function LoginForm({ onSubmit, pending, error, lockedUntil = null, attemptsLeft = null, onForgotPassword }: LoginFormProps) {
+export function LoginForm({ onSubmit, pending, error, lockedUntil = null, attemptsLeft = null, onForgotPassword, onFindId }: LoginFormProps) {
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
   const remaining = useRemainingLock(lockedUntil);
@@ -37,7 +39,14 @@ export function LoginForm({ onSubmit, pending, error, lockedUntil = null, attemp
       }}
     >
       <div className="grid gap-2">
-        <Label htmlFor="login-user-id">아이디</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="login-user-id">아이디</Label>
+          {onFindId && (
+            <button type="button" onClick={onFindId} className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
+              아이디를 잊으셨나요?
+            </button>
+          )}
+        </div>
         <Input id="login-user-id" autoComplete="username" required disabled={locked} value={userId} onChange={(e) => setUserId(e.target.value)} />
       </div>
       <div className="grid gap-2">

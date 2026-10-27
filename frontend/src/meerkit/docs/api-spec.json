@@ -1,0 +1,1403 @@
+{
+  "title": "MeerKit",
+  "version": "0.1.0",
+  "generatedFrom": "/private/tmp/claude-501/-Users-iseung-yeol-project-goorm-sprint2-meerkit/74870037-cdff-439c-926f-1455b78e6053/scratchpad/openapi-fresh.json",
+  "groups": [
+    {
+      "tag": "health",
+      "title": "Health",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/health",
+          "summary": "살아 있는지 (DB 확인 없음)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "object",
+              "example": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/health/ready",
+          "summary": "요청을 받을 준비가 됐는지 (DB 연결까지 확인)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "object",
+              "example": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "auth",
+      "title": "Auth",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/auth/terms",
+          "summary": "가입 때 동의받을 약관 (현재 버전)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "TermRead[]",
+              "example": [
+                {
+                  "id": "terms",
+                  "version": 1,
+                  "title": "이용약관",
+                  "required": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/check-user-id",
+          "summary": "아이디 사용 가능 여부",
+          "description": "",
+          "auth": false,
+          "params": [
+            {
+              "name": "user_id",
+              "in": "query",
+              "type": "string",
+              "required": true,
+              "description": "확인할 아이디 (가입 규칙과 같음)",
+              "constraints": "",
+              "example": "kim_2024"
+            }
+          ],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "LoginIdCheck",
+              "example": {
+                "available": true
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/email/send-code",
+          "summary": "가입용 이메일 인증번호 발송 (같은 이메일 60초 간격, 하루 10회)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "EmailCodeRequest",
+            "fields": [
+              {
+                "name": "email",
+                "type": "string (email)",
+                "required": true,
+                "description": "인증번호를 받을 이메일",
+                "constraints": "",
+                "example": "kim@example.com"
+              }
+            ],
+            "example": {
+              "email": "kim@example.com"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/email/verify-code",
+          "summary": "인증번호 확인 → 가입에 붙일 증표 발급",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "VerifyEmailCodeRequest",
+            "fields": [
+              {
+                "name": "email",
+                "type": "string (email)",
+                "required": true,
+                "description": "인증번호를 받은 이메일",
+                "constraints": "",
+                "example": "kim@example.com"
+              },
+              {
+                "name": "code",
+                "type": "string",
+                "required": true,
+                "description": "메일로 받은 6자리 인증번호",
+                "constraints": "최소 1자, 최대 10자",
+                "example": "123456"
+              }
+            ],
+            "example": {
+              "email": "kim@example.com",
+              "code": "123456"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "VerifyEmailCodeResponse",
+              "example": {
+                "token": "(증표 문자열)"
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/signup",
+          "summary": "회원가입 (기본 역할 VIEWER, 필수 약관·이메일 인증 필요)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "SignupRequest",
+            "fields": [
+              {
+                "name": "nickname",
+                "type": "string | null",
+                "required": false,
+                "description": "닉네임 (다른 회원과 겹치면 안 됨)",
+                "constraints": "최소 1자, 최대 30자",
+                "example": "행복한미어캣"
+              },
+              {
+                "name": "phone",
+                "type": "string | null",
+                "required": false,
+                "description": "전화번호",
+                "constraints": "최대 20자",
+                "example": "010-1234-5678"
+              },
+              {
+                "name": "postcode",
+                "type": "string | null",
+                "required": false,
+                "description": "우편번호",
+                "constraints": "최대 10자",
+                "example": "06236"
+              },
+              {
+                "name": "address",
+                "type": "string | null",
+                "required": false,
+                "description": "기본 주소 (주소 검색 결과)",
+                "constraints": "최대 255자",
+                "example": "서울 강남구 테헤란로 123"
+              },
+              {
+                "name": "address_detail",
+                "type": "string | null",
+                "required": false,
+                "description": "상세 주소",
+                "constraints": "최대 255자",
+                "example": "4층 401호"
+              },
+              {
+                "name": "birth_date",
+                "type": "string (date) | null",
+                "required": false,
+                "description": "생년월일 (YYYY-MM-DD)",
+                "constraints": "",
+                "example": "1995-04-12"
+              },
+              {
+                "name": "gender",
+                "type": "string | null",
+                "required": false,
+                "description": "성별: male, female, none(선택 안 함)",
+                "constraints": "최대 10자",
+                "example": "female"
+              },
+              {
+                "name": "user_id",
+                "type": "string",
+                "required": true,
+                "description": "로그인 아이디. 영문으로 시작, 영문·숫자·밑줄(_) 4~30자. 소문자로 저장",
+                "constraints": "",
+                "example": "kim_2024"
+              },
+              {
+                "name": "email",
+                "type": "string (email)",
+                "required": true,
+                "description": "이메일 (연락·인증용, 다른 회원과 겹치면 안 됨)",
+                "constraints": "",
+                "example": "kim@example.com"
+              },
+              {
+                "name": "password",
+                "type": "string",
+                "required": true,
+                "description": "비밀번호 8~128자 (argon2 해시로만 저장)",
+                "constraints": "최소 8자, 최대 128자",
+                "example": "Passw0rd!example"
+              },
+              {
+                "name": "name",
+                "type": "string",
+                "required": true,
+                "description": "이름",
+                "constraints": "최소 1자, 최대 50자",
+                "example": "김미어"
+              },
+              {
+                "name": "agreed_terms",
+                "type": "string[]",
+                "required": false,
+                "description": "동의한 약관 id 목록 (GET /auth/terms의 id). 필수 약관(terms, privacy)은 꼭 포함",
+                "constraints": "",
+                "example": [
+                  "terms",
+                  "privacy"
+                ]
+              },
+              {
+                "name": "email_verification_token",
+                "type": "string | null",
+                "required": false,
+                "description": "POST /auth/email/verify-code가 돌려준 token. 이메일 인증을 켠 경우(기본) 필수",
+                "constraints": "",
+                "example": "verify-code 응답의 token 값"
+              }
+            ],
+            "example": {
+              "nickname": "행복한미어캣",
+              "phone": "010-1234-5678",
+              "postcode": "06236",
+              "address": "서울 강남구 테헤란로 123",
+              "address_detail": "4층 401호",
+              "birth_date": "1995-04-12",
+              "gender": "female",
+              "user_id": "kim_2024",
+              "email": "kim@example.com",
+              "password": "Passw0rd!example",
+              "name": "김미어",
+              "agreed_terms": [
+                "terms",
+                "privacy"
+              ],
+              "email_verification_token": "verify-code 응답의 token 값"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "201",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/login",
+          "summary": "로그인 (연속 실패 시 잠금: 429 + Retry-After)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "LoginRequest",
+            "fields": [
+              {
+                "name": "user_id",
+                "type": "string",
+                "required": true,
+                "description": "로그인 아이디 (이메일 아님)",
+                "constraints": "",
+                "example": "kim_2024"
+              },
+              {
+                "name": "password",
+                "type": "string",
+                "required": true,
+                "description": "비밀번호",
+                "constraints": "",
+                "example": "Passw0rd!example"
+              }
+            ],
+            "example": {
+              "user_id": "kim_2024",
+              "password": "Passw0rd!example"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "TokenResponse",
+              "example": {
+                "access_token": "eyJhbGciOi...(JWT)",
+                "token_type": "bearer"
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/refresh",
+          "summary": "리프레시 쿠키로 액세스 토큰 재발급",
+          "description": "",
+          "auth": false,
+          "params": [
+            {
+              "name": "meerkit_refresh",
+              "in": "cookie",
+              "type": "string",
+              "required": false,
+              "description": "",
+              "constraints": "",
+              "example": "string"
+            }
+          ],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "TokenResponse",
+              "example": {
+                "access_token": "eyJhbGciOi...(JWT)",
+                "token_type": "bearer"
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/password/forgot",
+          "summary": "비밀번호 재설정 메일 요청 (가입 여부와 관계없이 항상 같은 응답)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ForgotPasswordRequest",
+            "fields": [
+              {
+                "name": "email",
+                "type": "string",
+                "required": true,
+                "description": "가입한 이메일",
+                "constraints": "최대 255자",
+                "example": "kim@example.com"
+              }
+            ],
+            "example": {
+              "email": "kim@example.com"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "202",
+              "description": "성공",
+              "schema": "object",
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/password/reset",
+          "summary": "메일 링크의 토큰으로 새 비밀번호 설정 (30분, 한 번만)",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ResetPasswordRequest",
+            "fields": [
+              {
+                "name": "token",
+                "type": "string",
+                "required": true,
+                "description": "재설정 메일 링크의 token 값",
+                "constraints": "최소 1자, 최대 200자",
+                "example": "메일 링크의 token 값"
+              },
+              {
+                "name": "password",
+                "type": "string",
+                "required": true,
+                "description": "새 비밀번호 8~128자",
+                "constraints": "최소 8자, 최대 128자",
+                "example": "NewPassw0rd!example"
+              }
+            ],
+            "example": {
+              "token": "메일 링크의 token 값",
+              "password": "NewPassw0rd!example"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/auth/logout",
+          "summary": "로그아웃",
+          "description": "",
+          "auth": false,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/auth/me",
+          "summary": "내 정보 (임시 유지, 새 코드는 GET /users/me 사용)",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "users (me)",
+      "title": "Users · 내 정보",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/users/me",
+          "summary": "내 정보",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/users/me",
+          "summary": "탈퇴 (계정을 막고, 보관 기간이 지나면 개인정보 삭제)",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "WithdrawRequest",
+            "fields": [
+              {
+                "name": "password",
+                "type": "string",
+                "required": true,
+                "description": "지금 비밀번호 (본인 확인)",
+                "constraints": "",
+                "example": "Passw0rd!example"
+              }
+            ],
+            "example": {
+              "password": "Passw0rd!example"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/users/me",
+          "summary": "내 정보 수정 (보낸 항목만)",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ProfileUpdate",
+            "fields": [
+              {
+                "name": "name",
+                "type": "string | null",
+                "required": false,
+                "description": "이름 (비울 수 없음)",
+                "constraints": "최소 1자, 최대 50자",
+                "example": "김미어"
+              },
+              {
+                "name": "email",
+                "type": "string (email) | null",
+                "required": false,
+                "description": "새 이메일 (바꿀 때는 email_verification_token도 함께)",
+                "constraints": "",
+                "example": "kim.new@example.com"
+              },
+              {
+                "name": "email_verification_token",
+                "type": "string | null",
+                "required": false,
+                "description": "새 이메일로 /auth/email/send-code → verify-code를 거쳐 받은 token",
+                "constraints": "",
+                "example": "verify-code 응답의 token 값"
+              },
+              {
+                "name": "nickname",
+                "type": "string | null",
+                "required": false,
+                "description": "닉네임 (다른 회원과 겹치면 안 됨)",
+                "constraints": "최소 1자, 최대 30자",
+                "example": "행복한미어캣"
+              },
+              {
+                "name": "phone",
+                "type": "string | null",
+                "required": false,
+                "description": "전화번호",
+                "constraints": "최대 20자",
+                "example": "010-1234-5678"
+              },
+              {
+                "name": "postcode",
+                "type": "string | null",
+                "required": false,
+                "description": "우편번호",
+                "constraints": "최대 10자",
+                "example": "06236"
+              },
+              {
+                "name": "address",
+                "type": "string | null",
+                "required": false,
+                "description": "기본 주소",
+                "constraints": "최대 255자",
+                "example": "서울 강남구 테헤란로 123"
+              },
+              {
+                "name": "address_detail",
+                "type": "string | null",
+                "required": false,
+                "description": "상세 주소",
+                "constraints": "최대 255자",
+                "example": "4층 401호"
+              },
+              {
+                "name": "birth_date",
+                "type": "string (date) | null",
+                "required": false,
+                "description": "생년월일 (YYYY-MM-DD)",
+                "constraints": "",
+                "example": "1995-04-12"
+              },
+              {
+                "name": "gender",
+                "type": "string | null",
+                "required": false,
+                "description": "성별: male, female, none",
+                "constraints": "최대 10자",
+                "example": "female"
+              }
+            ],
+            "example": {
+              "name": "김미어",
+              "email": "kim.new@example.com",
+              "email_verification_token": "verify-code 응답의 token 값",
+              "nickname": "행복한미어캣",
+              "phone": "010-1234-5678",
+              "postcode": "06236",
+              "address": "서울 강남구 테헤란로 123",
+              "address_detail": "4층 401호",
+              "birth_date": "1995-04-12",
+              "gender": "female"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/users/me/password",
+          "summary": "비밀번호 변경 (다른 기기의 로그인은 풀리고, 이 기기는 새 리프레시 쿠키를 받음)",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ChangePasswordRequest",
+            "fields": [
+              {
+                "name": "current_password",
+                "type": "string",
+                "required": true,
+                "description": "지금 비밀번호 (본인 확인)",
+                "constraints": "",
+                "example": "Passw0rd!example"
+              },
+              {
+                "name": "new_password",
+                "type": "string",
+                "required": true,
+                "description": "새 비밀번호 8~128자",
+                "constraints": "최소 8자, 최대 128자",
+                "example": "NewPassw0rd!example"
+              }
+            ],
+            "example": {
+              "current_password": "Passw0rd!example",
+              "new_password": "NewPassw0rd!example"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "users (admin)",
+      "title": "Users · 관리자",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/api/users",
+          "summary": "멤버 검색 (아이디·이름·이메일·닉네임, 역할·상태 필터, 페이지)",
+          "description": "",
+          "auth": true,
+          "params": [
+            {
+              "name": "q",
+              "in": "query",
+              "type": "string",
+              "required": false,
+              "description": "",
+              "constraints": "최대 100자",
+              "example": "string"
+            },
+            {
+              "name": "role_id",
+              "in": "query",
+              "type": "integer",
+              "required": false,
+              "description": "",
+              "constraints": "",
+              "example": 0
+            },
+            {
+              "name": "status",
+              "in": "query",
+              "type": "\"active\" | \"inactive\" | \"deleted\"",
+              "required": false,
+              "description": "",
+              "constraints": "",
+              "example": "active"
+            },
+            {
+              "name": "page",
+              "in": "query",
+              "type": "integer",
+              "required": false,
+              "description": "",
+              "constraints": "최소 1, 기본 1",
+              "example": 1
+            },
+            {
+              "name": "size",
+              "in": "query",
+              "type": "integer",
+              "required": false,
+              "description": "",
+              "constraints": "최소 1, 최대 100, 기본 20",
+              "example": 20
+            }
+          ],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserPage",
+              "example": {
+                "items": [
+                  {
+                    "id": 12,
+                    "user_id": "kim_2024",
+                    "email": "kim@example.com",
+                    "name": "김미어",
+                    "nickname": "행복한미어캣",
+                    "phone": "010-1234-5678",
+                    "postcode": "06236",
+                    "address": "서울 강남구 테헤란로 123",
+                    "address_detail": "4층 401호",
+                    "birth_date": "1995-04-12",
+                    "gender": "female",
+                    "avatar_url": null,
+                    "email_verified": true,
+                    "roles": [
+                      {}
+                    ],
+                    "is_active": true,
+                    "created_at": "2026-10-27T04:35:54Z",
+                    "updated_at": "2026-10-27T04:40:12Z",
+                    "locked_until": null,
+                    "deactivated_at": null,
+                    "deleted_at": null
+                  }
+                ],
+                "total": 42,
+                "page": 1,
+                "size": 20
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/users/roles",
+          "summary": "역할 목록",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "RoleRead[]",
+              "example": [
+                {
+                  "id": 3,
+                  "name": "VIEWER"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/users/{user_id}/roles",
+          "summary": "역할 변경",
+          "description": "",
+          "auth": true,
+          "params": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "",
+              "constraints": "",
+              "example": 0
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "schema": "RolesUpdate",
+            "fields": [
+              {
+                "name": "roles",
+                "type": "string[]",
+                "required": true,
+                "description": "역할 코드 목록, 1개 이상 (MASTER, OWNER, VIEWER, WRITER)",
+                "constraints": "",
+                "example": [
+                  "VIEWER",
+                  "WRITER"
+                ]
+              }
+            ],
+            "example": {
+              "roles": [
+                "VIEWER",
+                "WRITER"
+              ]
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "PATCH",
+          "path": "/api/users/{user_id}/active",
+          "summary": "활성/비활성",
+          "description": "",
+          "auth": true,
+          "params": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "",
+              "constraints": "",
+              "example": 0
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ActiveUpdate",
+            "fields": [
+              {
+                "name": "is_active",
+                "type": "boolean",
+                "required": true,
+                "description": "true: 활성화(복구·잠금 해제), false: 비활성화",
+                "constraints": "",
+                "example": false
+              }
+            ],
+            "example": {
+              "is_active": false
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/users/{user_id}",
+          "summary": "멤버 삭제 (탈퇴 처리, 보관 기간 뒤 개인정보 삭제)",
+          "description": "",
+          "auth": true,
+          "params": [
+            {
+              "name": "user_id",
+              "in": "path",
+              "type": "integer",
+              "required": true,
+              "description": "",
+              "constraints": "",
+              "example": 0
+            }
+          ],
+          "body": null,
+          "responses": [
+            {
+              "status": "204",
+              "description": "성공",
+              "schema": null,
+              "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

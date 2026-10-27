@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { memo } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -17,7 +18,7 @@ interface TermsAgreementProps {
 }
 
 // 전체 동의 + 개별 약관 체크박스. 필수/선택 표시와 약관 전문 링크가 있다.
-export function TermsAgreement({ terms, value, onChange, invalid }: TermsAgreementProps) {
+export const TermsAgreement = memo(function TermsAgreement({ terms, value, onChange, invalid }: TermsAgreementProps) {
   if (terms.length === 0) return null;
   const allChecked = terms.every((t) => value.includes(t.id));
   const someChecked = value.length > 0 && !allChecked;
@@ -56,4 +57,4 @@ export function TermsAgreement({ terms, value, onChange, invalid }: TermsAgreeme
       </div>
     </fieldset>
   );
-}
+});

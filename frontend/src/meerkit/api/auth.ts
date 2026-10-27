@@ -1,4 +1,4 @@
-import type { EmailCodeInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, TokenResponse, User, VerifyEmailCodeInput, VerifyEmailCodeResponse } from "../types";
+import type { EmailCodeInput, ForgotIdInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, TokenResponse, User, VerifyEmailCodeInput, VerifyEmailCodeResponse } from "../types";
 import { api } from "./client";
 
 export const authApi = {
@@ -10,6 +10,8 @@ export const authApi = {
   checkUserId: (userId: string) =>
     api.get<{ available: boolean }>("/auth/check-user-id", { params: { user_id: userId } }).then((r) => r.data.available),
   // 가입된 이메일인지 알려 주지 않도록, 서버는 항상 같은 응답을 준다.
+  // 아이디 찾기: 가입된 이메일이면 일부를 가린 아이디를 메일로 보낸다. 가입 여부와 관계없이 항상 같은 응답 (서버 구현 필요)
+  forgotId: (input: ForgotIdInput) => api.post("/auth/id/forgot", input),
   forgotPassword: (input: ForgotPasswordInput) => api.post("/auth/password/forgot", input),
   resetPassword: (input: ResetPasswordInput) => api.post("/auth/password/reset", input),
   // 이메일 인증번호 발송 / 확인. 확인에 성공하면 가입 요청에 붙일 증표(token)를 돌려준다.

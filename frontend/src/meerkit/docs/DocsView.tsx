@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { COMPONENT_APIS } from "./component-apis";
 import { docContent } from "./content";
+import { LinkedApis } from "./content/api-spec";
 import { DocsShell } from "./DocsShell";
 import { AUDIENCES, allDocs, docHref } from "./nav";
 
@@ -22,6 +24,8 @@ interface TocItem {
 // 이전 페이지는 숨김 상태로 DOM에 남아 있을 수 있다. 목차와 앵커는 항상 이 페이지의 article 안에서만 찾는다.
 function scrollToHeading(root: HTMLElement | null, id: string, smooth = true) {
   const el = root?.querySelector<HTMLElement>(`[id="${CSS.escape(id)}"]`);
+  // 접혀 있는 API 행이면 먼저 펼친다
+  window.dispatchEvent(new CustomEvent("mk-open-anchor", { detail: id }));
   el?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
   return !!el;
 }
@@ -119,6 +123,7 @@ export function DocsView({ slug }: { slug: string }) {
           <div className="mt-8 grid gap-4">
             <Content />
           </div>
+          {COMPONENT_APIS[slug] && <LinkedApis apis={COMPONENT_APIS[slug]} />}
         </article>
 
         <div className="mx-auto mt-[120px] flex max-w-[720px] justify-between gap-3">

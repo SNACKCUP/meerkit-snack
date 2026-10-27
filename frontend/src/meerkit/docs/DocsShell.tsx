@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 import { LogoMark } from "../brand/LogoMark";
+import { ThemeToggle } from "../theme/ThemeToggle";
 import { meerkitConfig } from "../config";
 import { DocsFooter } from "./DocsFooter";
+import { ScrollTopButton } from "./ScrollTopButton";
 import { AUDIENCES, docGroups, docHref, type Audience, type DocMeta } from "./nav";
 
 function NavLink({ item, slug, onNavigate }: { item: DocMeta; slug?: string; onNavigate?: () => void }) {
@@ -53,10 +55,10 @@ function Sidebar({ slug, onNavigate }: { slug?: string; onNavigate?: () => void 
                   const items = group.items.filter((i) => i.audience === aud);
                   if (items.length === 0) return null;
                   return (
-                    <div key={aud} className="grid gap-0.5">
-                      <p className="flex items-center gap-1.5 px-2.5 pb-0.5 pt-1 text-[11px] font-semibold text-muted-foreground/80">
+                    <div key={aud} className={cn("grid gap-0.5 border-l-2 pl-2", AUDIENCES[aud].tone.bar)}>
+                      <p className="flex items-center px-2.5 pb-0.5 pt-1 text-[11px] font-semibold text-muted-foreground">
                         {AUDIENCES[aud].section}
-                        <span className="font-normal text-muted-foreground/60">{items.length}</span>
+                        <span className="ml-auto font-normal opacity-60">{items.length}</span>
                       </p>
                       {items.map((item) => <NavLink key={item.slug} item={item} slug={slug} onNavigate={onNavigate} />)}
                     </div>
@@ -131,6 +133,10 @@ export function DocsShell({ slug, query, children, aside }: DocsShellProps) {
     if (open) centerActiveLink(drawerRef.current, false);
   }, [open]);
 
+  // 헤더에서 지금 보고 있는 구역을 진하게 표시한다
+  const section = slug?.startsWith("api-") ? "api" : slug === "components" || docGroups.find((g) => g.label.includes("Components"))?.items.some((i) => i.slug === slug) ? "components" : "docs";
+  const navCls = (active: boolean) => (active ? "font-medium text-foreground" : "hover:text-foreground");
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
@@ -143,11 +149,12 @@ export function DocsShell({ slug, query, children, aside }: DocsShellProps) {
           </Link>
           <nav className="ml-4 hidden items-center gap-5 text-[13px] text-muted-foreground md:flex">
             <Link href={meerkitConfig.routes.home} className="hover:text-foreground">Home</Link>
-            <Link href="/docs" className="font-medium text-foreground">Docs</Link>
-            <Link href="/docs/login-form" className="hover:text-foreground">Components</Link>
-            <Link href="/docs/api-reference" className="hover:text-foreground">API</Link>
+            <Link href="/docs" className={navCls(section === "docs")}>Docs</Link>
+            <Link href="/docs/components" className={navCls(section === "components")}>Components</Link>
+            <Link href="/docs/api-overview" className={navCls(section === "api")}>API</Link>
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <HeaderSearch key={query ?? ""} initial={query} />
             <Button asChild size="sm" variant="outline">
               <a href={meerkitConfig.githubUrl} target="_blank" rel="noreferrer">GitHub</a>
@@ -174,6 +181,7 @@ export function DocsShell({ slug, query, children, aside }: DocsShellProps) {
         <aside className="mk-scroll sticky top-14 hidden h-[calc(100vh-3.5rem)] overflow-y-auto py-10 xl:block">{aside}</aside>
       </div>
       <DocsFooter />
+      <ScrollTopButton />
     </div>
   );
 }

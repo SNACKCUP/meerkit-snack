@@ -1,33 +1,31 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 
 import { AuthDialog } from "../auth/components/AuthDialog";
 import { useLockoutStore } from "../auth/lockout";
-import { hasSessionHint, setSessionHint } from "../auth/session-hint";
+import { refreshAccessToken } from "../api/client";
+import { hasSessionHint } from "../auth/session-hint";
 import { useAuthStore } from "../auth/store";
 import { meerkitConfig } from "../config";
+import { ThemeSync } from "../theme/ThemeSync";
 
 // 새로고침 시 리프레시 쿠키로 액세스 토큰을 복원한다.
 // 로그인한 적이 있는 브라우저에서만 요청한다 (처음 온 방문자나 문서만 보는 사람에게는 요청이 나가지 않는다).
 function useRestoreSession() {
-  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const setSessionStatus = useAuthStore((s) => s.setSessionStatus);
   useEffect(() => {
-    if (meerkitConfig.docsOnly || !hasSessionHint()) return;
-    fetch(`${meerkitConfig.apiBaseUrl}/auth/refresh`, {
-      method: "POST",
-      credentials: "include",
-    })
-      .then((r) => {
-        if (r.status === 401) setSessionHint(false); // 세션이 끝났으면 표시를 지운다
-        return r.ok ? r.json() : null;
-      })
-      .then((data) => data?.access_token && setAccessToken(data.access_token))
-      .catch(() => {});
-  }, [setAccessToken]);
+    if (meerkitConfig.docsOnly || !hasSessionHint()) {
+      setSessionStatus("ready");
+      return;
+    }
+    setSessionStatus("restoring");
+    // 복원이 끝나기 전에는 "로그인 전" 화면을 보여 주지 않는다 (useAuth().isLoading)
+    refreshAccessToken().finally(() => setSessionStatus("ready"));
+  }, [setSessionStatus]);
 }
 
 export function MeerkitProvider({ children }: { children: React.ReactNode }) {
@@ -40,6 +38,9 @@ export function MeerkitProvider({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <Suspense fallback={null}>
+        <ThemeSync />
+      </Suspense>
       <AuthDialog />
       <Toaster />
     </QueryClientProvider>
