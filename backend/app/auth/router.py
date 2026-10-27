@@ -64,7 +64,7 @@ def list_terms(db: Session = Depends(get_db)):
 
 @router.get("/check-user-id", response_model=LoginIdCheck, summary="아이디 사용 가능 여부")
 def check_user_id(
-    user_id: Annotated[LoginId, Query()],
+    user_id: Annotated[LoginId, Query(description="확인할 아이디 (가입 규칙과 같음)", examples=["kim_2024"])],
     db: Session = Depends(get_db),
 ):
     return LoginIdCheck(available=user_service.is_login_id_available(db, user_id))
