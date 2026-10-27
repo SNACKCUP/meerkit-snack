@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Copy, ExternalLink, Info, TriangleAlert } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 import { useState } from "react";
@@ -194,6 +195,28 @@ export function LinkCards({ items }: { items: { href: string; title: string; des
         <Link key={it.href} href={it.href} className="rounded-2xl border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:bg-surface">
           <p className="text-sm font-medium">{it.title}</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</p>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/** 킷 위에 만든 서브 프로젝트를 화면 캡처와 함께 카드로 보여 준다. 누르면 해당 프로젝트로 이동한다 */
+export function SubProjectCards({ items }: { items: { href: string; title: string; desc: string; image: string }[] }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {items.map((it) => (
+        <Link key={it.href} href={it.href} className="group overflow-hidden rounded-2xl border bg-card shadow-soft transition-all hover:-translate-y-0.5 hover:bg-surface">
+          <div className="relative aspect-[16/10] overflow-hidden border-b bg-muted">
+            <Image src={it.image} alt={`${it.title} 메인 화면`} fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.03]" />
+          </div>
+          <div className="flex items-start justify-between gap-3 p-4">
+            <div>
+              <p className="text-sm font-semibold">{it.title}</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">{it.desc}</p>
+            </div>
+            <ExternalLink className="mt-0.5 size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" aria-hidden />
+          </div>
         </Link>
       ))}
     </div>

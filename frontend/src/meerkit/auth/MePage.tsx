@@ -12,14 +12,20 @@ import { meerkitConfig } from "../config";
 import { ChangePasswordForm } from "./components/ChangePasswordForm";
 import { NicknameForm } from "./components/NicknameForm";
 import { ProfileForm } from "./components/ProfileForm";
+import { ProfileImageField } from "./components/ProfileImageField";
 import { RoleBadges } from "./components/RoleBadges";
-import { UserAvatar, displayName } from "./components/UserAvatar";
+import { displayName } from "./components/UserAvatar";
 import { WithdrawForm } from "./components/WithdrawForm";
 import { RequireAuth } from "./guards/RequireAuth";
 import { useAuth } from "./hooks";
-import { useChangePassword, useSendEmailCode, useUpdateNickname, useUpdateProfile, useVerifyEmailCode, useWithdraw } from "./mutations";
+import { useChangePassword, useRemoveAvatar, useSendEmailCode, useUpdateNickname, useUpdateProfile, useUploadAvatar, useVerifyEmailCode, useWithdraw } from "./mutations";
 
 const date = (iso: string) => iso.slice(0, 10);
+
+// 부품이 보여 줄 수 있게 서버 오류를 문구가 담긴 Error로 바꿔 다시 던진다
+const rethrow = (e: unknown): never => {
+  throw new Error(errorMessage(e) ?? "이미지를 처리하지 못했습니다.");
+};
 
 function MeContent() {
   const { user } = useAuth();
@@ -29,6 +35,8 @@ function MeContent() {
   const withdraw = useWithdraw();
   const sendCode = useSendEmailCode();
   const verifyCode = useVerifyEmailCode();
+  const upload = useUploadAvatar();
+  const removeAvatar = useRemoveAvatar();
   const router = useRouter();
   if (!user) return null;
   const nicknameOn = meerkitConfig.signup.optionalFields.includes("nickname");
@@ -50,8 +58,8 @@ function MeContent() {
         <h1 className="text-3xl font-semibold tracking-tight">내 정보</h1>
       </div>
       <Card className="mb-4">
-        <CardContent className="flex items-center gap-4">
-          <UserAvatar user={user} size="xl" />
+        <CardContent className="grid gap-5">
+          <ProfileImageField user={user} onUpload={(file) => upload.mutateAsync(file).catch(rethrow)} onRemove={() => removeAvatar.mutateAsync().catch(rethrow)} />
           <div className="min-w-0">
             <p className="truncate text-xl font-semibold">{displayName(user)}</p>
             <p className="truncate text-sm text-muted-foreground">{user.email}</p>

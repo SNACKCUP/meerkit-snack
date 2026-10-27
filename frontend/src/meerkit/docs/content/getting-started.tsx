@@ -1,6 +1,6 @@
 "use client";
 
-import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, LinkCards, links, OL, P, PkgTabs, Tree, UL } from "../ui";
+import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, LinkCards, links, OL, P, PkgTabs, SubProjectCards, Tree, UL } from "../ui";
 
 export function Introduction() {
   return (
@@ -80,7 +80,7 @@ PostgreSQL ── users, roles
       <P>범위를 좁게 유지하기 위해 다음은 기본 제공하지 않습니다. 필요하면 서비스에서 추가하세요.</P>
       <UL>
         <li>링크 방식 이메일 인증, 소셜 로그인, 2단계 인증</li>
-        <li>프로필 이미지 업로드 (이미지 주소를 받아 표시만 합니다)</li>
+        <li>프로필 이미지 저장 API (고르고 미리 보는 화면 부품 ProfileImageField만 있고, 올린 파일의 저장은 서비스 서버가 맡습니다)</li>
         <li>실제 약관 문구와 메일 발송 (샘플 약관 페이지만 있습니다)</li>
         <li>세부 권한(permission) 테이블, 조직·팀 구조</li>
         <li>AI 사용량 기록과 한도 관리 (관리자용 사용량 화면 UI는 제공하며, 실제 집계는 추후 적용 예정)</li>
@@ -91,6 +91,14 @@ PostgreSQL ── users, roles
           { href: "/docs/installation", title: "Installation", desc: "프로젝트를 만들고 실행합니다." },
           { href: "/docs/authentication", title: "Authentication", desc: "인증 흐름을 이해합니다." },
           { href: "/docs/login-form", title: "Components", desc: "화면 부품을 살펴봅니다." },
+        ]}
+      />
+      <H2>Sub Project</H2>
+      <P>Meerkit 위에 실제로 얹어 만든 서브 프로젝트입니다. 카드를 누르면 해당 프로젝트로 이동합니다.</P>
+      <SubProjectCards
+        items={[
+          { href: "/maemusae", title: "매무새", desc: "고객이 보낸 문서에서 요구사항을 가려내 정의서로 정리하는 서비스", image: "/images/sub-maemusae.png" },
+          { href: "/malmoa", title: "말모아", desc: "회의는 말로, 기록은 글로. AI가 회의 내용을 회의록으로 만들어 주는 서비스", image: "/images/sub-malmoa.png" },
         ]}
       />
     </>

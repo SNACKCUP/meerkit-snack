@@ -20,6 +20,15 @@ export function WelcomePage() {
   const openDialog = useAuthDialog((s) => s.openDialog);
   const logout = useLogout();
 
+  // 로그인 전후 모두 보인다. 문서는 별도 사이트로 배포하므로 docsUrl로 보내고, 새 창으로 연다.
+  const docsButton = (
+    <Button asChild size="lg" variant="ghost">
+      <a href={meerkitConfig.docsUrl} target="_blank" rel="noreferrer">
+        Docs <ArrowUpRight />
+      </a>
+    </Button>
+  );
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6">
       <GhostCards />
@@ -41,17 +50,15 @@ export function WelcomePage() {
             // 세션을 확인하는 동안 로그인 버튼이 먼저 보였다 사라지지 않게 같은 높이의 빈 자리를 둔다
             <div className="h-11" aria-hidden />
           ) : isAuthenticated && user ? (
-            <UserMenu user={user} onLogout={() => logout.mutate()} />
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <UserMenu user={user} onLogout={() => logout.mutate()} />
+              {docsButton}
+            </div>
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-3">
               <Button size="lg" onClick={() => openDialog("signup")}>회원가입</Button>
               <Button size="lg" variant="outline" onClick={() => openDialog("login")}>로그인</Button>
-              <Button asChild size="lg" variant="ghost">
-                {/* 문서는 별도 사이트로 배포하므로 docsUrl로 보내고, 새 창으로 연다. */}
-                <a href={meerkitConfig.docsUrl} target="_blank" rel="noreferrer">
-                  Docs <ArrowUpRight />
-                </a>
-              </Button>
+              {docsButton}
             </div>
           )}
         </div>

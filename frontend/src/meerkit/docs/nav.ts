@@ -62,6 +62,7 @@ export const docGroups: DocGroup[] = [
       { slug: "profile", title: "Profile & Password", description: "내 정보 수정과 비밀번호 변경 화면입니다.", audience: "user" },
       { slug: "nickname", title: "Nickname", description: "닉네임 입력, 자동 생성 버튼, 마이페이지에서의 닉네임 변경입니다.", audience: "user" },
       { slug: "auth-dialog", title: "Auth Dialog", description: "로그인과 가입을 하나로 묶은 모달입니다.", audience: "user" },
+      { slug: "profile-image", title: "Profile Image", description: "프로필 이미지를 고르고 미리 보며 올리는 입력입니다.", audience: "user" },
       { slug: "user-avatar", title: "User Avatar", description: "프로필 이미지 또는 이니셜로 사용자를 나타내는 아바타입니다.", audience: "user" },
       { slug: "user-menu", title: "User Menu", description: "로그인한 사용자가 자기 계정을 다루는 아바타 드롭다운 메뉴입니다.", audience: "user" },
       { slug: "member-table", title: "Member Table", description: "관리자용 유저 목록 테이블입니다.", audience: "admin" },

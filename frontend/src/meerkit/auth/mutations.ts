@@ -104,6 +104,28 @@ export function useUpdateNickname() {
   });
 }
 
+export function useUploadAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => usersApi.uploadAvatar(file),
+    onSuccess: (user) => {
+      queryClient.setQueryData(meKey, user);
+      toast.success("프로필 이미지를 바꿨습니다.");
+    },
+  });
+}
+
+export function useRemoveAvatar() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: usersApi.removeAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(meKey, user);
+      toast.success("프로필 이미지를 삭제했습니다.");
+    },
+  });
+}
+
 export function useChangePassword() {
   return useMutation({
     mutationFn: (input: ChangePasswordInput) => usersApi.changePassword(input),
