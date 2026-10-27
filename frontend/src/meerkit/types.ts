@@ -70,6 +70,10 @@ export interface VerifyEmailCodeResponse {
   token: string;
 }
 
+export interface ForgotIdInput {
+  email: string;
+}
+
 export interface ForgotPasswordInput {
   email: string;
 }

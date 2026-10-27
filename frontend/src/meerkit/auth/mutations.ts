@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/users";
 import { meerkitConfig } from "../config";
-import type { ChangePasswordInput, EmailCodeInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
+import type { ChangePasswordInput, EmailCodeInput, ForgotIdInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
 import { useAuthDialog } from "./dialog-store";
 import { useLockoutStore } from "./lockout";
 import { meKey } from "./queries";
@@ -59,6 +59,10 @@ export function useLogout() {
       queryClient.removeQueries({ queryKey: meKey });
     },
   });
+}
+
+export function useForgotId() {
+  return useMutation({ mutationFn: (input: ForgotIdInput) => authApi.forgotId(input) });
 }
 
 export function useForgotPassword() {

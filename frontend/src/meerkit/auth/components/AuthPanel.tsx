@@ -15,10 +15,12 @@ interface AuthPanelProps {
   onSuccess?: () => void;
   /** 비밀번호 찾기 링크를 보여 줄 때 누르면 호출한다 */
   onForgotPassword?: () => void;
+  /** 아이디 찾기 링크를 보여 줄 때 누르면 호출한다 */
+  onFindId?: () => void;
 }
 
 /** 로그인·가입 폼을 모달 없이 페이지에 바로 놓는 부품. 로직은 AuthDialog와 같고, 폼 모양은 LoginForm·SignupForm이 정한다 */
-export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps) {
+export function AuthPanel({ mode, onSuccess, onForgotPassword, onFindId }: AuthPanelProps) {
   const login = useLogin();
   const signup = useSignup();
   const lock = useLoginLockout();
@@ -42,6 +44,7 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps)
         lockedUntil={lock.lockedUntil}
         attemptsLeft={lock.attemptsLeft}
         onForgotPassword={onForgotPassword}
+        onFindId={onFindId}
       />
     );
   }
