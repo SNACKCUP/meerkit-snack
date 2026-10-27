@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { formatBytes } from "../_lib/format";
 import { useMalmoa } from "../_lib/store";
 import type { MeetingSource } from "../_lib/types";
-import { PixelIcon, PxButton, PxCard } from "./px";
+import { PixelIcon, PxButton, PxPanel } from "./px";
 
 const AUDIO_EXT = [".mp3", ".wav", ".m4a", ".webm", ".mp4", ".ogg"];
 const IMAGE_EXT = [".jpg", ".jpeg", ".png", ".heic", ".heif", ".webp"];
@@ -31,7 +31,7 @@ function readDuration(file: File): Promise<number | null> {
   });
 }
 
-export function UploadPanel() {
+export function UploadPanel({ bare }: { bare?: boolean } = {}) {
   const addMeeting = useMalmoa((s) => s.addMeeting);
   const fileRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
@@ -71,7 +71,7 @@ export function UploadPanel() {
   }
 
   return (
-    <PxCard title="파일 업로드">
+    <PxPanel title="파일 업로드" bare={bare}>
       <div className="grid gap-4">
         <div
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
@@ -99,6 +99,6 @@ export function UploadPanel() {
           <PxButton variant="gold" disabled={!file || sending} onClick={() => void submit()}>{isImage ? "올리고 글자 읽기" : "업로드하고 텍스트로 변환"}</PxButton>
         </div>
       </div>
-    </PxCard>
+    </PxPanel>
   );
 }

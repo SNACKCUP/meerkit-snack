@@ -24,3 +24,9 @@ export function PxCard({ title, action, tone = "default", className, children, .
     </section>
   );
 }
+
+// 창 안에 들어갈 때(bare)는 테두리 없이 내용만, 단독으로 쓸 때는 PxCard로 감싼다.
+export function PxPanel({ title, bare, action, children }: { title: ReactNode; bare?: boolean; action?: ReactNode; children: ReactNode }) {
+  if (bare) return <div className="p-3">{children}</div>;
+  return <PxCard title={title} action={action}>{children}</PxCard>;
+}

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 
 import { cn } from "@/lib/utils";
 
+import { useMemoPad } from "../_lib/memo";
 import { useRecorderPrefs } from "../_lib/prefs";
 import { RecorderProvider } from "../_lib/recorder";
 import { useMalmoa } from "../_lib/store";
@@ -70,7 +71,7 @@ export function Shell({ children }: { children: ReactNode }) {
   // 저장해 둔 목 데이터·녹음 설정을 불러온다 (서버가 그린 화면과 어긋나지 않게 마운트 뒤에 한다)
   useEffect(() => {
     let cancelled = false;
-    Promise.all([useMalmoa.persist.rehydrate(), useRecorderPrefs.persist.rehydrate()]).then(() => {
+    Promise.all([useMalmoa.persist.rehydrate(), useRecorderPrefs.persist.rehydrate(), useMemoPad.persist.rehydrate()]).then(() => {
       if (!cancelled) useMalmoa.getState().finishHydration();
     });
     return () => {

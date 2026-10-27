@@ -8,9 +8,9 @@ import { formatClock, recordingFileName } from "../_lib/format";
 import { useRecorderPrefs } from "../_lib/prefs";
 import { REC_ERROR_TEXT, useRecorder } from "../_lib/recorder";
 import { useMalmoa } from "../_lib/store";
-import { PixelIcon, PxBar, PxButton, PxCard } from "./px";
+import { PixelIcon, PxBar, PxButton, PxPanel } from "./px";
 
-export function RecorderPanel() {
+export function RecorderPanel({ bare }: { bare?: boolean } = {}) {
   const r = useRecorder();
   const addMeeting = useMalmoa((s) => s.addMeeting);
   const deviceId = useRecorderPrefs((s) => s.deviceId);
@@ -50,7 +50,7 @@ export function RecorderPanel() {
   }
 
   return (
-    <PxCard title="직접 녹음">
+    <PxPanel title="직접 녹음" bare={bare}>
       <div className="grid gap-4">
         <div className="grid justify-items-center gap-3 w98-in bg-black text-[#33ff33] px-4 py-6">
           <p className="font-pixel text-5xl tabular-nums" aria-live="off" aria-label={`녹음 시간 ${formatClock(r.elapsed)}`}>
@@ -113,6 +113,6 @@ export function RecorderPanel() {
           </div>
         ) : null}
       </div>
-    </PxCard>
+    </PxPanel>
   );
 }

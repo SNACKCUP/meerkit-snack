@@ -2,22 +2,7 @@
 
 import Link from "next/link";
 
-import { PixelIcon, PxBadge, PxCard, pxButtonClass, type PixelIconName } from "./_components/px";
-
-const STEPS: { icon: PixelIconName; title: string; body: string }[] = [
-  { icon: "mic", title: "1. 말하기", body: "회의를 녹음하거나 파일·화이트보드 사진을 올립니다." },
-  { icon: "doc", title: "2. 글로 모으기", body: "말이 시간 표시가 붙은 텍스트로 바뀝니다." },
-  { icon: "bolt", title: "3. 문서로 만들기", body: "AI가 논의·결정·할 일을 회의록으로 정리합니다." },
-];
-
-const FEATURES: { icon: PixelIconName; title: string; body: string }[] = [
-  { icon: "mic", title: "직접 녹음", body: "10초마다 자동 저장되어 탭이 꺼져도 이어서 복구할 수 있습니다." },
-  { icon: "upload", title: "파일 업로드", body: "MP3, WAV, M4A, WEBM 녹음 파일을 최대 500MB까지 올립니다." },
-  { icon: "camera", title: "화이트보드 사진", body: "사진 속 글자를 읽어 텍스트로 바꿉니다." },
-  { icon: "doc", title: "AI 회의록", body: "8개 항목으로 정리하고, 모르는 내용은 지어내지 않고 ‘확인 필요’로 남깁니다." },
-  { icon: "share", title: "링크로 공유", body: "누구나 링크로 회의록을 읽을 수 있습니다. 언제든 끌 수 있어요." },
-  { icon: "lock", title: "내 브라우저에 보관", body: "녹음 조각은 이 브라우저에만 저장되고, 음성은 AI로 보내지 않습니다." },
-];
+import { PixelIcon, PxBadge, PxCard, pxButtonClass } from "./_components/px";
 
 export default function MalmoaLanding() {
   return (
@@ -50,41 +35,11 @@ export default function MalmoaLanding() {
         </div>
       </section>
 
-      <section className="grid gap-4" aria-labelledby="how">
-        <h2 id="how" className="mp-title font-pixel text-2xl" data-rise>이렇게 진행돼요</h2>
-        <ol className="grid gap-4 md:grid-cols-3">
-          {STEPS.map((s) => (
-            <li key={s.title} data-rise>
-              <PxCard title={s.title} className="h-full">
-                <PixelIcon name={s.icon} size={32} />
-                <p className="mt-3 text-sm leading-relaxed">{s.body}</p>
-              </PxCard>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="grid gap-4" aria-labelledby="features">
-        <h2 id="features" className="mp-title font-pixel text-2xl" data-rise>가진 기능</h2>
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <li key={f.title} data-rise>
-              <PxCard title={f.title} className="h-full">
-                <div className="flex gap-3">
-                  <PixelIcon name={f.icon} size={24} className="mt-0.5 shrink-0" />
-                  <p className="text-sm leading-relaxed">{f.body}</p>
-                </div>
-              </PxCard>
-            </li>
-          ))}
-        </ul>
-      </section>
-
       <section data-rise>
         <PxCard title="시작하기">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="font-pixel text-xl">오늘 회의부터 바로 기록해 보세요.</p>
-            <Link href="/malmoa/home" className={pxButtonClass("mint", "lg")}>녹음 화면으로</Link>
+            <p className="font-pixel text-xl">처음이라면 사용 안내부터 확인해 보세요.</p>
+            <Link href="/malmoa/guide" className={pxButtonClass("mint", "lg")}>사용 안내 보기</Link>
           </div>
         </PxCard>
       </section>

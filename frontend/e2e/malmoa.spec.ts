@@ -84,3 +84,32 @@ test("로그인·가입 화면과 계정 메뉴는 없다", async ({ page }) => 
   await page.goto("/malmoa/login");
   await expect(page.getByRole("heading", { level: 1, name: /찾을 수 없/ })).toBeVisible();
 });
+
+test("녹음 화면: 창을 끌어 옮기고, 닫았다가 아이콘으로 다시 연다", async ({ page }) => {
+  await page.goto("/malmoa/home");
+  await page.getByRole("list", { name: "바탕화면 아이콘" }).waitFor();
+  const win = page.getByRole("region", { name: "메모장" });
+  await expect(win).toBeVisible();
+  const before = await win.boundingBox();
+  const bar = win.locator("header");
+  const b = (await bar.boundingBox())!;
+  await page.mouse.move(b.x + 60, b.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 20, b.y + 80, { steps: 5 });
+  await page.mouse.up();
+  const after = await win.boundingBox();
+  expect(after!.y).toBeGreaterThan(before!.y + 40);
+
+  await page.getByRole("button", { name: "메모장 닫기" }).click();
+  await expect(win).toBeHidden();
+  await page.getByRole("list", { name: "바탕화면 아이콘" }).getByRole("button", { name: "메모장" }).click();
+  await expect(win).toBeVisible();
+});
+
+test("메모장: 녹음 중이면 녹음 시각이 찍힌다", async ({ page }) => {
+  await page.goto("/malmoa/home");
+  await page.getByRole("button", { name: "녹음 시작" }).click();
+  await expect(page.getByRole("button", { name: "녹음 종료" })).toBeVisible();
+  await page.getByRole("button", { name: "녹음 시각 넣기" }).click();
+  await expect(page.getByRole("textbox", { name: "메모" })).toHaveValue(/\[녹음 \d\d:\d\d:\d\d\]/);
+});
