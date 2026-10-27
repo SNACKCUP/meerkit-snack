@@ -25,7 +25,7 @@ export default function SharedMinutes() {
 
   if (reason || !share || !meeting || !doc) {
     return (
-      <section className="mx-auto grid max-w-md px-5 py-16">
+      <section className="mx-auto grid max-w-md px-3 py-12">
         <PxCard title="공유 링크">
           <div className="grid gap-4">
             <h1 className="font-pixel text-xl">{reason}</h1>
@@ -38,19 +38,23 @@ export default function SharedMinutes() {
   }
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 px-5 py-10">
-      <div className="grid gap-2" data-rise>
-        <PxBadge tone="sky" className="w-fit">읽기 전용</PxBadge>
-        <h1 className="mp-title font-pixel text-3xl break-all sm:text-4xl">{meeting.fileName.replace(/\.[^.]+$/, "")}</h1>
-        <p className="mp-title text-sm">{formatWhen(doc.generatedAt)} 작성 · {formatWhen(share.expiresAt)}까지 열려 있어요</p>
-      </div>
-      <div data-rise>
-        <PxCard title="회의록" tone="paper"><MarkdownView markdown={doc.markdown} /></PxCard>
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-3 w98-out p-4 text-black" data-rise>
-        <p className="font-pixel text-xl">말로 하고 글로 모으는 회의록, 말모아</p>
-        <Link href="/malmoa/home" className={pxButtonClass("mint", "md")}>말모아 열기</Link>
-      </div>
+    <div className="mx-auto max-w-4xl px-3 py-6 sm:px-5">
+      <PxCard title={`${meeting.fileName.replace(/\.[^.]+$/, "")} - 공유 보기`} data-rise>
+        <div className="grid gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <PxBadge tone="sky">읽기 전용</PxBadge>
+            <p className="text-sm">{formatWhen(doc.generatedAt)} 작성 · {formatWhen(share.expiresAt)}까지 열려 있어요</p>
+          </div>
+          <div className="w98-in grid gap-3 bg-white p-4">
+            <h1 className="font-pixel text-xl break-all">{meeting.fileName.replace(/\.[^.]+$/, "")}</h1>
+            <MarkdownView markdown={doc.markdown} />
+          </div>
+          <div className="w98-flat flex flex-wrap items-center justify-between gap-2 px-2 py-1">
+            <p className="text-sm">말로 하고 글로 모으는 회의록, 말모아</p>
+            <Link href="/malmoa/home" className={pxButtonClass("mint", "sm")}>말모아 열기</Link>
+          </div>
+        </div>
+      </PxCard>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,6 +18,17 @@ import { LOW_CONFIDENCE, transcriptFor } from "../../_lib/sample";
 import { useMalmoa } from "../../_lib/store";
 
 type Tab = "minutes" | "transcript";
+
+// 창 안의 구획: 제목이 붙은 테두리 상자 (paper면 흰 안쪽 영역)
+function Group({ title, paper, action, children }: { title: string; paper?: boolean; action?: ReactNode; children: ReactNode }) {
+  return (
+    <fieldset className="w98-group grid gap-3">
+      <legend>{title}</legend>
+      {action ? <div className="flex justify-end">{action}</div> : null}
+      <div className={cn(paper && "w98-in bg-white p-3")}>{children}</div>
+    </fieldset>
+  );
+}
 
 export default function MeetingResult() {
   const { id } = useParams<{ id: string }>();
@@ -53,35 +64,37 @@ export default function MeetingResult() {
   const baseName = meeting.fileName.replace(/\.[^.]+$/, "");
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 px-5 py-10">
-      <div className="grid gap-2" data-rise>
-        <Link href="/malmoa/meetings" className="mp-title font-pixel w-fit underline underline-offset-4">◀ 회의 목록</Link>
-        <h1 className="mp-title font-pixel text-3xl break-all sm:text-4xl">{meeting.fileName}</h1>
-        <div className="mp-title flex flex-wrap items-center gap-3 text-sm">
-          <StatusBadge meeting={meeting} />
-          {[formatWhen(meeting.createdAt), formatDuration(meeting.durationSec), formatBytes(meeting.sizeBytes)].filter(Boolean).join(" · ")}
-        </div>
+    <div className="mx-auto max-w-5xl px-3 py-6 sm:px-5">
+    <PxCard title={`${meeting.fileName} - 회의 뷰어`} data-rise>
+    <div className="grid gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/malmoa/meetings" className={pxButtonClass("ghost", "sm")}>◀ 회의 목록</Link>
+        <StatusBadge meeting={meeting} />
+      </div>
+      <div className="w98-in grid gap-1 bg-white p-3">
+        <h1 className="font-pixel text-xl break-all">{meeting.fileName}</h1>
+        <p className="text-sm text-[#404040]">{[formatWhen(meeting.createdAt), formatDuration(meeting.durationSec), formatBytes(meeting.sizeBytes)].filter(Boolean).join(" · ")}</p>
       </div>
 
       {active ? (
-        <PxCard title="처리 중" data-rise>
+        <Group title="처리 중">
           <div className="grid gap-2">
             <PxBar value={meeting.progress ?? 0} tone="sky" label="처리 진행률" />
             <p className="text-sm text-[#404040]">{meeting.stage ?? "처리 중"} · {meeting.progress ?? 0}% — 이 화면을 벗어나도 계속됩니다.</p>
           </div>
-        </PxCard>
+        </Group>
       ) : null}
 
       {meeting.status === "FAILED" ? (
-        <PxCard title="처리하지 못했어요" data-rise>
+        <Group title="처리하지 못했어요">
           <p role="alert" className="mb-3">{meeting.errorMessage ?? "처리 중 문제가 생겼습니다."}</p>
           <PxButton variant="pink" onClick={() => retry(meeting.id)}>다시 시도</PxButton>
-        </PxCard>
+        </Group>
       ) : null}
 
       {meeting.transcriptReady ? (
-        <div data-rise className="grid gap-4">
-          <div role="tablist" aria-label="결과 종류" className="flex gap-2">
+        <div className="grid gap-3">
+          <div role="tablist" aria-label="결과 종류" className="flex gap-1">
             {([["minutes", "회의록"], ["transcript", image ? "읽은 글" : "변환 원문"]] as const).map(([k, label]) => (
               <button
                 key={k}
@@ -97,7 +110,7 @@ export default function MeetingResult() {
 
           {tab === "minutes" ? (
             doc && meeting.minutesReady ? (
-              <PxCard title="AI 회의록" tone="paper" action={doc.edited ? <PxBadge tone="sky">수정됨</PxBadge> : undefined}>
+              <Group title="AI 회의록" paper action={doc.edited ? <PxBadge tone="sky">수정됨</PxBadge> : undefined}>
                 {editing ? (
                   <div className="grid gap-3">
                     <textarea value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="회의록 편집" rows={20} className="w98-in w-full bg-white p-3 font-mono text-sm text-black outline-none" />
@@ -119,26 +132,26 @@ export default function MeetingResult() {
                     <p className="text-xs text-(--mk-ink)/70">{doc.model} · {formatWhen(doc.generatedAt)}에 작성{doc.edited ? " · 직접 수정함" : ""}. 원문에 없는 내용은 지어내지 않고 ‘확인 필요’로 표시합니다.</p>
                   </div>
                 )}
-              </PxCard>
+              </Group>
             ) : (
-              <PxCard title="AI 회의록">
+              <Group title="AI 회의록">
                 <div className="grid justify-items-start gap-3">
                   <p>원문에서 논의·결정·할 일을 8개 항목으로 정리합니다. 변환된 텍스트만 AI로 전송되며, 음성은 보내지 않습니다.</p>
                   <PxButton disabled={active} onClick={() => generate(meeting.id)}><PixelIcon name="bolt" size={18} />AI 회의록 만들기</PxButton>
                   <p className="text-sm text-[#404040]">지금은 화면용 목 데이터로 작성됩니다. API 없이 쓰려면 ‘변환 원문’ 탭의 “회의록 요청문과 함께 복사”를 쓰세요.</p>
                 </div>
-              </PxCard>
+              </Group>
             )
           ) : (
             <div className="grid gap-4">
-              <PxCard title="복사하기">
+              <Group title="복사하기">
                 <div className="flex flex-wrap items-start gap-4">
                   <CopyButton variant="mint" text={() => segmentsToText(segs)} hint="멘토링·기타 용도 그대로 사용">텍스트만 복사</CopyButton>
                   {!image ? <CopyButton text={() => segmentsToTimed(segs)} hint="다시 들을 위치가 필요할 때 [00:12:34] …">시간 포함 복사</CopyButton> : null}
                   <CopyButton variant="gold" text={() => buildMinutesPrompt(segs, image)} hint="ChatGPT·Claude에 붙여 회의록 만들 때">회의록 요청문과 함께 복사</CopyButton>
                 </div>
-              </PxCard>
-              <PxCard title={image ? "사진에서 읽은 글" : "변환 원문"} action={<PxButton size="sm" variant="ghost" onClick={() => downloadText(`${baseName}_원문.txt`, image ? segmentsToText(segs) : segmentsToTimed(segs))}>TXT 받기</PxButton>}>
+              </Group>
+              <Group title={image ? "사진에서 읽은 글" : "변환 원문"} paper action={<PxButton size="sm" variant="ghost" onClick={() => downloadText(`${baseName}_원문.txt`, image ? segmentsToText(segs) : segmentsToTimed(segs))}>TXT 받기</PxButton>}>
                 <ul className="grid gap-2">
                   {segs.map((s, i) => (
                     <li key={i} className="flex flex-wrap items-baseline gap-2">
@@ -148,12 +161,15 @@ export default function MeetingResult() {
                     </li>
                   ))}
                 </ul>
-              </PxCard>
+              </Group>
             </div>
           )}
         </div>
       ) : null}
-      {meeting.minutesReady ? <ShareDialog meetingId={meeting.id} open={sharing} onOpenChange={setSharing} /> : null}
+      <p className="w98-flat px-2 py-0.5 text-sm">{active ? `처리 중 ${meeting.progress ?? 0}%` : meeting.status === "FAILED" ? "처리 실패" : meeting.minutesReady ? "회의록 준비됨" : meeting.transcriptReady ? "변환 완료" : "대기 중"}</p>
+    </div>
+    </PxCard>
+    {meeting.minutesReady ? <ShareDialog meetingId={meeting.id} open={sharing} onOpenChange={setSharing} /> : null}
     </div>
   );
 }
