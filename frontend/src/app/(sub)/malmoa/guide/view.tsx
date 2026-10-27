@@ -31,30 +31,41 @@ const FAQ: [string, string][] = [
 
 function Section({ id, title, desc, children }: { id: string; title: string; desc?: string; children: React.ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-6" data-rise>
-      <PxCard>
-        <h2 id={`${id}-h`} className="font-pixel text-2xl">{title}</h2>
-        {desc ? <p className="mp-title mt-1 text-sm">{desc}</p> : null}
-        <div className="mt-4">{children}</div>
-      </PxCard>
+    <section id={id} aria-labelledby={`${id}-h`} className="scroll-mt-16 border-b border-[#808080] pb-6 last:border-0 last:pb-0" data-rise>
+      <h2 id={`${id}-h`} className="font-pixel text-2xl text-[#000080]">{title}</h2>
+      {desc ? <p className="mt-1 text-sm text-[#404040]">{desc}</p> : null}
+      <div className="mt-4">{children}</div>
     </section>
   );
 }
 
+const TOC: [string, string][] = [["flow", "전체 흐름"], ["prep", "녹음 전 준비"], ["record", "직접 녹음"], ["upload", "파일 업로드"], ["recover", "녹음이 끊겼을 때"], ["privacy", "개인정보"], ["faq", "문제 해결"]];
+
 export default function GuideView() {
   return (
-    <div className="mx-auto grid max-w-4xl gap-6 px-5 py-10">
+    <div className="mx-auto grid max-w-5xl gap-4 px-4 py-8">
       <div data-rise>
         <h1 className="mp-title font-pixel text-3xl">사용 안내</h1>
         <p className="mp-title mt-1 text-sm">회의를 말로 녹음하고, 글로 모으고, 회의록으로 정리하는 방법입니다.</p>
-        <nav aria-label="안내 목차" className="mt-4 flex flex-wrap gap-2">
-          {[["flow", "전체 흐름"], ["prep", "녹음 전 준비"], ["record", "직접 녹음"], ["upload", "파일 업로드"], ["recover", "녹음이 끊겼을 때"], ["privacy", "개인정보"], ["faq", "문제 해결"]].map(([id, label]) => (
-            <a key={id} href={`#${id}`} className="font-pixel w98-out px-3 py-1 hover:underline">{label}</a>
-          ))}
-        </nav>
       </div>
 
-      <div role="note" className="w98-flat bg-white text-black p-4" data-rise>
+      <div data-rise>
+      <PxCard title="말모아 도움말">
+        <div className="-m-3 grid md:grid-cols-[210px_1fr]">
+          <nav aria-label="안내 목차" className="p-2 md:sticky md:top-14 md:self-start">
+            <p className="font-pixel mb-1 text-sm">목차</p>
+            <ul className="w98-in grid bg-white p-1 text-sm text-black">
+              {TOC.map(([id, label]) => (
+                <li key={id}>
+                  <a href={`#${id}`} className="flex items-center gap-2 px-2 py-1 hover:bg-[#000080] hover:text-white focus-visible:bg-[#000080] focus-visible:text-white focus-visible:outline-none">
+                    <PixelIcon name="doc" size={12} className="shrink-0" />{label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <div className="w98-in m-2 grid gap-6 bg-white p-5 text-black md:ml-0">
+      <div role="note" className="w98-flat bg-[#ffffe1] p-4" data-rise>
         <PxBadge tone="sky">안내</PxBadge>
         <p className="mt-2">지금은 화면을 먼저 만든 단계라 음성 변환과 AI 회의록이 예시 내용으로 만들어집니다. 녹음, 업로드, 복사, 공유 흐름은 실제처럼 동작해 볼 수 있습니다.</p>
       </div>
@@ -78,7 +89,7 @@ export default function GuideView() {
         </ul>
       </Section>
 
-      <Section id="record" title="직접 녹음하기" desc="녹음 화면의 ‘직접 녹음’ 창를 사용합니다.">
+      <Section id="record" title="직접 녹음하기" desc="녹음 화면의 ‘직접 녹음’ 창을 사용합니다.">
         <ol className="grid list-decimal gap-2 pl-6">
           <li>마이크를 고르고 ‘회의실 모드’를 확인한 뒤 <b>녹음 시작</b>을 누릅니다. 처음에는 브라우저가 마이크 권한을 묻습니다.</li>
           <li>녹음 중에는 시간과 입력 막대가 움직입니다. 쉬는 시간에는 <b>일시정지</b>, 이어서 하려면 <b>재개</b>를 누릅니다.</li>
@@ -100,7 +111,7 @@ export default function GuideView() {
       <Section id="recover" title="녹음이 끊겼을 때" desc="브라우저나 컴퓨터가 갑자기 꺼져도 녹음은 대부분 남아 있습니다.">
         <ol className="grid list-decimal gap-2 pl-6">
           <li>녹음은 10초마다 이 브라우저에 저장되므로, 갑자기 꺼지면 마지막 10초 정도만 사라집니다.</li>
-          <li>녹음 화면를 다시 열면 ‘이전 녹음이 중간에 종료되었습니다’ 안내가 뜹니다. <b>이전 녹음 불러오기</b>를 누르면 저장된 부분까지 이어 붙여 들어 볼 수 있습니다.</li>
+          <li>녹음 화면을 다시 열면 ‘이전 녹음이 중간에 종료되었습니다’ 안내가 뜹니다. <b>이전 녹음 불러오기</b>를 누르면 저장된 부분까지 이어 붙여 들어 볼 수 있습니다.</li>
           <li>회의가 계속되는 중이라면 불러온 녹음은 <b>파일 저장</b>으로 내려받아 두고, 새로 녹음을 시작하세요.</li>
         </ol>
         <p className="mt-3 w98-flat bg-[#ffffe1] p-3 text-sm">브라우저의 ‘인터넷 사용 기록 / 사이트 데이터 삭제’를 하면 보관 중인 녹음도 함께 지워집니다. 중요한 녹음은 꼭 파일로 저장해 두세요.</p>
@@ -129,9 +140,13 @@ export default function GuideView() {
         </Accordion>
       </Section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 w98-out p-4" data-rise>
-        <p className="font-pixel text-xl">준비가 되었다면 녹음 화면에서 시작하세요!</p>
-        <Link href="/malmoa/home" className={pxButtonClass("mint", "md")}><PixelIcon name="mic" size={18} />녹음하러 가기</Link>
+            <div className="flex flex-wrap items-center justify-between gap-3 w98-out p-4">
+              <p className="font-pixel text-xl">준비가 되었다면 녹음 화면에서 시작하세요!</p>
+              <Link href="/malmoa/home" className={pxButtonClass("mint", "md")}><PixelIcon name="mic" size={18} />녹음하러 가기</Link>
+            </div>
+          </div>
+        </div>
+      </PxCard>
       </div>
     </div>
   );
