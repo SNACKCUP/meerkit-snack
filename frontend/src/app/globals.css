@@ -221,13 +221,93 @@
 :root[data-mk-motion="off"] .mk-accordion-content,
 :root[data-mk-motion="off"] .mk-pop,
 :root[data-mk-motion="off"] .mk-menu,
-:root[data-mk-motion="off"] .mk-dialog {
+:root[data-mk-motion="off"] .mk-dialog,
+:root[data-mk-motion="off"] .mp-blink,
+:root[data-mk-motion="off"] .mp-bob,
+:root[data-mk-motion="off"] .mp-root [data-rise] {
   animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [class*="mk-ld"], [class*="mk-ld"] *, .mk-skeleton,
-  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping {
+  .mk-rise, .mk-fade, .mk-float, .mk-swap, .mk-overlay, .mk-dialog, .mk-menu, .mk-pop, .mk-accordion-content, .mk-glow, .mk-dot, .mk-shimmer-text, .animate-ping, .mp-blink, .mp-bob, .mp-root [data-rise] {
     animation: none !important;
   }
 }
+
+/* ── 말모아(서브 프로젝트) 전용 픽셀 글꼴: 둥근모꼴. 제목·버튼·HUD에만 쓴다 ── */
+@font-face {
+  font-family: "DungGeunMo";
+  src:
+    url("/malmoa/fonts/DungGeunMo.woff2") format("woff2"),
+    url("/malmoa/fonts/DungGeunMo.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --font-pixel: "DungGeunMo", "Pretendard Variable", Pretendard, monospace;
+}
+
+/* ── 말모아: Windows 98 입체 테두리 ── */
+.w98-out {
+  background-color: var(--mk-face);
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+.w98-in {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+.w98-flat {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
+}
+.w98-title {
+  background-image: linear-gradient(90deg, var(--mk-title-a), var(--mk-title-b));
+}
+/* 바탕화면 위에 바로 놓이는 글자(아이콘 이름표 느낌) */
+.mp-title { color: #fff; text-shadow: 1px 1px 0 #000; }
+/* 점선 초점 상자 */
+.w98-focus:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
+
+.mp-root { background-color: var(--mk-desktop); }
+
+/* 움직임: 창이 열리듯 부드럽게. 깜빡임은 천천히 */
+@keyframes mp-blink {
+  50% { opacity: 0.25; }
+}
+.mp-blink { animation: mp-blink 1.6s ease-in-out infinite; }
+.mp-bob { animation: none; }
+
+/* 스크롤 등장: 자바스크립트가 켜진 때만 처음에 숨기고, useReveal이 GSAP으로 나타낸다 (JS가 없거나 움직임이 꺼지면 그대로 보인다) */
+@keyframes mp-reveal-fallback { to { opacity: 1; } }
+@media (scripting: enabled) {
+  /* 5초가 지나도 자바스크립트가 나타내 주지 않으면(느린 환경·오류) 숨겨 둔 채로 두지 않고 그냥 보여 준다 */
+  .mp-root [data-rise]:not([data-in]) { opacity: 0; animation: mp-reveal-fallback 0s 5s forwards; }
+}
+
+/* Windows 98 슬라이더(<input type="range">): 움푹 들어간 홈 + 튀어나온 손잡이 */
+.w98-range { appearance: none; -webkit-appearance: none; height: 20px; background: transparent; cursor: pointer; }
+.w98-range:focus-visible { outline: 1px dotted #000; outline-offset: 2px; }
+.w98-range::-webkit-slider-runnable-track {
+  height: 4px; background: #fff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, inset 2px 2px #0a0a0a, inset -2px -2px #dfdfdf;
+}
+.w98-range::-moz-range-track {
+  height: 4px; background: #fff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, inset 2px 2px #0a0a0a, inset -2px -2px #dfdfdf;
+}
+.w98-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 11px; height: 20px; margin-top: -8px; border: 0; border-radius: 0; background: #c0c0c0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+.w98-range::-moz-range-thumb {
+  width: 11px; height: 20px; border: 0; border-radius: 0; background: #c0c0c0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+.w98-range:disabled { opacity: 0.5; cursor: default; }
+
+/* Windows 98 그룹 상자(fieldset): 새긴 듯한 테두리 + 제목 */
+.w98-group { border: 1px solid #808080; box-shadow: 1px 1px 0 #fff, inset 1px 1px 0 #fff; padding: 0.9rem 0.9rem 0.8rem; margin: 0; min-width: 0; }
+.w98-group > legend { padding: 0 0.35rem; font-family: var(--font-pixel); font-size: 15px; }
