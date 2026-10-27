@@ -14,6 +14,7 @@
 ```text
 로컬
 1. supabase/config.toml 에 버킷이 이미 적혀 있음 → npm run db:stop && npm run db:start
+   (버킷이 안 보이면 npx supabase seed buckets --local)
 2. npx supabase status 로 S3 키 확인 → backend/.env 에 STORAGE_* 넣기
 3. 백엔드 재시작 → 내 정보에서 이미지 올리기
 
@@ -54,6 +55,12 @@ npm run db:start
 ```
 
 Studio(<http://127.0.0.1:54323>) → Storage에 `meerkit-public`이 보이면 됩니다.
+
+이미 쓰던 로컬 DB가 있으면 껐다 켜도 버킷이 생기지 않을 수 있습니다(기존 데이터를 그대로 다시 씀). 그때는 아래 명령으로 `config.toml`의 버킷만 만듭니다. DB 데이터는 지워지지 않습니다.
+
+```bash
+npx supabase seed buckets --local
+```
 
 ### 2. S3 키 확인하고 `.env`에 넣기
 

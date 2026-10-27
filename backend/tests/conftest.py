@@ -84,6 +84,20 @@ def fake_llm():
         yield model
 
 
+@pytest.fixture(autouse=True)
+def isolate_storage(monkeypatch):
+    """개발자 .env 의 STORAGE_* 를 무시합니다. 테스트가 로컬 버킷에 파일을 올리지 않게 합니다."""
+    from app.storage import backends
+    from app.storage.config import storage_settings
+
+    monkeypatch.setattr(storage_settings, "storage_backend", "")
+    backends._s3.cache_clear()
+    backends._memory.cache_clear()
+    yield
+    backends._s3.cache_clear()
+    backends._memory.cache_clear()
+
+
 @pytest.fixture
 def storage():
     """메모리 저장소. storage.objects 로 올라간 파일을 확인합니다."""
