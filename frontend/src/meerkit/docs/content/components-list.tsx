@@ -2,31 +2,25 @@
 
 import Link from "next/link";
 
-import { cn } from "@/lib/utils";
-
 import { AUDIENCES, docGroups, docHref, type Audience } from "../nav";
 
 const ORDER: Audience[] = ["user", "admin", "common"];
 
-const AI_TONE = { box: "border-emerald-500/25 bg-emerald-500/8", dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300" };
+type Item = { slug: string; title: string; description: string };
 
-function Box({ title, tone, items }: { title: string; tone: { box: string; dot: string; text: string }; items: { slug: string; title: string; description: string }[] }) {
+// 그룹마다 제목과 가는 선으로 나누고, 카드는 이름과 한 줄 설명을 보여 준다.
+function Section({ title, items }: { title: string; items: Item[] }) {
   return (
-    <section className={cn("grid gap-4 rounded-3xl border p-5", tone.box)}>
-      <h2 className={cn("flex items-center gap-2 text-sm font-semibold", tone.text)}>
-        <span className={cn("size-2 rounded-full", tone.dot)} />
-        {title}
-        <span className="rounded-full bg-background/70 px-2 py-px text-[11px] font-medium text-muted-foreground">{items.length}</span>
-      </h2>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="grid gap-4">
+      <div className="flex items-baseline gap-2 border-b pb-2">
+        <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
+        <span className="text-xs text-muted-foreground">{items.length}</span>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
         {items.map((it) => (
-          <Link
-            key={it.slug}
-            href={docHref(it.slug)}
-            title={it.description}
-            className="rounded-xl border bg-card px-3 py-2.5 text-[14px] font-medium shadow-soft transition-colors hover:bg-accent"
-          >
-            {it.title}
+          <Link key={it.slug} href={docHref(it.slug)} className="grid content-start gap-1 rounded-xl border bg-card p-4 transition-colors hover:bg-accent/60">
+            <span className="text-[15px] font-medium">{it.title}</span>
+            <span className="line-clamp-2 text-[13px] leading-5 text-muted-foreground">{it.description}</span>
           </Link>
         ))}
       </div>
@@ -39,12 +33,12 @@ export function ComponentsListDoc() {
   const components = docGroups.find((g) => g.label === "Components")?.items.filter((i) => i.slug !== "components") ?? [];
   const ai = docGroups.find((g) => g.label === "AI Components")?.items ?? [];
   return (
-    <div className="grid gap-8">
+    <div className="grid gap-12">
       {ORDER.map((aud) => {
         const items = components.filter((i) => i.audience === aud);
-        return items.length ? <Box key={aud} title={AUDIENCES[aud].section} tone={AUDIENCES[aud].tone} items={items} /> : null;
+        return items.length ? <Section key={aud} title={AUDIENCES[aud].section} items={items} /> : null;
       })}
-      <Box title="AI Components" tone={AI_TONE} items={ai} />
+      <Section title="AI Components" items={ai} />
     </div>
   );
 }

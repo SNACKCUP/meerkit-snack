@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 import spec from "../api-spec.json";
 import { TAG_SLUG } from "../component-apis";
-import { Callout, CodeBlock, DocTable, H2, Ic, P } from "../ui";
+import { CodeBlock, DocTable, H2, Ic, P } from "../ui";
 
 // docs/api-spec.json은 백엔드 Swagger(OpenAPI)에서 뽑은 것이다. 갱신: frontend에서 node scripts/gen-api-spec.mjs
 // 이 페이지는 명세만 보여 준다 (요청을 보내 보는 기능은 없다).
@@ -142,13 +142,13 @@ function EndpointView({ ep }: { ep: Endpoint }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 text-left"
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
       >
         <MethodBadge method={ep.method} />
-        <code className="font-mono text-sm font-semibold">{ep.path}</code>
-        <span className="min-w-0 flex-1 text-[13px] text-foreground/70">{ep.summary}</span>
-        {ep.planned && <Badge variant="brand">서버 구현 예정</Badge>}
-        {ep.auth && <Badge variant="secondary">로그인 필요</Badge>}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <code className="break-all font-mono text-sm font-semibold">{ep.path}</code>
+          <span className="text-[13px] text-foreground/70">{ep.summary}</span>
+        </span>
         <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
       </button>
 
@@ -234,9 +234,6 @@ export function ApiOverviewDoc() {
         head={["묶음", "개수", "설명"]}
         rows={spec.groups.map((g) => [<Ic key={g.tag}>{g.title}</Ic>, `${g.endpoints.length + (PLANNED[g.tag]?.length ?? 0)}개`, DESCRIPTIONS[g.tag] ?? ""])}
       />
-      <Callout>
-        <Ic>서버 구현 예정</Ic> 표시가 붙은 API는 킷 화면이 이미 호출하지만 백엔드에는 아직 없는 것입니다. 서버를 만들 때 이 명세를 기준으로 합니다.
-      </Callout>
     </>
   );
 }
@@ -262,12 +259,13 @@ export function LinkedApis({ apis }: { apis: string[] }) {
           <Link
             key={`${ep.method} ${ep.path}`}
             href={`/docs/${TAG_SLUG[tag]}#${endpointId(ep.method, ep.path)}`}
-            className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3 py-2 transition-opacity hover:opacity-80", METHOD_STYLE[ep.method]?.row)}
+            className={cn("flex items-center gap-3 rounded-xl border px-3 py-2 transition-opacity hover:opacity-80", METHOD_STYLE[ep.method]?.row)}
           >
             <MethodBadge method={ep.method} />
-            <code className="font-mono text-[13px] font-semibold">{ep.path}</code>
-            <span className="min-w-0 flex-1 text-[13px] text-foreground/70">{ep.summary}</span>
-            {ep.planned && <Badge variant="brand">서버 구현 예정</Badge>}
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <code className="break-all font-mono text-[13px] font-semibold">{ep.path}</code>
+              <span className="text-[13px] text-foreground/70">{ep.summary}</span>
+            </span>
           </Link>
         ))}
       </div>

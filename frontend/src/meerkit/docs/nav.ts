@@ -1,10 +1,10 @@
 /** 컴포넌트를 누가 쓰는지: 사용자 화면 / 관리자 화면 / 둘 다 쓰는 공통 */
 export type Audience = "user" | "admin" | "common";
 
-export const AUDIENCES: Record<Audience, { section: string; badge: string; hint: string; tone: { box: string; dot: string; text: string } }> = {
-  user: { section: "사용자 화면", badge: "사용자용", hint: "서비스를 쓰는 일반 사용자가 보는 화면에 쓰입니다.", tone: { box: "border-sky-500/25 bg-sky-500/8", dot: "bg-sky-500", text: "text-sky-700 dark:text-sky-300" } },
-  admin: { section: "관리자 화면", badge: "관리자용", hint: "관리자(MASTER)만 쓰는 화면에 쓰입니다.", tone: { box: "border-violet-500/25 bg-violet-500/8", dot: "bg-violet-500", text: "text-violet-700 dark:text-violet-300" } },
-  common: { section: "공통", badge: "공통", hint: "사용자 화면과 관리자 화면 모두에서 쓰입니다.", tone: { box: "border-slate-500/25 bg-slate-500/8", dot: "bg-slate-500", text: "text-slate-700 dark:text-slate-300" } },
+export const AUDIENCES: Record<Audience, { section: string; badge: string; hint: string; tone: { bar: string } }> = {
+  user: { section: "사용자 화면", badge: "사용자용", hint: "서비스를 쓰는 일반 사용자가 보는 화면에 쓰입니다.", tone: { bar: "border-sky-500/40" } },
+  admin: { section: "관리자 화면", badge: "관리자용", hint: "관리자(MASTER)만 쓰는 화면에 쓰입니다.", tone: { bar: "border-violet-500/40" } },
+  common: { section: "공통", badge: "공통", hint: "사용자 화면과 관리자 화면 모두에서 쓰입니다.", tone: { bar: "border-slate-500/40" } },
 };
 
 export interface DocMeta {

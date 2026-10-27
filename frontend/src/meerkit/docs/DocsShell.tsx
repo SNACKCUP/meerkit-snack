@@ -55,11 +55,10 @@ function Sidebar({ slug, onNavigate }: { slug?: string; onNavigate?: () => void 
                   const items = group.items.filter((i) => i.audience === aud);
                   if (items.length === 0) return null;
                   return (
-                    <div key={aud} className={cn("grid gap-0.5 rounded-xl border p-1.5", AUDIENCES[aud].tone.box)}>
-                      <p className={cn("flex items-center gap-1.5 px-2 pb-1 pt-0.5 text-[11px] font-bold", AUDIENCES[aud].tone.text)}>
-                        <span className={cn("size-1.5 rounded-full", AUDIENCES[aud].tone.dot)} />
+                    <div key={aud} className={cn("grid gap-0.5 border-l-2 pl-2", AUDIENCES[aud].tone.bar)}>
+                      <p className="flex items-center px-2.5 pb-0.5 pt-1 text-[11px] font-semibold text-muted-foreground">
                         {AUDIENCES[aud].section}
-                        <span className="ml-auto font-medium opacity-70">{items.length}</span>
+                        <span className="ml-auto font-normal opacity-60">{items.length}</span>
                       </p>
                       {items.map((item) => <NavLink key={item.slug} item={item} slug={slug} onNavigate={onNavigate} />)}
                     </div>
