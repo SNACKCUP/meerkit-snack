@@ -3,10 +3,12 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import type { AddressType, SignupOptionalField, TermsItem } from "../../define-config";
+import { errorMessage } from "../../api/error";
 import type { SignupInput } from "../../types";
 import type { AddressSearchProvider, AddressSearchResult } from "./address-search";
 import { EmailVerificationField } from "./EmailVerificationField";
@@ -34,6 +36,8 @@ interface SignupFormProps {
   terms?: TermsItem[];
   /** 주면 이메일 옆에 인증번호 받기·확인 버튼이 생기고, 인증해야 가입할 수 있다 */
   emailVerification?: EmailVerificationHandlers;
+  /** 주면 아이디 옆에 [중복 확인] 버튼이 생기고, 사용 가능 확인을 받아야 가입할 수 있다. 쓸 수 있으면 true */
+  checkUserId?: (userId: string) => Promise<boolean>;
   /** 닉네임 동작: [자동 생성] 버튼 표시, 폼을 열 때 미리 채우기 */
   nickname?: { generator?: boolean; autoFill?: boolean };
   /** 주소 검색 방식. "popup"(카카오 우편번호 팝업, 기본) 또는 "dialog"(우리 검색 창) */
@@ -45,6 +49,11 @@ interface SignupFormProps {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// 서버 규칙과 같음: 영문·숫자·밑줄 4~30자 (서버는 소문자로 바꿔 저장)
+const USER_ID_PATTERN = /^[A-Za-z0-9_]{4,30}$/;
+const USER_ID_RULE = "아이디는 영문·숫자·밑줄(_) 4~30자로 입력해 주세요.";
+
+type IdCheck = { value: string; status: "checking" | "available" | "taken" | "error"; message?: string };
 
 export function SignupForm({
   onSubmit,
@@ -55,6 +64,7 @@ export function SignupForm({
   addressType = "basic",
   terms = [],
   emailVerification,
+  checkUserId,
   nickname,
   addressSearch,
   onSearchAddress,
@@ -70,12 +80,32 @@ export function SignupForm({
   const [emailToken, setEmailToken] = useState<string | null>(null);
   const [invalid, setInvalid] = useState<string | null>(null);
   const [termsInvalid, setTermsInvalid] = useState(false);
+  // 마지막으로 확인한 아이디와 결과. 아이디를 고치면 다시 확인해야 한다
+  const [idCheck, setIdCheck] = useState<IdCheck | null>(null);
+  const normalizedId = form.user_id.trim().toLowerCase();
+  const idStatus = idCheck && idCheck.value === normalizedId ? idCheck.status : null;
+
+  async function runIdCheck() {
+    if (!checkUserId) return;
+    if (!USER_ID_PATTERN.test(form.user_id.trim())) {
+      return setIdCheck({ value: normalizedId, status: "error", message: USER_ID_RULE });
+    }
+    setIdCheck({ value: normalizedId, status: "checking" });
+    try {
+      const available = await checkUserId(normalizedId);
+      setIdCheck({ value: normalizedId, status: available ? "available" : "taken" });
+    } catch (e) {
+      setIdCheck({ value: normalizedId, status: "error", message: errorMessage(e) ?? "확인하지 못했습니다. 잠시 후 다시 시도해 주세요." });
+    }
+  }
   const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setTermsInvalid(false);
+    if (!USER_ID_PATTERN.test(form.user_id.trim())) return setInvalid(USER_ID_RULE);
+    if (checkUserId && idStatus !== "available") return setInvalid("아이디 중복 확인을 해 주세요.");
     if (!EMAIL_PATTERN.test(form.email)) return setInvalid("이메일 형식이 올바르지 않습니다.");
     if (emailVerification && !emailToken) return setInvalid("이메일 인증을 완료해 주세요.");
     if (form.password.length < 8) return setInvalid("비밀번호는 8자 이상이어야 합니다.");
@@ -107,7 +137,28 @@ export function SignupForm({
     <form className="grid gap-4" onSubmit={submit} noValidate>
       <div className="grid gap-2">
         <Label htmlFor="signup-user-id">아이디</Label>
-        <Input id="signup-user-id" autoComplete="username" required value={form.user_id} onChange={set("user_id")} />
+        <div className="flex gap-2">
+          <Input id="signup-user-id" autoComplete="username" required value={form.user_id} onChange={set("user_id")} />
+          {checkUserId && (
+            <Button
+              type="button"
+              variant="outline"
+              className="shrink-0"
+              disabled={!form.user_id.trim() || idStatus === "checking" || idStatus === "available"}
+              onClick={runIdCheck}
+            >
+              {idStatus === "checking" ? "확인 중…" : idStatus === "available" ? "확인 완료" : "중복 확인"}
+            </Button>
+          )}
+        </div>
+        {checkUserId && idStatus && idStatus !== "checking" && (
+          <p
+            role={idStatus === "available" ? "status" : "alert"}
+            className={cn("mk-swap text-xs", idStatus === "available" ? "text-brand" : "text-destructive")}
+          >
+            {idStatus === "available" ? "사용할 수 있는 아이디입니다." : idStatus === "taken" ? "이미 사용 중인 아이디입니다." : idCheck?.message}
+          </p>
+        )}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="signup-name">이름</Label>

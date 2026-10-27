@@ -17,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import type { AddressType, SignupOptionalField } from "../../define-config";
 import type { RoleName } from "../../roles";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
-import { demoAddressProvider, demoEmailHandlers, mockUsers } from "./mock";
+import { demoAddressProvider, demoCheckUserId, demoEmailHandlers, mockUsers } from "./mock";
 
 const noop = () => {};
 
@@ -147,6 +147,7 @@ export function SignupFormDoc() {
           optionalFields={fields}
           addressType={addressType}
           terms={withTerms ? signupTerms : []}
+          checkUserId={demoCheckUserId}
           emailVerification={withEmail ? demoEmailHandlers : undefined}
           addressSearch="dialog"
           addressSearchProvider={demoAddressProvider}
@@ -248,6 +249,7 @@ export function SignupFormDoc() {
           ["optionalFields", '("nickname" | "phone" | "address" | "birth_date" | "gender")[]', "추가로 받을 선택 항목. address는 검색 버튼 입력, gender는 라디오 버튼으로 나옵니다."],
           ["addressType", '"basic" | "postcode"', "주소 입력 방식. basic은 주소 + 상세, postcode는 우편번호 + 주소 + 상세."],
           ["emailVerification", "{ sendCode, verifyCode }", "주면 이메일 옆에 인증번호 받기·확인 버튼이 생기고 인증해야 가입할 수 있습니다."],
+          ["checkUserId", "(userId: string) => Promise<boolean>", "주면 아이디 옆에 [중복 확인] 버튼이 생기고, 사용 가능 확인을 받아야 가입할 수 있습니다 (GET /auth/check-user-id). 아이디를 고치면 다시 확인합니다."],
           ["onSearchAddress", "() => Promise<{ postcode, address } | null>", "주소 검색 방법을 바꿉니다. 기본은 카카오 우편번호 팝업."],
           ["terms", "TermsItem[]", "동의받을 약관. 비어 있으면 약관 영역이 없습니다."],
         ]}
@@ -564,6 +566,7 @@ export function MemberTableDoc() {
           ["members", "User[]", "표시할 사용자 목록. 비어 있으면 안내 문구를 보여 줍니다.", true],
           ["onRoleChange", "(id: number, roleId: number) => void", "역할 선택이 바뀌면 호출합니다.", true],
           ["onRemove", "(id: number) => void", "탈퇴 처리 버튼을 누르면 호출합니다.", true],
+          ["onActiveChange", "(id: number, isActive: boolean) => void", "주면 상태에 맞는 버튼 하나가 생깁니다: 활성 → 비활성화, 비활성 → 활성화, 잠김 → 잠금 해제, 탈퇴 → 복구 (PATCH /users/{id}/active)."],
           ["roleEditor", '"dialog" | "inline"', "역할 변경 방식. 기본 dialog(확인 창), inline은 표 안의 선택 상자."],
           ["currentUserId", "number", "로그인한 관리자의 id. 본인 행은 역할 변경·탈퇴 처리를 잠급니다 (서버도 막음)."],
         ]}

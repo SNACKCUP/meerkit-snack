@@ -13,7 +13,7 @@ import { errorMessage } from "../../api/error";
 import { meerkitConfig } from "../../config";
 import { useAuthDialog } from "../dialog-store";
 import { useLoginLockout } from "../lockout";
-import { useForgotPassword, useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
+import { useCheckUserId, useForgotPassword, useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
 import { LoginForm } from "./LoginForm";
 import { SignupForm } from "./SignupForm";
@@ -31,6 +31,7 @@ export function AuthDialog() {
   const forgot = useForgotPassword();
   const lock = useLoginLockout();
   const sendCode = useSendEmailCode();
+  const checkId = useCheckUserId();
   const verifyCode = useVerifyEmailCode();
 
   return (
@@ -64,7 +65,8 @@ export function AuthDialog() {
               addressType={meerkitConfig.signup.addressType}
               nickname={meerkitConfig.signup.nickname}
               addressSearch={meerkitConfig.signup.addressSearch}
-              emailVerification={
+              checkUserId={(id) => checkId.mutateAsync(id)}
+      emailVerification={
                 meerkitConfig.signup.emailVerification
                   ? {
                       sendCode: (email) => sendCode.mutateAsync({ email }),

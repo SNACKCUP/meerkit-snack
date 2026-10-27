@@ -27,6 +27,8 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  /** 로그인 잠금이 풀리는 시각. 지금보다 뒤면 연속 실패로 잠긴 상태 */
+  locked_until?: string | null;
   /** 탈퇴(또는 관리자 삭제) 시각. 값이 있으면 탈퇴한 계정이다 */
   deactivated_at: string | null;
   /** 탈퇴 후 보관 기간이 지나 개인정보를 지운 시각 */

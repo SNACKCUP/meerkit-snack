@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { errorMessage } from "../../api/error";
 import { meerkitConfig } from "../../config";
 import { useLoginLockout } from "../lockout";
-import { useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
+import { useCheckUserId, useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
 import { LoginForm } from "./LoginForm";
 import { SignupForm } from "./SignupForm";
 
@@ -23,6 +23,7 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps)
   const signup = useSignup();
   const lock = useLoginLockout();
   const sendCode = useSendEmailCode();
+  const checkId = useCheckUserId();
   const verifyCode = useVerifyEmailCode();
 
   const done = login.isSuccess || signup.isSuccess;
@@ -55,6 +56,7 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps)
       addressType={meerkitConfig.signup.addressType}
       nickname={meerkitConfig.signup.nickname}
       addressSearch={meerkitConfig.signup.addressSearch}
+      checkUserId={(id) => checkId.mutateAsync(id)}
       emailVerification={
         meerkitConfig.signup.emailVerification
           ? {

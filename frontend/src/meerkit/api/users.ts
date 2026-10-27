@@ -19,6 +19,9 @@ export const usersApi = {
   updateRoles: (id: number, roles: RoleName[]) =>
     api.put<User>(`/users/${id}/roles`, { roles }).then((r) => r.data),
   remove: (id: number) => api.delete(`/users/${id}`),
+  // 활성/비활성 전환. 서버가 로그인 잠금도 함께 풀고, 탈퇴 계정을 활성화하면 탈퇴가 취소된다
+  updateActive: (id: number, is_active: boolean) =>
+    api.patch<User>(`/users/${id}/active`, { is_active }).then((r) => r.data),
   updateMe: (input: Partial<UpdateProfileInput>) => api.patch<User>("/users/me", input).then((r) => r.data),
   changePassword: (input: ChangePasswordInput) => api.patch("/users/me/password", input),
   // 탈퇴: 계정이 막히고, 보관 기간이 지나면 개인정보가 지워진다
