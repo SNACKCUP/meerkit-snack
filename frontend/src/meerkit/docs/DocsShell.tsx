@@ -12,6 +12,7 @@ import { LogoMark } from "../brand/LogoMark";
 import { ThemeToggle } from "../theme/ThemeToggle";
 import { meerkitConfig } from "../config";
 import { DocsFooter } from "./DocsFooter";
+import { ScrollTopButton } from "./ScrollTopButton";
 import { AUDIENCES, docGroups, docHref, type Audience, type DocMeta } from "./nav";
 
 function NavLink({ item, slug, onNavigate }: { item: DocMeta; slug?: string; onNavigate?: () => void }) {
@@ -54,10 +55,11 @@ function Sidebar({ slug, onNavigate }: { slug?: string; onNavigate?: () => void 
                   const items = group.items.filter((i) => i.audience === aud);
                   if (items.length === 0) return null;
                   return (
-                    <div key={aud} className="grid gap-0.5">
-                      <p className="flex items-center gap-1.5 px-2.5 pb-0.5 pt-1 text-[11px] font-semibold text-muted-foreground/80">
+                    <div key={aud} className={cn("grid gap-0.5 rounded-xl border p-1.5", AUDIENCES[aud].tone.box)}>
+                      <p className={cn("flex items-center gap-1.5 px-2 pb-1 pt-0.5 text-[11px] font-bold", AUDIENCES[aud].tone.text)}>
+                        <span className={cn("size-1.5 rounded-full", AUDIENCES[aud].tone.dot)} />
                         {AUDIENCES[aud].section}
-                        <span className="font-normal text-muted-foreground/60">{items.length}</span>
+                        <span className="ml-auto font-medium opacity-70">{items.length}</span>
                       </p>
                       {items.map((item) => <NavLink key={item.slug} item={item} slug={slug} onNavigate={onNavigate} />)}
                     </div>
@@ -180,6 +182,7 @@ export function DocsShell({ slug, query, children, aside }: DocsShellProps) {
         <aside className="mk-scroll sticky top-14 hidden h-[calc(100vh-3.5rem)] overflow-y-auto py-10 xl:block">{aside}</aside>
       </div>
       <DocsFooter />
+      <ScrollTopButton />
     </div>
   );
 }

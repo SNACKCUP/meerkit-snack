@@ -1,13 +1,18 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 import spec from "../api-spec.json";
-import { Callout, CodeBlock, DocTable, H2, H3, Ic, P, UL } from "../ui";
+import { TAG_SLUG } from "../component-apis";
+import { Callout, CodeBlock, DocTable, H2, Ic, P } from "../ui";
 
 // docs/api-spec.json은 백엔드 Swagger(OpenAPI)에서 뽑은 것이다. 갱신: frontend에서 node scripts/gen-api-spec.mjs
-// 이 페이지는 명세만 보여 준다 (요청을 보내 보는 기능은 없다. 직접 해 보려면 백엔드의 /docs를 쓴다).
+// 이 페이지는 명세만 보여 준다 (요청을 보내 보는 기능은 없다).
 
 interface Field { name: string; type: string; required: boolean; description: string; constraints: string; example: unknown }
 interface Endpoint {
@@ -23,12 +28,13 @@ interface Endpoint {
   planned?: boolean;
 }
 
-const METHOD_STYLE: Record<string, string> = {
-  GET: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-  POST: "bg-blue-500/12 text-blue-700 dark:text-blue-300",
-  PUT: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  PATCH: "bg-violet-500/12 text-violet-700 dark:text-violet-300",
-  DELETE: "bg-red-500/12 text-red-700 dark:text-red-300",
+// Swagger처럼 메서드마다 색을 달리한다: 행 배경·테두리(row), 메서드 배지(badge)
+const METHOD_STYLE: Record<string, { row: string; badge: string }> = {
+  GET: { row: "border-sky-500/40 bg-sky-500/8", badge: "bg-sky-600 text-white" },
+  POST: { row: "border-emerald-500/40 bg-emerald-500/8", badge: "bg-emerald-600 text-white" },
+  PUT: { row: "border-amber-500/45 bg-amber-500/10", badge: "bg-amber-500 text-white" },
+  PATCH: { row: "border-teal-500/40 bg-teal-500/8", badge: "bg-teal-600 text-white" },
+  DELETE: { row: "border-red-500/40 bg-red-500/8", badge: "bg-red-600 text-white" },
 };
 
 const STATUS_STYLE = (status: string) =>
@@ -90,7 +96,7 @@ const PLANNED: Record<string, Endpoint[]> = {
 const json = (v: unknown) => JSON.stringify(v, null, 2);
 
 function MethodBadge({ method }: { method: string }) {
-  return <span className={cn("inline-flex min-w-14 justify-center rounded-md px-2 py-0.5 font-mono text-[11px] font-bold", METHOD_STYLE[method] ?? "bg-muted")}>{method}</span>;
+  return <span className={cn("inline-flex min-w-16 justify-center rounded-md px-2 py-1 font-mono text-xs font-bold", METHOD_STYLE[method]?.badge ?? "bg-muted")}>{method}</span>;
 }
 
 function FieldTable({ fields, withIn }: { fields: (Field & { in?: string })[]; withIn?: boolean }) {
@@ -114,50 +120,76 @@ function FieldTable({ fields, withIn }: { fields: (Field & { in?: string })[]; w
   );
 }
 
+export const endpointId = (method: string, path: string) => `ep-${method}-${path}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-$/, "");
+
 function EndpointView({ ep }: { ep: Endpoint }) {
+  const id = endpointId(ep.method, ep.path);
+  const [open, setOpen] = useState(false);
+
+  // 목차나 링크의 #앵커로 오면 이 행을 펼친다 (DocsView가 앵커로 이동하며 이벤트를 보낸다)
+  useEffect(() => {
+    const onOpen = (e: Event) => { if ((e as CustomEvent<string>).detail === id) setOpen(true); };
+    window.addEventListener("mk-open-anchor", onOpen);
+    return () => window.removeEventListener("mk-open-anchor", onOpen);
+  }, [id]);
+
+  const style = METHOD_STYLE[ep.method];
   return (
-    <section className="grid gap-4">
-      <H2>{`${ep.method} ${ep.path}`}</H2>
-      <div className="flex flex-wrap items-center gap-2">
+    <section className={cn("relative overflow-hidden rounded-2xl border", style?.row)}>
+      {/* 우측 목차가 가리키는 제목 (화면에는 보이지 않는다) */}
+      <h2 id={id} className="sr-only scroll-mt-24">{`${ep.method} ${ep.path}`}</h2>
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2.5 text-left"
+      >
         <MethodBadge method={ep.method} />
-        <code className="font-mono text-sm">{ep.path}</code>
-        {ep.auth ? <Badge variant="secondary">로그인 필요 (Bearer)</Badge> : <Badge variant="outline">인증 없음</Badge>}
+        <code className="font-mono text-sm font-semibold">{ep.path}</code>
+        <span className="min-w-0 flex-1 text-[13px] text-foreground/70">{ep.summary}</span>
         {ep.planned && <Badge variant="brand">서버 구현 예정</Badge>}
-      </div>
-      <P>{ep.summary}</P>
-      {ep.description && ep.description !== ep.summary && <P className="text-muted-foreground">{ep.description}</P>}
+        {ep.auth && <Badge variant="secondary">로그인 필요</Badge>}
+        <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
+      </button>
 
-      {ep.params.length > 0 && (
-        <>
-          <H3>Parameters</H3>
-          <FieldTable fields={ep.params} withIn />
-        </>
-      )}
+      {open && (
+        <div className="grid gap-4 border-t border-inherit bg-background/70 p-4">
+          {ep.description && ep.description !== ep.summary && <P className="text-muted-foreground">{ep.description}</P>}
+          <p className="text-xs text-muted-foreground">{ep.auth ? <>인증: <Ic>Authorization: Bearer &lt;access_token&gt;</Ic></> : "인증 없이 호출할 수 있습니다."}</p>
 
-      {ep.body && (
-        <>
-          <H3>Request Body</H3>
-          <p className="text-xs text-muted-foreground">
-            <Ic>{ep.body.contentType}</Ic> · <Ic>{ep.body.schema}</Ic>{ep.body.required ? " · 필수" : ""}
-          </p>
-          {ep.body.fields.length > 0 && <FieldTable fields={ep.body.fields} />}
-          <CodeBlock title="Example Value" code={json(ep.body.example)} />
-        </>
-      )}
+          {ep.params.length > 0 && (
+            <>
+              <h3 className="text-sm font-semibold">Parameters</h3>
+              <FieldTable fields={ep.params} withIn />
+            </>
+          )}
 
-      <H3>Responses</H3>
-      <div className="grid gap-3">
-        {ep.responses.map((r) => (
-          <div key={r.status} className="grid gap-2 rounded-2xl border bg-card p-4 shadow-soft">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={cn("rounded-md px-2 py-0.5 font-mono text-xs font-bold", STATUS_STYLE(r.status))}>{r.status}</span>
-              <span className="text-sm">{r.description}</span>
-              {r.schema && <code className="ml-auto font-mono text-xs text-muted-foreground">{r.schema}</code>}
-            </div>
-            {r.example !== null && r.example !== undefined && <CodeBlock title="Example Value" code={json(r.example)} />}
+          {ep.body && (
+            <>
+              <h3 className="text-sm font-semibold">Request Body</h3>
+              <p className="text-xs text-muted-foreground">
+                <Ic>{ep.body.contentType}</Ic> · <Ic>{ep.body.schema}</Ic>{ep.body.required ? " · 필수" : ""}
+              </p>
+              {ep.body.fields.length > 0 && <FieldTable fields={ep.body.fields} />}
+              <CodeBlock title="Example Value" code={json(ep.body.example)} />
+            </>
+          )}
+
+          <h3 className="text-sm font-semibold">Responses</h3>
+          <div className="grid gap-3">
+            {ep.responses.map((r) => (
+              <div key={r.status} className="grid gap-2 rounded-2xl border bg-card p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={cn("rounded-md px-2 py-0.5 font-mono text-xs font-bold", STATUS_STYLE(r.status))}>{r.status}</span>
+                  <span className="text-sm">{r.description}</span>
+                  {r.schema && <code className="ml-auto font-mono text-xs text-muted-foreground">{r.schema}</code>}
+                </div>
+                {r.example !== null && r.example !== undefined && <CodeBlock title="Example Value" code={json(r.example)} />}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -169,10 +201,10 @@ export function ApiSpecPage({ tag }: { tag: string }) {
   const endpoints = [...(group.endpoints as Endpoint[]), ...(PLANNED[tag] ?? [])];
   return (
     <>
-      <P>
-        <strong>{group.title}</strong> 묶음의 API {endpoints.length}개입니다. 경로는 프론트에서 <Ic>/api</Ic> 프록시로 호출하는 주소 그대로입니다.
-      </P>
-      {endpoints.map((ep) => <EndpointView key={`${ep.method} ${ep.path}`} ep={ep} />)}
+      <P>{DESCRIPTIONS[tag]}. 줄을 누르면 요청과 응답이 펼쳐집니다.</P>
+      <div className="grid gap-3">
+        {endpoints.map((ep) => <EndpointView key={`${ep.method} ${ep.path}`} ep={ep} />)}
+      </div>
     </>
   );
 }
@@ -182,8 +214,7 @@ export function ApiOverviewDoc() {
   return (
     <>
       <P>
-        백엔드(FastAPI) Swagger 명세를 그대로 옮긴 API 문서입니다. 현재 <strong>{total}개</strong>의 엔드포인트가 있고, 묶음별로 나뉘어 있습니다.
-        이 문서는 명세만 보여 주며 요청을 보내 보는 기능은 없습니다. 직접 호출해 보려면 백엔드의 <Ic>/docs</Ic>(Swagger UI)를 쓰세요.
+        어떤 API가 있고, 요청에 무엇을 담아 보내면 어떤 응답이 오는지 정리한 문서입니다. 현재 <strong>{total}개</strong>의 API가 있습니다.
       </P>
       <H2>Conventions</H2>
       <DocTable
@@ -204,14 +235,8 @@ export function ApiOverviewDoc() {
         rows={spec.groups.map((g) => [<Ic key={g.tag}>{g.title}</Ic>, `${g.endpoints.length + (PLANNED[g.tag]?.length ?? 0)}개`, DESCRIPTIONS[g.tag] ?? ""])}
       />
       <Callout>
-        <Ic>서버 구현 예정</Ic> 표시가 붙은 API는 킷 화면이 이미 호출하지만 백엔드에는 아직 없는 것입니다. 서버를 만들 때 이 명세를 기준으로 하세요.
+        <Ic>서버 구현 예정</Ic> 표시가 붙은 API는 킷 화면이 이미 호출하지만 백엔드에는 아직 없는 것입니다. 서버를 만들 때 이 명세를 기준으로 합니다.
       </Callout>
-      <H2>명세 갱신</H2>
-      <UL>
-        <li>백엔드가 바뀌면 <Ic>frontend</Ic>에서 <Ic>node scripts/gen-api-spec.mjs</Ic>를 실행해 <Ic>src/meerkit/docs/api-spec.json</Ic>을 다시 만듭니다.</li>
-        <li>서버가 켜져 있지 않으면 <Ic>app.openapi()</Ic> 결과를 파일로 저장해 경로를 넘길 수 있습니다 (스크립트 맨 위 주석 참고).</li>
-        <li>서비스 쪽 API(예: 요구사항 문서)는 킷 문서에 넣지 않도록 스크립트에서 제외합니다.</li>
-      </UL>
     </>
   );
 }
@@ -222,3 +247,30 @@ const DESCRIPTIONS: Record<string, string> = {
   "users (me)": "내 정보 조회·수정, 비밀번호 변경, 탈퇴",
   "users (admin)": "멤버 검색, 역할 변경, 활성/비활성, 삭제 (MASTER 전용)",
 };
+
+/** 컴포넌트 문서 맨 아래: 이 컴포넌트가 호출하는 API */
+export function LinkedApis({ apis }: { apis: string[] }) {
+  const all = spec.groups.flatMap((g) => [...(g.endpoints as Endpoint[]), ...(PLANNED[g.tag] ?? [])].map((ep) => ({ tag: g.tag, ep })));
+  const rows = apis.map((key) => all.find(({ ep }) => `${ep.method} ${ep.path}` === key)).filter((r) => !!r);
+  if (rows.length === 0) return null;
+  return (
+    <section className="mt-12 grid gap-3">
+      <H2>Related API</H2>
+      <p className="text-sm text-muted-foreground">이 컴포넌트가 호출하는 API입니다. 누르면 요청·응답 명세로 이동합니다.</p>
+      <div className="grid gap-2">
+        {rows.map(({ tag, ep }) => (
+          <Link
+            key={`${ep.method} ${ep.path}`}
+            href={`/docs/${TAG_SLUG[tag]}#${endpointId(ep.method, ep.path)}`}
+            className={cn("flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3 py-2 transition-opacity hover:opacity-80", METHOD_STYLE[ep.method]?.row)}
+          >
+            <MethodBadge method={ep.method} />
+            <code className="font-mono text-[13px] font-semibold">{ep.path}</code>
+            <span className="min-w-0 flex-1 text-[13px] text-foreground/70">{ep.summary}</span>
+            {ep.planned && <Badge variant="brand">서버 구현 예정</Badge>}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}

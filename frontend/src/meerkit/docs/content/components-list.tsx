@@ -2,20 +2,35 @@
 
 import Link from "next/link";
 
+import { cn } from "@/lib/utils";
+
 import { AUDIENCES, docGroups, docHref, type Audience } from "../nav";
-import { H2, P } from "../ui";
 
 const ORDER: Audience[] = ["user", "admin", "common"];
 
-function Grid({ items }: { items: { slug: string; title: string; description: string }[] }) {
+const AI_TONE = { box: "border-emerald-500/25 bg-emerald-500/8", dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300" };
+
+function Box({ title, tone, items }: { title: string; tone: { box: string; dot: string; text: string }; items: { slug: string; title: string; description: string }[] }) {
   return (
-    <div className="grid gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((it) => (
-        <Link key={it.slug} href={docHref(it.slug)} title={it.description} className="rounded-lg px-2 py-2 text-[15px] font-medium transition-colors hover:bg-accent">
-          {it.title}
-        </Link>
-      ))}
-    </div>
+    <section className={cn("grid gap-4 rounded-3xl border p-5", tone.box)}>
+      <h2 className={cn("flex items-center gap-2 text-sm font-semibold", tone.text)}>
+        <span className={cn("size-2 rounded-full", tone.dot)} />
+        {title}
+        <span className="rounded-full bg-background/70 px-2 py-px text-[11px] font-medium text-muted-foreground">{items.length}</span>
+      </h2>
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((it) => (
+          <Link
+            key={it.slug}
+            href={docHref(it.slug)}
+            title={it.description}
+            className="rounded-xl border bg-card px-3 py-2.5 text-[14px] font-medium shadow-soft transition-colors hover:bg-accent"
+          >
+            {it.title}
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -23,25 +38,13 @@ function Grid({ items }: { items: { slug: string; title: string; description: st
 export function ComponentsListDoc() {
   const components = docGroups.find((g) => g.label === "Components")?.items.filter((i) => i.slug !== "components") ?? [];
   const ai = docGroups.find((g) => g.label === "AI Components")?.items ?? [];
-  const total = components.length + ai.length;
   return (
-    <>
-      <P>킷이 제공하는 컴포넌트 {total}개입니다. 이름을 누르면 미리보기와 사용법을 볼 수 있습니다.</P>
+    <div className="grid gap-8">
       {ORDER.map((aud) => {
         const items = components.filter((i) => i.audience === aud);
-        if (items.length === 0) return null;
-        return (
-          <section key={aud} className="grid gap-3">
-            <H2>{AUDIENCES[aud].section}</H2>
-            <P className="text-muted-foreground">{AUDIENCES[aud].hint}</P>
-            <Grid items={items} />
-          </section>
-        );
+        return items.length ? <Box key={aud} title={AUDIENCES[aud].section} tone={AUDIENCES[aud].tone} items={items} /> : null;
       })}
-      <section className="grid gap-3">
-        <H2>AI Components</H2>
-        <Grid items={ai} />
-      </section>
-    </>
+      <Box title="AI Components" tone={AI_TONE} items={ai} />
+    </div>
   );
 }
