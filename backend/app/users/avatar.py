@@ -39,7 +39,7 @@ def _sniff(data: bytes) -> str | None:
 def process(data: bytes) -> bytes:
     """올린 이미지를 검사하고 저장할 WEBP 바이트를 돌려줍니다."""
     if len(data) > MAX_BYTES:
-        raise ImageTooLargeError("IMAGE_TOO_LARGE", "이미지는 2MB 이하만 올릴 수 있습니다.")
+        raise ImageTooLargeError("IMAGE_TOO_LARGE", "이미지는 2MB 이하로 올려 주세요.")
     kind = _sniff(data)
     if kind is None:
         raise UnsupportedImageTypeError("UNSUPPORTED_IMAGE_TYPE", "JPG, PNG, WEBP 이미지만 올릴 수 있습니다.")
