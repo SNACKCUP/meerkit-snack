@@ -49,9 +49,16 @@ interface SignupFormProps {
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-// 서버 규칙과 같음: 영문·숫자·밑줄 4~30자 (서버는 소문자로 바꿔 저장)
-const USER_ID_PATTERN = /^[A-Za-z0-9_]{4,30}$/;
-const USER_ID_RULE = "아이디는 영문·숫자·밑줄(_) 4~30자로 입력해 주세요.";
+const USER_ID_HINT = "영문으로 시작, 숫자·밑줄(_) 함께 사용 가능, 4~30자";
+
+// 서버 규칙(backend app/auth/schemas.py의 check_login_id)과 같은 규칙·문구. 어긋나면 이유를, 맞으면 null을 돌려준다
+function userIdProblem(raw: string): string | null {
+  const value = raw.trim();
+  if (value.length < 4 || value.length > 30) return "아이디는 4~30자로 입력해 주세요.";
+  if (!/^[A-Za-z0-9_]+$/.test(value)) return "아이디는 영문·숫자·밑줄(_)만 쓸 수 있습니다.";
+  if (!/^[A-Za-z]/.test(value)) return "아이디는 영문으로 시작해야 해요. (영문, 영문+숫자, 영문+밑줄, 영문+숫자+밑줄 가능)";
+  return null;
+}
 
 type IdCheck = { value: string; status: "checking" | "available" | "taken" | "error"; message?: string };
 
@@ -87,9 +94,8 @@ export function SignupForm({
 
   async function runIdCheck() {
     if (!checkUserId) return;
-    if (!USER_ID_PATTERN.test(form.user_id.trim())) {
-      return setIdCheck({ value: normalizedId, status: "error", message: USER_ID_RULE });
-    }
+    const problem = userIdProblem(form.user_id);
+    if (problem) return setIdCheck({ value: normalizedId, status: "error", message: problem });
     setIdCheck({ value: normalizedId, status: "checking" });
     try {
       const available = await checkUserId(normalizedId);
@@ -104,7 +110,8 @@ export function SignupForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setTermsInvalid(false);
-    if (!USER_ID_PATTERN.test(form.user_id.trim())) return setInvalid(USER_ID_RULE);
+    const idProblem = userIdProblem(form.user_id);
+    if (idProblem) return setInvalid(idProblem);
     if (checkUserId && idStatus !== "available") return setInvalid("아이디 중복 확인을 해 주세요.");
     if (!EMAIL_PATTERN.test(form.email)) return setInvalid("이메일 형식이 올바르지 않습니다.");
     if (emailVerification && !emailToken) return setInvalid("이메일 인증을 완료해 주세요.");
@@ -159,6 +166,7 @@ export function SignupForm({
             {idStatus === "available" ? "사용할 수 있는 아이디입니다." : idStatus === "taken" ? "이미 사용 중인 아이디입니다." : idCheck?.message}
           </p>
         )}
+        {(!idStatus || idStatus === "checking") && <p className="text-xs text-muted-foreground">{USER_ID_HINT}</p>}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="signup-name">이름</Label>
