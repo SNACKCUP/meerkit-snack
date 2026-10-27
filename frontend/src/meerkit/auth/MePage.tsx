@@ -1,5 +1,9 @@
 "use client";
 
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -25,12 +29,26 @@ function MeContent() {
   const withdraw = useWithdraw();
   const sendCode = useSendEmailCode();
   const verifyCode = useVerifyEmailCode();
+  const router = useRouter();
   if (!user) return null;
   const nicknameOn = meerkitConfig.signup.optionalFields.includes("nickname");
 
   return (
     <main className="mk-rise mx-auto max-w-xl px-4 py-12">
-      <h1 className="mb-6 text-3xl font-semibold tracking-tight">내 정보</h1>
+      <div className="mb-6 flex items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="rounded-full"
+          aria-label="뒤로 가기"
+          // 이전 화면이 없으면(주소를 직접 열었으면) 처음 화면으로 간다
+          onClick={() => (window.history.length > 1 ? router.back() : router.push(meerkitConfig.routes.home))}
+        >
+          <ArrowLeft />
+        </Button>
+        <h1 className="text-3xl font-semibold tracking-tight">내 정보</h1>
+      </div>
       <Card className="mb-4">
         <CardContent className="flex items-center gap-4">
           <UserAvatar user={user} size="xl" />
@@ -74,6 +92,8 @@ function MeContent() {
                 error={errorMessage(update.error)}
                 optionalFields={meerkitConfig.signup.optionalFields.filter((f) => f !== "nickname")}
                 addressType={meerkitConfig.signup.addressType}
+                nameRange={meerkitConfig.signup.name}
+                phoneInput={meerkitConfig.signup.phoneInput}
                 addressSearch={meerkitConfig.signup.addressSearch}
                 emailVerification={
                   meerkitConfig.signup.emailVerification

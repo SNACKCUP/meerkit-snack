@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,8 @@ import type { SignupInput } from "../../types";
 import type { AddressSearchProvider, AddressSearchResult } from "./address-search";
 import { EmailVerificationField } from "./EmailVerificationField";
 import { generateNickname } from "../nickname";
-import { OptionalFields, collectOptional, emptyOptionalValues, validateOptional, type OptionalValues } from "./OptionalFields";
+import { DEFAULT_NAME_RANGE, OptionalFields, collectOptional, emptyOptionalValues, validateName, validateOptional, type OptionalValues } from "./OptionalFields";
+import { TextField } from "./TextField";
 import { TermsAgreement } from "./TermsAgreement";
 
 export interface EmailVerificationHandlers {
@@ -38,6 +39,10 @@ interface SignupFormProps {
   emailVerification?: EmailVerificationHandlers;
   /** 주면 아이디 옆에 [중복 확인] 버튼이 생기고, 사용 가능 확인을 받아야 가입할 수 있다. 쓸 수 있으면 true */
   checkUserId?: (userId: string) => Promise<boolean>;
+  /** 이름 글자 수 제한. 기본 2~10자 */
+  nameRange?: { min: number; max: number };
+  /** 전화번호 입력 방식. 기본 "single" */
+  phoneInput?: "single" | "split";
   /** 닉네임 동작: [자동 생성] 버튼 표시, 폼을 열 때 미리 채우기 */
   nickname?: { generator?: boolean; autoFill?: boolean };
   /** 주소 검색 방식. "popup"(카카오 우편번호 팝업, 기본) 또는 "dialog"(우리 검색 창) */
@@ -73,6 +78,8 @@ export function SignupForm({
   emailVerification,
   checkUserId,
   nickname,
+  nameRange = DEFAULT_NAME_RANGE,
+  phoneInput,
   addressSearch,
   onSearchAddress,
   addressSearchProvider,
@@ -104,14 +111,19 @@ export function SignupForm({
       setIdCheck({ value: normalizedId, status: "error", message: errorMessage(e) ?? "확인하지 못했습니다. 잠시 후 다시 시도해 주세요." });
     }
   }
-  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  // 아래 핸들러는 모두 고정해 둔다. 한 칸을 입력할 때 다른 칸·부품이 다시 그려지지 않게 하기 위해서다.
+  const setField = useCallback((name: string, value: string) => setForm((prev) => ({ ...prev, [name]: value })), []);
+  const setEmail = useCallback((email: string) => setForm((p) => ({ ...p, email })), []);
+  const setOptionalPatch = useCallback((patch: Partial<OptionalValues>) => setOptional((p) => ({ ...p, ...patch })), []);
+  const setAgreedTerms = useCallback((v: string[]) => { setAgreed(v); setTermsInvalid(false); }, []);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setTermsInvalid(false);
     const idProblem = userIdProblem(form.user_id);
     if (idProblem) return setInvalid(idProblem);
+    const nameProblem = validateName(form.name, nameRange);
+    if (nameProblem) return setInvalid(nameProblem);
     if (checkUserId && idStatus !== "available") return setInvalid("아이디 중복 확인을 해 주세요.");
     if (!EMAIL_PATTERN.test(form.email)) return setInvalid("이메일 형식이 올바르지 않습니다.");
     if (emailVerification && !emailToken) return setInvalid("이메일 인증을 완료해 주세요.");
@@ -145,12 +157,12 @@ export function SignupForm({
       <div className="grid gap-2">
         <Label htmlFor="signup-user-id">아이디</Label>
         <div className="flex gap-2">
-          <Input id="signup-user-id" autoComplete="username" required value={form.user_id} onChange={set("user_id")} />
+          <Input id="signup-user-id" autoComplete="username" required value={form.user_id} onChange={(e) => setField("user_id", e.target.value)} />
           {checkUserId && (
             <Button
               type="button"
               variant="outline"
-              className="shrink-0"
+              size="field"
               disabled={!form.user_id.trim() || idStatus === "checking" || idStatus === "available"}
               onClick={runIdCheck}
             >
@@ -168,47 +180,38 @@ export function SignupForm({
         )}
         {(!idStatus || idStatus === "checking") && <p className="text-xs text-muted-foreground">{USER_ID_HINT}</p>}
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="signup-name">이름</Label>
-        <Input id="signup-name" autoComplete="name" required value={form.name} onChange={set("name")} />
-      </div>
+      <TextField id="signup-name" name="name" label="이름" autoComplete="name" required maxLength={nameRange.max} placeholder={`${nameRange.min}~${nameRange.max}자`} value={form.name} onValueChange={setField} />
       {emailVerification ? (
         <EmailVerificationField
           value={form.email}
-          onChange={(email) => setForm((p) => ({ ...p, email }))}
+          onChange={setEmail}
           verified={emailToken !== null}
           onVerifiedChange={setEmailToken}
           sendCode={emailVerification.sendCode}
           verifyCode={emailVerification.verifyCode}
         />
       ) : (
-        <div className="grid gap-2">
-          <Label htmlFor="signup-email">이메일</Label>
-          <Input id="signup-email" type="email" autoComplete="email" required value={form.email} onChange={set("email")} />
-        </div>
+        <TextField id="signup-email" name="email" label="이메일" type="email" autoComplete="email" required value={form.email} onValueChange={setField} />
       )}
-      <div className="grid gap-2">
-        <Label htmlFor="signup-password">비밀번호</Label>
-        <Input id="signup-password" type="password" autoComplete="new-password" required value={form.password} onChange={set("password")} />
-      </div>
+      <TextField id="signup-password" name="password" label="비밀번호" type="password" autoComplete="new-password" required value={form.password} onValueChange={setField} />
       {passwordConfirm && (
-        <div className="mk-swap grid gap-2">
-          <Label htmlFor="signup-password-confirm">비밀번호 확인</Label>
-          <Input id="signup-password-confirm" type="password" autoComplete="new-password" required value={form.password_confirm} onChange={set("password_confirm")} />
+        <div className="mk-swap">
+          <TextField id="signup-password-confirm" name="password_confirm" label="비밀번호 확인" type="password" autoComplete="new-password" required value={form.password_confirm} onValueChange={setField} />
         </div>
       )}
       <OptionalFields
         idPrefix="signup"
         fields={optionalFields}
         values={optional}
-        onChange={(patch) => setOptional((p) => ({ ...p, ...patch }))}
+        onChange={setOptionalPatch}
+        phoneInput={phoneInput}
         addressType={addressType}
         nicknameGenerator={nickname?.generator ?? true}
         addressSearch={addressSearch}
         onSearchAddress={onSearchAddress}
         addressSearchProvider={addressSearchProvider}
       />
-      <TermsAgreement terms={terms} value={agreed} onChange={(v) => { setAgreed(v); setTermsInvalid(false); }} invalid={termsInvalid} />
+      <TermsAgreement terms={terms} value={agreed} onChange={setAgreedTerms} invalid={termsInvalid} />
       {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
       <Button type="submit" disabled={pending}>{pending ? "가입 중…" : "회원가입"}</Button>
     </form>

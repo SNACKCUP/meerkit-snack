@@ -1,7 +1,7 @@
 "use client";
 
 import { BadgeCheck } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,12 +29,16 @@ interface EmailVerificationFieldProps {
   skip?: boolean;
   /** 인증 완료 옆에 보여 줄 안내 */
   verifiedText?: string;
+  /** 주면 [인증번호 받기] 왼쪽에 [취소] 버튼이 생긴다. 내 정보 수정에서 이메일 변경을 그만둘 때 쓴다 */
+  onCancel?: () => void;
+  /** true면 [인증번호 받기]를 누를 수 없다. 원래 이메일 그대로일 때 쓴다 */
+  unchanged?: boolean;
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // 이메일 입력 + [인증번호 받기] → 번호 입력 + [확인] → 인증 완료. 서비스에 따라 켜고 끌 수 있다.
-export function EmailVerificationField({
+export const EmailVerificationField = memo(function EmailVerificationField({
   value,
   onChange,
   verified,
@@ -46,6 +50,8 @@ export function EmailVerificationField({
   id = "signup-email",
   skip = false,
   verifiedText = "이 이메일로 가입합니다.",
+  onCancel,
+  unchanged = false,
 }: EmailVerificationFieldProps) {
   const [sent, setSent] = useState(false);
   const [code, setCode] = useState("");
@@ -113,10 +119,13 @@ export function EmailVerificationField({
             if (sent) setSent(false); // 인증번호는 보낸 이메일에만 유효하다
           }}
         />
+        {onCancel && !verified && (
+          <Button type="button" variant="outline" size="field" disabled={busy !== null} onClick={onCancel}>취소</Button>
+        )}
         {skip ? null : verified ? (
-          <Button type="button" variant="outline" className="shrink-0" onClick={changeEmail}>변경</Button>
+          <Button type="button" variant="outline" size="field" onClick={changeEmail}>변경</Button>
         ) : (
-          <Button type="button" variant="outline" className="shrink-0" disabled={busy !== null || (sent && resendIn > 0)} onClick={send}>
+          <Button type="button" variant="outline" size="field" disabled={busy !== null || unchanged || (sent && resendIn > 0)} onClick={send}>
             {busy === "send" ? "보내는 중…" : sent ? (resendIn > 0 ? `재전송 ${Math.ceil(resendIn / 1000)}s` : "재전송") : "인증번호 받기"}
           </Button>
         )}
@@ -141,10 +150,15 @@ export function EmailVerificationField({
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
             />
-            <Button type="button" className="shrink-0" disabled={busy !== null || expired} onClick={verify}>
+            <Button type="button" size="field" disabled={busy !== null || expired} onClick={verify}>
               {busy === "verify" ? "확인 중…" : "확인"}
             </Button>
           </div>
+          {resendIn > 0 && (
+            <p role="status" className="text-xs text-muted-foreground">
+              메일이 도착하지 않았나요? <span className="font-mono font-medium text-foreground">{Math.ceil(resendIn / 1000)}초</span> 뒤에 다시 받을 수 있어요. 잠시만 기다려 주세요.
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
             {expired ? "인증번호가 만료되었습니다. 다시 받아 주세요." : <>남은 시간 <span className="font-mono font-medium text-foreground">{formatRemaining(expiresIn)}</span></>}
           </p>
@@ -158,4 +172,4 @@ export function EmailVerificationField({
       )}
     </div>
   );
-}
+});

@@ -55,6 +55,8 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword }: AuthPanelProps)
       terms={[...meerkitConfig.signup.terms]}
       addressType={meerkitConfig.signup.addressType}
       nickname={meerkitConfig.signup.nickname}
+              nameRange={meerkitConfig.signup.name}
+              phoneInput={meerkitConfig.signup.phoneInput}
       addressSearch={meerkitConfig.signup.addressSearch}
       checkUserId={(id) => checkId.mutateAsync(id)}
       emailVerification={

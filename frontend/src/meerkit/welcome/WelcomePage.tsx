@@ -16,7 +16,7 @@ import { GhostCards } from "./GhostCards";
 const delay = (n: number) => ({ animationDelay: `${n * 110}ms` });
 
 export function WelcomePage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const openDialog = useAuthDialog((s) => s.openDialog);
   const logout = useLogout();
 
@@ -37,7 +37,10 @@ export function WelcomePage() {
           회원가입, 로그인, 권한 관리를 지금 바로 테스트해 보세요.
         </p>
         <div className="mk-rise pt-2" style={delay(4)}>
-          {isAuthenticated && user ? (
+          {isLoading ? (
+            // 세션을 확인하는 동안 로그인 버튼이 먼저 보였다 사라지지 않게 같은 높이의 빈 자리를 둔다
+            <div className="h-11" aria-hidden />
+          ) : isAuthenticated && user ? (
             <UserMenu user={user} onLogout={() => logout.mutate()} />
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-3">

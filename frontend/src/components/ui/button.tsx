@@ -21,6 +21,8 @@ const buttonVariants = cva(
         default: "h-10 px-5 py-2",
         sm: "h-9 gap-1.5 px-4",
         lg: "h-12 px-7 text-[15px]",
+        // 입력칸(h-11)과 나란히 놓는 버튼
+        field: "h-11 px-5",
         icon: "size-9",
       },
     },

@@ -23,7 +23,7 @@ export function NicknameInput({ id, value, onChange, generator = true, placehold
     <div className="flex gap-2">
       <Input id={id} autoComplete="nickname" placeholder={placeholder} disabled={disabled} value={value} onChange={(e) => onChange(e.target.value)} />
       {generator && (
-        <Button type="button" variant="outline" className="shrink-0" disabled={disabled} onClick={() => onChange(generateNickname())}>
+        <Button type="button" variant="outline" size="field" disabled={disabled} onClick={() => onChange(generateNickname())}>
           <Dices /> 자동 생성
         </Button>
       )}

@@ -32,3 +32,7 @@ export { VoiceButton } from "./ai/VoiceInput";
 export { useVoiceRecorder, type VoiceOptions, type VoiceStatus } from "./ai/use-voice-recorder";
 export { Calendar, DatePicker, DateRangeLinked, DateRangePicker } from "./date";
 export { AuthPanel } from "./auth/components/AuthPanel";
+export { NotFoundPage } from "./status/NotFoundPage";
+export { StatusScreen } from "./status/StatusScreen";
+export { ProfileImageField } from "./auth/components/ProfileImageField";
+export { PhoneInput, PhoneInputSplit } from "./phone";

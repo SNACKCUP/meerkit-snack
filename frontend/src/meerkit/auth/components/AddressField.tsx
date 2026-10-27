@@ -70,7 +70,7 @@ export function AddressField({
 
   // 입력칸을 눌러도 검색이 실행되지 않는다. 검색은 [주소 검색] 버튼으로만 시작한다.
   const searchButton = (
-    <Button type="button" variant="outline" disabled={disabled || searching} onClick={() => (searchMode === "dialog" ? setDialogOpen(true) : search())} className="shrink-0">
+    <Button type="button" variant="outline" disabled={disabled || searching} onClick={() => (searchMode === "dialog" ? setDialogOpen(true) : search())} size="field">
       <Search /> {searching ? "검색 중…" : "주소 검색"}
     </Button>
   );
