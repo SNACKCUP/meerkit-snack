@@ -82,8 +82,8 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 ## 1. 위치 규칙
 
 - 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `src/app/`에는 킷을 연결하는 얇은 파일만 둔다.
-- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
-- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`은 `core`만 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
+- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`, `storage`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
+- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만, `users`는 `storage`도 씀 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
 
 | 만들 것             | 위치                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------- |
@@ -111,6 +111,7 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 - `llm/`은 사용량 기록과 연결하지 않는다.
 - 역할은 `MASTER`, `OWNER`, `VIEWER`, `WRITER` 4종이고 한 사람이 여러 역할을 가질 수 있다. 관리자 검사는 `permissions/roles.py`의 `ADMIN_ROLE`(`MASTER`) 하나로만 한다 (`require_admin`).
 - 역할별 세부 권한은 아직 정하지 않았다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
+- 파일은 `app.storage.get_storage()`로만 저장한다. 공개 버킷(`meerkit-public`)에는 공개해도 되는 파일만 두고, 고객 문서는 넣지 않는다.
 - 메일은 `app.mail.send_mail`로만 보낸다. 라우터에서 `BackgroundTasks`로 넘기고, 인증번호·토큰·비밀번호를 로그에 남기지 않는다.
 
 ## 4. 상태 규칙 (프론트)

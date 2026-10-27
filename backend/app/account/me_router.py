@@ -1,9 +1,9 @@
-"""로그인한 본인의 회원 API: /api/users/me (내 정보 조회·수정, 탈퇴, 비밀번호 변경)
+"""로그인한 본인의 회원 API: /api/users/me (내 정보 조회·수정, 프로필 이미지, 탈퇴, 비밀번호 변경)
 
 /users/{user_id} 보다 먼저 등록해야 "me"가 id로 해석되지 않습니다 (app/api.py).
 """
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, File, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.auth import router as auth_router
@@ -12,7 +12,7 @@ from app.auth.deps import get_current_user
 from app.auth.schemas import ChangePasswordRequest
 from app.core.config import settings
 from app.core.database import get_db
-from app.users import service
+from app.users import avatar, service
 from app.users.models import User
 from app.users.schemas import ProfileUpdate, UserRead, WithdrawRequest
 
@@ -43,6 +43,30 @@ def update_me(
         auth_service.consume_email_verification(db, body.email_verification_token, new_email)
         email_verified = True
     return service.update_profile(db, user, changes, email_verified=email_verified)
+
+
+@router.post(
+    "/avatar",
+    response_model=UserRead,
+    summary="프로필 이미지 올리기 (JPG·PNG·WEBP, 2MB 이하)",
+    description=(
+        "multipart/form-data 의 `file` 하나를 받습니다. 서버가 파일 내용으로 형식을 다시 확인하고, "
+        "위치정보(EXIF)를 지운 512px WEBP 로 바꿔 저장합니다. 이전 이미지는 지워집니다. "
+        "오류: 413 IMAGE_TOO_LARGE, 415 UNSUPPORTED_IMAGE_TYPE, 422 INVALID_IMAGE, 503 STORAGE_NOT_CONFIGURED"
+    ),
+)
+async def upload_avatar(
+    file: UploadFile = File(description="이미지 파일 (JPG, PNG, WEBP · 2MB 이하)"),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    data = await file.read(avatar.MAX_BYTES + 1)  # 한도보다 1바이트 더 읽어 넘었는지만 확인
+    return service.set_avatar(db, user, data)
+
+
+@router.delete("/avatar", response_model=UserRead, summary="프로필 이미지 삭제")
+def delete_avatar(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return service.remove_avatar(db, user)
 
 
 @router.delete(

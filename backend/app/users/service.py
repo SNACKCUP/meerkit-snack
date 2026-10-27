@@ -1,5 +1,6 @@
 """회원 관리 업무 규칙. HTTP는 모르고, DB 접근은 repository에 맡깁니다."""
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -7,9 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppError
 from app.core.security import hash_password, verify_password
-from app.users import repository
+from app.storage import get_storage
+from app.users import avatar, repository
 from app.users.models import Role, Term, User
 from app.users.roles import DEFAULT_ROLE
+
+logger = logging.getLogger(__name__)
 
 RESERVED_LOGIN_ID_PREFIX = "deleted_"  # 개인정보를 지운 계정의 아이디에 씁니다
 
@@ -137,6 +141,42 @@ def update_profile(
     return user
 
 
+def _delete_avatar_file(key: str | None) -> None:
+    """이전 이미지 파일 삭제. 실패해도 요청은 성공으로 두고 로그만 남깁니다 (DB 는 이미 새 값)."""
+    if not key:
+        return
+    try:
+        get_storage().delete(key)
+    except AppError as e:
+        logger.warning("프로필 이미지 파일 삭제 실패 key=%s code=%s", key, e.code)
+
+
+def set_avatar(db: Session, user: User, data: bytes) -> User:
+    """이미지를 검사·변환해 저장소에 올리고 주소를 기록합니다. 이전 이미지는 지웁니다."""
+    image = avatar.process(data)
+    storage = get_storage()
+    key = avatar.new_key()
+    storage.put(key, image, avatar.CONTENT_TYPE)
+    old_key = user.avatar_key
+    user.avatar_key = key
+    user.avatar_url = storage.public_url(key)
+    db.commit()
+    db.refresh(user)
+    logger.info("프로필 이미지 변경 user_id=%s size=%s", user.id, len(image))
+    _delete_avatar_file(old_key)
+    return user
+
+
+def remove_avatar(db: Session, user: User) -> User:
+    old_key = user.avatar_key
+    user.avatar_key = None
+    user.avatar_url = None
+    db.commit()
+    db.refresh(user)
+    _delete_avatar_file(old_key)
+    return user
+
+
 def _deactivate(user: User) -> None:
     """탈퇴 처리: 계정을 막고 탈퇴 시각을 남깁니다. 개인정보는 보관 기간 뒤 purge 명령이 지웁니다."""
     user.is_active = False
@@ -162,6 +202,7 @@ PERSONAL_FIELDS = (
     "birth_date",
     "gender",
     "avatar_url",
+    "avatar_key",
     "email_verified_at",
     "last_login_at",
 )
@@ -173,6 +214,7 @@ def anonymize(user: User) -> None:
     user.email = f"{RESERVED_LOGIN_ID_PREFIX}{user.id}@deleted.invalid"
     user.name = DELETED_NAME
     user.hashed_password = UNUSABLE_PASSWORD
+    _delete_avatar_file(user.avatar_key)
     for field in PERSONAL_FIELDS:
         setattr(user, field, None)
     user.is_active = False

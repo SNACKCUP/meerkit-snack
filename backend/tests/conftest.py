@@ -84,6 +84,18 @@ def fake_llm():
         yield model
 
 
+@pytest.fixture
+def storage():
+    """메모리 저장소. storage.objects 로 올라간 파일을 확인합니다."""
+    from app.storage import override_storage
+    from app.storage.backends import MemoryStorage
+
+    memory = MemoryStorage()
+    override_storage(memory)
+    yield memory
+    override_storage(None)
+
+
 @pytest.fixture(autouse=True)
 def mail_outbox():
     FakeBackend.outbox.clear()

@@ -118,6 +118,12 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
+# 킷 공개 버킷 (프로필 이미지 등, app.storage). 운영 Supabase 에도 같은 이름으로 만듭니다 (docs/storage-setup.md)
+[storage.buckets.meerkit-public]
+public = true
+file_size_limit = "2MiB"
+allowed_mime_types = ["image/webp"]
+
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
 # public = false
