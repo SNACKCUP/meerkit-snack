@@ -1,7 +1,9 @@
+import re
 from datetime import date
 from typing import Annotated
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -12,10 +14,28 @@ from pydantic import (
 
 from app.users.schemas import OPTIONAL_PROFILE_FIELDS, blank_to_none
 
-# 로그인 아이디: 영문 소문자·숫자·밑줄 4~30자 (대문자로 보내도 소문자로 바꿔 저장)
+# 로그인 아이디 규칙. 프론트 SignupForm.tsx의 userIdProblem과 같은 규칙·문구입니다.
+LOGIN_ID_LENGTH = "아이디는 4~30자로 입력해 주세요."
+LOGIN_ID_CHARS = "아이디는 영문·숫자·밑줄(_)만 쓸 수 있습니다."
+LOGIN_ID_START = "아이디는 영문으로 시작해야 해요. (영문, 영문+숫자, 영문+밑줄, 영문+숫자+밑줄 가능)"
+
+
+def check_login_id(value: str) -> str:
+    """영문·숫자·밑줄 4~30자, 첫 글자는 영문. 어긋난 이유를 메시지로 알려 주고, 소문자로 바꿔 돌려줍니다."""
+    if not 4 <= len(value) <= 30:
+        raise ValueError(LOGIN_ID_LENGTH)
+    if not re.fullmatch(r"[a-z0-9_]+", value):
+        raise ValueError(LOGIN_ID_CHARS)
+    if not value[0].isascii() or not value[0].isalpha():
+        raise ValueError(LOGIN_ID_START)
+    return value
+
+
+# 가입·중복 확인에서 쓰는 아이디 (대문자로 보내도 소문자로 바꿔 저장). 로그인은 이 검사를 하지 않습니다.
 LoginId = Annotated[
     str,
-    StringConstraints(strip_whitespace=True, to_lower=True, pattern=r"^[A-Za-z0-9_]{4,30}$"),
+    StringConstraints(strip_whitespace=True, to_lower=True),
+    AfterValidator(check_login_id),
 ]
 Password = Annotated[str, Field(min_length=8, max_length=128)]
 

@@ -125,3 +125,27 @@ def test_signup_blank_optional_fields_become_null(signup):
     assert response.status_code == 201, response.text
     body = response.json()
     assert (body["nickname"], body["birth_date"], body["phone"]) == (None, None, None)
+
+
+def test_login_id_rule(client, signup):
+    """아이디는 영문으로 시작 + 영문·숫자·밑줄 4~30자. 어긋난 이유를 메시지로 알려 줍니다."""
+    for ok in ["kimm", "kim2024", "kim_lee", "kim_2024", "k___"]:
+        assert client.get("/api/auth/check-user-id", params={"user_id": ok}).status_code == 200, ok
+    for bad, reason in [
+        ("33333", "영문으로 시작"),
+        ("____", "영문으로 시작"),
+        ("2024kim", "영문으로 시작"),
+        ("_kim", "영문으로 시작"),
+        ("kim-lee", "영문·숫자·밑줄"),
+        ("김철수아", "영문·숫자·밑줄"),
+        ("abc", "4~30자"),
+        ("a" * 31, "4~30자"),
+    ]:
+        response = client.get("/api/auth/check-user-id", params={"user_id": bad})
+        assert response.status_code == 422, bad
+        assert reason in response.json()["errors"][0]["message"], bad
+
+    rejected = signup("33333")
+    assert rejected.status_code == 422
+    assert rejected.json()["errors"][0]["field"] == "user_id"
+    assert signup("Kim_2024").json()["user_id"] == "kim_2024"
