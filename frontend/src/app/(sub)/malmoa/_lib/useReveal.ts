@@ -19,7 +19,8 @@ export function useReveal(root: RefObject<HTMLElement | null>, still: boolean) {
       let t: ReturnType<typeof setTimeout>;
       const tick = (n = 0) => {
         pending().forEach(show);
-        if (n < 60) t = setTimeout(() => tick(n + 1), 100);
+        if (n < 200) t = setTimeout(() => tick(n + 1), 100);
+        else host.querySelectorAll("[data-rise]:not([data-in])").forEach(show);
       };
       tick();
       const mo = new MutationObserver(() => pending().forEach(show));

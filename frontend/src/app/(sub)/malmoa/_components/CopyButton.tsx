@@ -17,7 +17,7 @@ export function CopyButton({ text, children, variant = "ghost", hint }: { text: 
       <PxButton variant={state === "fail" ? "pink" : state === "ok" ? "mint" : variant} onClick={() => void onClick()}>
         {state === "ok" ? "복사했어요!" : state === "fail" ? "복사하지 못했어요" : children}
       </PxButton>
-      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+      {hint ? <span className="text-xs text-[#404040]">{hint}</span> : null}
     </div>
   );
 }

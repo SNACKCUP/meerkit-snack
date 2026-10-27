@@ -18,7 +18,7 @@ const JSON_LD = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   inLanguage: "ko",
-  description: "회의 내용을 말로 모으면 AI가 문서로 만들어 주고, 회의할수록 경험치가 쌓이는 픽셀 회의록 서비스",
+  description: "회의 내용을 말로 모으면 AI가 문서로 만들어 주고, 옛 윈도우 같은 도트 화면의 회의록 서비스",
 };
 
 export default function Page() {

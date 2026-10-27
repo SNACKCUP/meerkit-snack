@@ -252,23 +252,33 @@
   --font-pixel: "DungGeunMo", "Pretendard Variable", Pretendard, monospace;
 }
 
-/* 말모아 바탕: 은은한 빛 번짐 */
-.mp-root {
-  background-image:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(76 201 240 / 0.10), transparent 60%),
-    radial-gradient(50rem 28rem at -10% 10%, rgb(61 220 151 / 0.07), transparent 60%);
-  background-repeat: no-repeat;
+/* ── 말모아: Windows 98 입체 테두리 ── */
+.w98-out {
+  background-color: var(--mk-face);
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
 }
+.w98-in {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+.w98-flat {
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #808080;
+}
+.w98-title {
+  background-image: linear-gradient(90deg, var(--mk-title-a), var(--mk-title-b));
+}
+/* 바탕화면 위에 바로 놓이는 글자(아이콘 이름표 느낌) */
+.mp-title { color: #fff; text-shadow: 1px 1px 0 #000; }
+/* 점선 초점 상자 */
+.w98-focus:focus-visible { outline: 1px dotted #000; outline-offset: -4px; }
 
-/* 말모아 움직임: 부드러운 곡선. 깜빡임·둥실은 천천히 */
+.mp-root { background-color: var(--mk-desktop); }
+
+/* 움직임: 창이 열리듯 부드럽게. 깜빡임은 천천히 */
 @keyframes mp-blink {
   50% { opacity: 0.25; }
 }
-@keyframes mp-bob {
-  50% { transform: translateY(-5px); }
-}
 .mp-blink { animation: mp-blink 1.6s ease-in-out infinite; }
-.mp-bob { animation: mp-bob 3.2s ease-in-out infinite; }
+.mp-bob { animation: none; }
 
 /* 스크롤 등장: 자바스크립트가 켜진 때만 처음에 숨기고, useReveal이 GSAP으로 나타낸다 (JS가 없거나 움직임이 꺼지면 그대로 보인다) */
 @media (scripting: enabled) {

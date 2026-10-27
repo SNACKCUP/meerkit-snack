@@ -16,18 +16,6 @@ export interface Meeting {
   minutesReady: boolean;
 }
 
-export interface XpEntry {
-  id: string;
-  at: string;
-  amount: number;
-  reason: string;
-}
-
-export interface LevelUp {
-  from: number;
-  to: number;
-}
-
 export interface Segment {
   start: number;
   end: number;

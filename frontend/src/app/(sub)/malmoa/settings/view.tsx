@@ -11,9 +11,9 @@ import { useMalmoa } from "../_lib/store";
 
 function Toggle({ id, label, desc, checked, onChange }: { id: string; label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label htmlFor={id} className="flex items-start gap-3 border-2 border-border p-3">
-      <input id={id} type="checkbox" className="mt-1 size-5 accent-(--mk-mint)" checked={checked} onChange={(e) => onChange(e.target.checked)} />
-      <span><span className="font-pixel block text-lg">{label}</span><span className="text-sm text-muted-foreground">{desc}</span></span>
+    <label htmlFor={id} className="flex items-start gap-3 w98-flat p-3">
+      <input id={id} type="checkbox" className="mt-1 size-5 accent-[#000080]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span><span className="font-pixel block text-lg">{label}</span><span className="text-sm text-[#404040]">{desc}</span></span>
     </label>
   );
 }
@@ -31,8 +31,8 @@ export default function SettingsPage() {
   return (
     <div className="mx-auto grid max-w-3xl gap-6 px-5 py-10">
       <div data-rise>
-        <h1 className="font-pixel text-4xl text-(--mk-gold)">설정</h1>
-        <p className="mt-1 text-muted-foreground">이 브라우저에만 저장되는 설정입니다.</p>
+        <h1 className="mp-title font-pixel text-3xl">설정</h1>
+        <p className="mp-title mt-1 text-sm">이 브라우저에만 저장되는 설정입니다.</p>
       </div>
 
       <div data-rise>
@@ -44,7 +44,7 @@ export default function SettingsPage() {
                 <option value="">시스템 기본 마이크</option>
                 {rec.devices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || "마이크"}</option>)}
               </NativeSelect>
-              <span className="text-sm text-muted-foreground">녹음을 한 번 시작하면 사용할 수 있는 마이크 목록이 채워집니다.</span>
+              <span className="text-sm text-[#404040]">녹음을 한 번 시작하면 사용할 수 있는 마이크 목록이 채워집니다.</span>
             </label>
             <Toggle id="meeting-room" label="회의실 모드" desc="멀리 있는 화자의 목소리를 깎지 않도록 통화용 에코 제거·잡음 억제를 끕니다." checked={prefs.meetingRoom} onChange={prefs.setMeetingRoom} />
           </div>
@@ -60,15 +60,15 @@ export default function SettingsPage() {
       <div data-rise>
         <PxCard title="저장된 데이터">
           <div className="grid justify-items-start gap-3">
-            <p>회의 목록, 회의록, 경험치, 공유 링크를 처음 상태(예시 데이터)로 되돌립니다. 되돌린 뒤에는 복구할 수 없습니다.</p>
+            <p>회의 목록, 회의록, 공유 링크를 처음 상태(예시 데이터)로 되돌립니다. 되돌린 뒤에는 복구할 수 없습니다.</p>
             <PxButton variant="pink" disabled={recording} onClick={() => { setDone(false); setConfirm(true); }}>데이터 초기화</PxButton>
-            {recording ? <p className="text-sm text-muted-foreground">녹음 중에는 초기화할 수 없습니다.</p> : null}
-            {done ? <p role="status" className="text-(--mk-mint)">처음 상태로 되돌렸어요.</p> : null}
+            {recording ? <p className="text-sm text-[#404040]">녹음 중에는 초기화할 수 없습니다.</p> : null}
+            {done ? <p role="status" className="font-pixel text-[#000080]">처음 상태로 되돌렸어요.</p> : null}
           </div>
         </PxCard>
       </div>
 
-      <PxDialog open={confirm} onOpenChange={setConfirm} title="정말 초기화할까요?" description="기록한 회의와 경험치가 모두 사라지고 예시 데이터로 바뀝니다.">
+      <PxDialog open={confirm} onOpenChange={setConfirm} title="정말 초기화할까요?" description="기록한 회의가 모두 사라지고 예시 데이터로 바뀝니다.">
         <div className="flex gap-3">
           <PxButton variant="pink" onClick={() => { reset(); setConfirm(false); setDone(true); }}>초기화</PxButton>
           <PxButton variant="ghost" onClick={() => setConfirm(false)}>취소</PxButton>

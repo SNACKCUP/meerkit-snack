@@ -1,10 +1,10 @@
-import { PixelMeerkat } from "./px";
+import { PixelIcon } from "./px";
 
 export function Logo() {
   return (
     <span className="flex items-center gap-2">
-      <PixelMeerkat level={1} size={26} />
-      <span className="font-pixel text-2xl text-(--mk-gold)">말모아</span>
+      <PixelIcon name="mic" size={20} />
+      <span className="font-pixel text-xl">말모아</span>
     </span>
   );
 }

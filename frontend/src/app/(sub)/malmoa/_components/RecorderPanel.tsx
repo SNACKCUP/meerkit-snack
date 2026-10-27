@@ -52,22 +52,22 @@ export function RecorderPanel() {
   return (
     <PxCard title="직접 녹음">
       <div className="grid gap-4">
-        <div className="grid justify-items-center gap-3 border-2 border-(--mk-px-edge) bg-(--mk-px-edge) px-4 py-6">
+        <div className="grid justify-items-center gap-3 w98-in bg-black text-[#33ff33] px-4 py-6">
           <p className="font-pixel text-5xl tabular-nums" aria-live="off" aria-label={`녹음 시간 ${formatClock(r.elapsed)}`}>
-            {r.state === "recording" ? <span className="mp-blink mr-2 text-(--mk-pink)">●</span> : null}
+            {r.state === "recording" ? <span className="mp-blink mr-2 text-[#ff4040]">●</span> : null}
             {formatClock(r.elapsed)}
           </p>
-          <PxBar value={Math.round(r.level * 100)} tone={r.state === "recording" ? "pink" : "sky"} segments={24} label="입력 레벨" className="w-full max-w-sm" />
-          <p className="text-sm text-muted-foreground">
-            {r.state === "recording" ? "10초마다 이 브라우저에 자동 저장됩니다" : r.state === "paused" ? "일시정지 중입니다" : r.state === "stopped" ? "녹음이 끝났습니다. 들어 보고 보관하세요" : "Mac 마이크로 지금 회의를 녹음합니다"}
+          <PxBar value={Math.round(r.level * 100)} tone={r.state === "recording" ? "pink" : "mint"} segments={24} label="입력 레벨" className="w-full max-w-sm" />
+          <p className="text-sm text-[#99ff99]">
+            {r.state === "recording" ? "10초마다 이 브라우저에 자동 저장됩니다" : r.state === "paused" ? "일시정지 중입니다" : r.state === "stopped" ? "녹음이 끝났습니다. 들어 보고 보관하세요" : "마이크로 지금 회의를 녹음합니다"}
           </p>
         </div>
 
-        {r.quiet ? <p role="alert" className="border-2 border-(--mk-gold) bg-muted p-3 text-sm">소리가 거의 들어오지 않습니다. 마이크가 가까이 있는지, 음소거가 아닌지 확인해 주세요.</p> : null}
-        {r.error ? <p role="alert" className="border-2 border-(--mk-pink) bg-muted p-3 text-sm">{REC_ERROR_TEXT[r.error]}</p> : null}
+        {r.quiet ? <p role="alert" className="w98-flat bg-[#ffffe1] text-black p-3 text-sm">소리가 거의 들어오지 않습니다. 마이크가 가까이 있는지, 음소거가 아닌지 확인해 주세요.</p> : null}
+        {r.error ? <p role="alert" className="w98-flat bg-[#ffffe1] text-[#b00000] p-3 text-sm">{REC_ERROR_TEXT[r.error]}</p> : null}
 
         {r.recoverable && r.state === "idle" ? (
-          <div className="grid gap-2 border-2 border-(--mk-sky) bg-muted p-3">
+          <div className="grid gap-2 w98-flat bg-white text-black p-3">
             <p className="text-sm">이전 녹음이 중간에 종료되었습니다. 저장된 부분을 불러올 수 있어요.</p>
             <div className="flex gap-2">
               <PxButton size="sm" variant="sky" onClick={() => void r.recover()}>이전 녹음 불러오기</PxButton>
@@ -86,9 +86,9 @@ export function RecorderPanel() {
                   {r.devices.map((d) => <option key={d.deviceId} value={d.deviceId}>{d.label || "마이크"}</option>)}
                 </NativeSelect>
               </label>
-              <label className="flex items-start gap-2 border-2 border-border p-2 text-sm">
-                <input type="checkbox" className="mt-1 size-4 accent-(--mk-mint)" checked={meetingRoom} disabled={busy} onChange={(e) => useRecorderPrefs.getState().setMeetingRoom(e.target.checked)} />
-                <span><span className="font-pixel block">회의실 모드</span><span className="text-muted-foreground">멀리 있는 화자의 목소리를 깎지 않도록 통화용 잡음 억제를 끕니다</span></span>
+              <label className="flex items-start gap-2 w98-flat p-2 text-sm">
+                <input type="checkbox" className="mt-1 size-4 accent-[#000080]" checked={meetingRoom} disabled={busy} onChange={(e) => useRecorderPrefs.getState().setMeetingRoom(e.target.checked)} />
+                <span><span className="font-pixel block">회의실 모드</span><span className="text-[#404040]">멀리 있는 화자의 목소리를 깎지 않도록 통화용 잡음 억제를 끕니다</span></span>
               </label>
             </div>
             <PxButton size="lg" disabled={r.state === "requesting"} onClick={() => void r.start()}><PixelIcon name="mic" size={20} />{r.state === "requesting" ? "마이크 연결 중…" : "녹음 시작"}</PxButton>

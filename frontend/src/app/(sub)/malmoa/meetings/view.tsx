@@ -39,8 +39,8 @@ export default function MeetingsPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-6 px-5 py-10">
       <div data-rise>
-        <h1 className="font-pixel text-4xl text-(--mk-gold)">회의 목록</h1>
-        <p className="mt-1 text-muted-foreground">파일명으로 찾거나 상태로 걸러 볼 수 있습니다.</p>
+        <h1 className="mp-title font-pixel text-3xl">회의 목록</h1>
+        <p className="mp-title mt-1 text-sm">파일명으로 찾거나 상태로 걸러 볼 수 있습니다.</p>
       </div>
       <div data-rise>
         <PxCard title="전체 회의">
@@ -52,18 +52,18 @@ export default function MeetingsPage() {
                 onChange={(e) => { setQ(e.target.value); setPage(1); }}
                 placeholder="파일명 검색"
                 aria-label="파일명 검색"
-                className="h-10 min-w-48 flex-1 border-2 border-border bg-(--mk-px-edge) px-3 outline-none placeholder:text-muted-foreground focus-visible:border-(--mk-sky)"
+                className="w98-in h-8 min-w-48 flex-1 bg-white px-2 text-black outline-none placeholder:text-[#808080]"
               />
               <NativeSelect aria-label="상태 필터" value={status} onChange={(e) => { setStatus(e.target.value as typeof status); setPage(1); }} className="h-10 border-2">
                 {FILTERS.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
               </NativeSelect>
             </div>
             {rows.length === 0 ? (
-              <p className="py-6 text-center text-muted-foreground">
-                {meetings.length === 0 ? <>아직 기록한 회의가 없어요. <Link href="/malmoa/home" className="font-pixel text-(--mk-gold) underline underline-offset-4">퀘스트 보드</Link>에서 시작해 보세요.</> : "조건에 맞는 회의가 없습니다."}
+              <p className="py-6 text-center text-[#404040]">
+                {meetings.length === 0 ? <>아직 기록한 회의가 없어요. <Link href="/malmoa/home" className="font-pixel text-[#000080] underline underline-offset-4">녹음 화면</Link>에서 시작해 보세요.</> : "조건에 맞는 회의가 없습니다."}
               </p>
             ) : (
-              <ul className="divide-y-2 divide-border">
+              <ul className="w98-in divide-y divide-[#c0c0c0] bg-white p-3">
                 {rows.map((m) => <MeetingRow key={m.id} meeting={m} />)}
               </ul>
             )}

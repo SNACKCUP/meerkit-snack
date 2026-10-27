@@ -3,18 +3,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { localDay } from "./format";
-import { levelOf } from "./levels";
-import { SEED_XP, seedMeetings, seedMinutes, seedXpLog } from "./seed";
+import { seedMeetings, seedMinutes } from "./seed";
 import { minutesTemplate } from "./sample";
-import type { LevelUp, Meeting, MeetingSource, MinutesDoc, Share, XpEntry } from "./types";
+import type { Meeting, MeetingSource, MinutesDoc, Share } from "./types";
 
 /*
   말모아 목 데이터 저장소.
-  백엔드에 회의·변환·경험치 API가 만들어지기 전까지, 같은 동작을 브라우저 안에서 흉내 낸다.
+  백엔드에 회의·변환 API가 만들어지기 전까지, 같은 동작을 브라우저 안에서 흉내 낸다.
   - 새로고침해도 남도록 localStorage에 저장한다.
   - 변환(음성→텍스트, 사진→글자)은 시간 지연으로 흉내 낸다. 진행 중에 새로고침하면 "실패"로 표시하고 다시 시도할 수 있다.
-  - 경험치·연속 기록 계산은 화면용이다. 실제로는 서버가 같은 계산을 해야 한다(어뷰징 방지).
 */
 
 const TICK_MS = 450;
@@ -33,14 +30,9 @@ interface State {
   meetings: Meeting[];
   minutes: Record<string, MinutesDoc>;
   shares: Record<string, Share>; // 회의 id → 공유
-  xp: number;
-  xpLog: XpEntry[];
-  streak: number;
-  lastActiveDay: string | null;
   seeded: boolean;
   // 저장하지 않는 값
   hydrated: boolean;
-  levelUp: LevelUp | null;
 
   addMeeting: (input: NewMeeting) => string;
   retry: (id: string) => void;
@@ -48,7 +40,6 @@ interface State {
   saveMinutes: (id: string, markdown: string) => void;
   createShare: (meetingId: string) => Share | null;
   revokeShare: (meetingId: string) => void;
-  dismissLevelUp: () => void;
   reset: () => void;
   finishHydration: () => void;
 }
@@ -66,32 +57,6 @@ export const useMalmoa = create<State>()(
     (set, get) => {
       const patch = (id: string, p: Partial<Meeting>) => set((s) => ({ meetings: s.meetings.map((m) => (m.id === id ? { ...m, ...p } : m)) }));
 
-      // 경험치를 더하고, 레벨이 오르면 알림을 띄운다
-      function grant(amount: number, reason: string, extra: Partial<State> = {}) {
-        const { xp } = get();
-        const nextXp = xp + amount;
-        const from = levelOf(xp);
-        const to = levelOf(nextXp);
-        set((s) => ({
-          ...extra,
-          xp: nextXp,
-          xpLog: [{ id: uid(), at: nowIso(), amount, reason }, ...s.xpLog].slice(0, 50),
-          levelUp: to > from ? { from, to } : s.levelUp,
-        }));
-      }
-
-      // 변환 완료 보상: 기본 + 길이 보너스 + 연속 기록 보너스
-      function award(m: Meeting) {
-        const { streak, lastActiveDay } = get();
-        const today = localDay(new Date());
-        const yesterday = localDay(new Date(Date.now() - 86_400_000));
-        const nextStreak = lastActiveDay === today ? streak : lastActiveDay === yesterday ? streak + 1 : 1;
-        const base = m.source === "image" ? 20 : 50;
-        const lengthBonus = m.durationSec ? Math.floor(m.durationSec / 600) * 5 : 0;
-        const streakBonus = lastActiveDay === today ? 0 : 5 * Math.min(nextStreak - 1, 7);
-        grant(base + lengthBonus + streakBonus, m.source === "image" ? "사진 글자 읽기 완료" : "회의 변환 완료", { streak: nextStreak, lastActiveDay: today });
-      }
-
       function summarize(id: string) {
         if (timers.has(id)) return;
         patch(id, { status: "SUMMARIZING", progress: 0, stage: "회의록 작성 중", errorMessage: null });
@@ -107,11 +72,9 @@ export const useMalmoa = create<State>()(
           if (progress < 100) return patch(id, { progress });
           clearInterval(timer);
           timers.delete(id);
-          const first = !m.minutesReady;
           const doc: MinutesDoc = { markdown: minutesTemplate(m.fileName), generatedAt: nowIso(), model: "데모 모델", edited: false };
           set((s) => ({ minutes: { ...s.minutes, [id]: doc } }));
           patch(id, { status: "COMPLETED", progress: null, stage: null, minutesReady: true });
-          if (first) grant(30, "AI 회의록 생성");
         }, TICK_MS);
         timers.set(id, timer);
       }
@@ -131,9 +94,7 @@ export const useMalmoa = create<State>()(
           if (progress >= 100) {
             clearInterval(timer);
             timers.delete(id);
-            const finished: Meeting = { ...m, status: "COMPLETED", progress: null, stage: null, transcriptReady: true };
             patch(id, { status: "COMPLETED", progress: null, stage: null, transcriptReady: true });
-            award(finished);
             return;
           }
           patch(id, { status: "TRANSCRIBING", progress, stage: stageFor(m, progress) });
@@ -145,13 +106,8 @@ export const useMalmoa = create<State>()(
         meetings: [],
         minutes: {},
         shares: {},
-        xp: 0,
-        xpLog: [],
-        streak: 0,
-        lastActiveDay: null,
         seeded: false,
         hydrated: false,
-        levelUp: null,
 
         addMeeting: (input) => {
           const id = uid();
@@ -171,7 +127,7 @@ export const useMalmoa = create<State>()(
           summarize(id);
         },
         saveMinutes: (id, markdown) => set((s) => (s.minutes[id] ? { minutes: { ...s.minutes, [id]: { ...s.minutes[id], markdown, edited: true } } } : s)),
-        // 공유 링크를 만든다(이미 있으면 다시 켠다). 회의록이 있는 회의만 공유할 수 있고, 처음 공유할 때 +10 EXP
+        // 공유 링크를 만든다(이미 있으면 다시 켠다). 회의록이 있는 회의만 공유할 수 있고
         createShare: (meetingId) => {
           const m = get().meetings.find((x) => x.id === meetingId);
           if (!m || !m.minutesReady) return null;
@@ -183,16 +139,14 @@ export const useMalmoa = create<State>()(
             expiresAt: new Date(Date.now() + SHARE_DAYS * 86_400_000).toISOString(),
             revoked: false,
           };
-          if (prev) set((s) => ({ shares: { ...s.shares, [meetingId]: share } }));
-          else grant(10, "회의록 공유", { shares: { ...get().shares, [meetingId]: share } });
+          set((s) => ({ shares: { ...s.shares, [meetingId]: share } }));
           return share;
         },
         revokeShare: (meetingId) => set((s) => (s.shares[meetingId] ? { shares: { ...s.shares, [meetingId]: { ...s.shares[meetingId], revoked: true } } } : s)),
-        dismissLevelUp: () => set({ levelUp: null }),
         reset: () => {
           for (const t of timers.values()) clearInterval(t);
           timers.clear();
-          set({ meetings: seedMeetings(), minutes: seedMinutes(), shares: {}, xp: SEED_XP, xpLog: seedXpLog(), streak: 0, lastActiveDay: null, seeded: true, levelUp: null });
+          set({ meetings: seedMeetings(), minutes: seedMinutes(), shares: {}, seeded: true });
         },
         // 저장된 값을 불러온 뒤 한 번 부른다: 처음이면 예시 데이터를 채우고, 진행 중이던 작업은 실패로 바꾼다
         finishHydration: () => {
@@ -213,7 +167,12 @@ export const useMalmoa = create<State>()(
     {
       name: "malmoa-mock",
       skipHydration: true,
-      partialize: (s) => ({ meetings: s.meetings, minutes: s.minutes, shares: s.shares, xp: s.xp, xpLog: s.xpLog, streak: s.streak, lastActiveDay: s.lastActiveDay, seeded: s.seeded }),
+      partialize: (s) => ({ meetings: s.meetings, minutes: s.minutes, shares: s.shares, seeded: s.seeded }),
+      version: 2, // 2: 경험치·연속 기록 제거
+      migrate: (state) => {
+        const { meetings, minutes, shares, seeded } = (state ?? {}) as Partial<State>;
+        return { meetings: meetings ?? [], minutes: minutes ?? {}, shares: shares ?? {}, seeded: seeded ?? false } as State;
+      },
     },
   ),
 );

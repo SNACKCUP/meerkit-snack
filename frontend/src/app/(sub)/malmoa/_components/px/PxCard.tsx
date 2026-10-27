@@ -2,25 +2,25 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-// 기본은 어두운 패널, paper는 회의록처럼 오래 읽는 글에 쓰는 밝은 종이 패널. 픽셀 테두리 + 계단 그림자.
+// Windows 98 창. title이 있으면 남색 제목 막대, paper는 문서 보기처럼 흰 안쪽 영역에 검은 글자.
 export function PxCard({ title, action, tone = "default", className, children, ...props }: Omit<ComponentProps<"section">, "title"> & { title?: ReactNode; action?: ReactNode; tone?: "default" | "paper" }) {
   const paper = tone === "paper";
   return (
-    <section
-      className={cn(
-        "border-[3px] shadow-[4px_4px_0_0_var(--mk-px-edge)] transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-[6px_6px_0_0_var(--mk-px-edge)]",
-        paper ? "border-(--mk-px-edge) bg-(--mk-paper) text-(--mk-ink)" : "border-border bg-card text-foreground",
-        className,
-      )}
-      {...props}
-    >
+    <section className={cn("w98-out p-[3px] text-black", className)} {...props}>
       {title ? (
-        <header className={cn("flex items-center justify-between gap-3 border-b-[3px] px-4 py-2", paper ? "border-(--mk-px-edge) bg-(--mk-gold)" : "border-border bg-muted")}>
-          <h2 className={cn("font-pixel text-base", paper && "text-(--mk-ink)")}>{title}</h2>
-          {action}
+        <header className="w98-title flex items-center justify-between gap-3 px-1.5 py-[3px] text-white">
+          <h2 className="font-pixel truncate text-[15px]">{title}</h2>
+          <div className="flex shrink-0 items-center gap-1">
+            {action}
+            <span aria-hidden className="flex gap-[2px]">
+              {["_", "□", "×"].map((g) => (
+                <span key={g} className="font-pixel w98-out grid size-4 place-items-center text-[12px] leading-none text-black">{g}</span>
+              ))}
+            </span>
+          </div>
         </header>
       ) : null}
-      <div className="p-5">{children}</div>
+      <div className={cn("p-3", paper && "w98-in m-[3px] bg-white p-4")}>{children}</div>
     </section>
   );
 }

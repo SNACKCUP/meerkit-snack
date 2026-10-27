@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 // 회의록 전용 아주 작은 마크다운 표시기: 제목, 목록, 굵게, '확인 필요' 강조만 지원한다.
 function inline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*|확인 필요)/g).map((part, i) => {
-    if (part === "확인 필요") return <mark key={i} className="bg-(--mk-pink) px-1 font-bold text-(--mk-ink)">확인 필요</mark>;
-    if (part.startsWith("**")) return <strong key={i}>{part.slice(2, -2) === "확인 필요" ? <mark className="bg-(--mk-pink) px-1 text-(--mk-ink)">확인 필요</mark> : part.slice(2, -2)}</strong>;
+    if (part === "확인 필요") return <mark key={i} className="bg-[#ffff00] px-1 font-bold text-black">확인 필요</mark>;
+    if (part.startsWith("**")) return <strong key={i}>{part.slice(2, -2) === "확인 필요" ? <mark className="bg-[#ffff00] px-1 text-black">확인 필요</mark> : part.slice(2, -2)}</strong>;
     return part;
   });
 }

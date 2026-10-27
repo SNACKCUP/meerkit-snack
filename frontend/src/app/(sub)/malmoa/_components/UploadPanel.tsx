@@ -77,25 +77,25 @@ export function UploadPanel() {
           onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
           onDragLeave={() => setDrag(false)}
           onDrop={onDrop}
-          className={cn("grid justify-items-center gap-3 border-2 border-dashed px-4 py-8 text-center", drag ? "border-(--mk-mint) bg-muted" : "border-border bg-(--mk-px-edge)")}
+          className={cn("w98-in grid justify-items-center gap-3 border-2 border-dashed px-4 py-8 text-center", drag ? "border-[#000080] bg-[#e0e0ff]" : "border-transparent bg-white")}
         >
-          <PixelIcon name="upload" size={40} className="text-(--mk-sky)" />
+          <PixelIcon name="upload" size={40} className="text-[#000080]" />
           {file ? (
-            <p className="font-pixel text-lg break-all">{file.name} <span className="text-muted-foreground">· {formatBytes(file.size)}</span></p>
+            <p className="font-pixel text-lg break-all">{file.name} <span className="text-[#404040]">· {formatBytes(file.size)}</span></p>
           ) : (
             <>
               <p className="font-pixel text-lg">파일을 여기로 끌어다 놓으세요</p>
-              <p className="text-sm text-muted-foreground">음성 MP3 · WAV · M4A · WEBM / 사진 JPG · PNG · HEIC · 최대 {MAX_MB}MB</p>
+              <p className="text-sm text-[#404040]">음성 MP3 · WAV · M4A · WEBM / 사진 JPG · PNG · HEIC · 최대 {MAX_MB}MB</p>
             </>
           )}
           <input ref={fileRef} type="file" className="sr-only" aria-label="파일 선택" accept={[...AUDIO_EXT, ...IMAGE_EXT].join(",")} onChange={(e) => pick(e.target.files?.[0])} />
           <PxButton size="sm" variant="ghost" onClick={() => fileRef.current?.click()}>파일 선택</PxButton>
         </div>
-        {error ? <p role="alert" className="border-2 border-(--mk-pink) bg-muted p-3 text-sm">{error}</p> : null}
+        {error ? <p role="alert" className="w98-flat bg-[#ffffe1] text-[#b00000] p-3 text-sm">{error}</p> : null}
         <input ref={photoRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-label="화이트보드 사진 찍기" onChange={(e) => pick(e.target.files?.[0])} />
         <PxButton variant="ghost" onClick={() => photoRef.current?.click()}><PixelIcon name="camera" size={18} />화이트보드 사진 찍기 · 올리기</PxButton>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">2시간 분량의 회의 녹음도 처리할 수 있습니다.</p>
+          <p className="text-sm text-[#404040]">2시간 분량의 회의 녹음도 처리할 수 있습니다.</p>
           <PxButton variant="gold" disabled={!file || sending} onClick={() => void submit()}>{isImage ? "올리고 글자 읽기" : "업로드하고 텍스트로 변환"}</PxButton>
         </div>
       </div>

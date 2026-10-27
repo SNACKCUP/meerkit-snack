@@ -35,10 +35,14 @@ export default function MeetingResult() {
   if (!hydrated) return <div className="h-[60vh]" aria-busy />;
   if (!meeting) {
     return (
-      <section className="mx-auto grid max-w-xl justify-items-center gap-4 px-5 py-16 text-center">
-        <h1 className="font-pixel text-3xl">회의를 찾을 수 없어요</h1>
-        <p className="text-muted-foreground">없어졌거나 주소가 잘못되었을 수 있습니다.</p>
-        <Link href="/malmoa/meetings" className={pxButtonClass("mint", "lg")}>회의 목록으로</Link>
+      <section className="mx-auto grid max-w-md px-5 py-16">
+        <PxCard title="오류">
+          <div className="grid gap-4">
+            <h1 className="font-pixel text-xl">회의를 찾을 수 없어요</h1>
+            <p className="text-sm">없어졌거나 주소가 잘못되었을 수 있습니다.</p>
+            <div className="flex justify-end"><Link href="/malmoa/meetings" className={pxButtonClass("mint", "md")}>회의 목록으로</Link></div>
+          </div>
+        </PxCard>
       </section>
     );
   }
@@ -51,9 +55,9 @@ export default function MeetingResult() {
   return (
     <div className="mx-auto grid max-w-4xl gap-6 px-5 py-10">
       <div className="grid gap-2" data-rise>
-        <Link href="/malmoa/meetings" className="font-pixel w-fit text-(--mk-gold) underline underline-offset-4">◀ 회의 목록</Link>
-        <h1 className="font-pixel text-3xl break-all sm:text-4xl">{meeting.fileName}</h1>
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+        <Link href="/malmoa/meetings" className="mp-title font-pixel w-fit underline underline-offset-4">◀ 회의 목록</Link>
+        <h1 className="mp-title font-pixel text-3xl break-all sm:text-4xl">{meeting.fileName}</h1>
+        <div className="mp-title flex flex-wrap items-center gap-3 text-sm">
           <StatusBadge meeting={meeting} />
           {[formatWhen(meeting.createdAt), formatDuration(meeting.durationSec), formatBytes(meeting.sizeBytes)].filter(Boolean).join(" · ")}
         </div>
@@ -63,7 +67,7 @@ export default function MeetingResult() {
         <PxCard title="처리 중" data-rise>
           <div className="grid gap-2">
             <PxBar value={meeting.progress ?? 0} tone="sky" label="처리 진행률" />
-            <p className="text-sm text-muted-foreground">{meeting.stage ?? "처리 중"} · {meeting.progress ?? 0}% — 이 화면을 벗어나도 계속됩니다.</p>
+            <p className="text-sm text-[#404040]">{meeting.stage ?? "처리 중"} · {meeting.progress ?? 0}% — 이 화면을 벗어나도 계속됩니다.</p>
           </div>
         </PxCard>
       ) : null}
@@ -84,7 +88,7 @@ export default function MeetingResult() {
                 role="tab"
                 aria-selected={tab === k}
                 onClick={() => setTab(k)}
-                className={cn("font-pixel border-2 border-(--mk-px-edge) px-4 py-2 text-lg", tab === k ? "bg-(--mk-gold) text-(--mk-ink)" : "bg-card text-foreground")}
+                className={cn("font-pixel w98-out px-4 py-1.5 text-base text-black", tab === k && "relative z-10 -mb-px bg-white font-bold")}
               >
                 {label}
               </button>
@@ -96,10 +100,10 @@ export default function MeetingResult() {
               <PxCard title="AI 회의록" tone="paper" action={doc.edited ? <PxBadge tone="sky">수정됨</PxBadge> : undefined}>
                 {editing ? (
                   <div className="grid gap-3">
-                    <textarea value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="회의록 편집" rows={20} className="w-full border-2 border-(--mk-px-edge) bg-white p-3 font-mono text-sm outline-none focus-visible:border-(--mk-sky)" />
+                    <textarea value={draft} onChange={(e) => setDraft(e.target.value)} aria-label="회의록 편집" rows={20} className="w98-in w-full bg-white p-3 font-mono text-sm text-black outline-none" />
                     <div className="flex gap-3">
                       <PxButton onClick={() => { save(meeting.id, draft); setEditing(false); }}>저장</PxButton>
-                      <PxButton variant="ghost" className="text-(--mk-ink)" onClick={() => setEditing(false)}>취소</PxButton>
+                      <PxButton variant="ghost" className="text-black" onClick={() => setEditing(false)}>취소</PxButton>
                     </div>
                   </div>
                 ) : (
@@ -120,8 +124,8 @@ export default function MeetingResult() {
               <PxCard title="AI 회의록">
                 <div className="grid justify-items-start gap-3">
                   <p>원문에서 논의·결정·할 일을 8개 항목으로 정리합니다. 변환된 텍스트만 AI로 전송되며, 음성은 보내지 않습니다.</p>
-                  <PxButton disabled={active} onClick={() => generate(meeting.id)}><PixelIcon name="bolt" size={18} />AI 회의록 만들기 (+30 EXP)</PxButton>
-                  <p className="text-sm text-muted-foreground">지금은 화면용 목 데이터로 작성됩니다. API 없이 쓰려면 ‘변환 원문’ 탭의 “회의록 요청문과 함께 복사”를 쓰세요.</p>
+                  <PxButton disabled={active} onClick={() => generate(meeting.id)}><PixelIcon name="bolt" size={18} />AI 회의록 만들기</PxButton>
+                  <p className="text-sm text-[#404040]">지금은 화면용 목 데이터로 작성됩니다. API 없이 쓰려면 ‘변환 원문’ 탭의 “회의록 요청문과 함께 복사”를 쓰세요.</p>
                 </div>
               </PxCard>
             )
@@ -138,7 +142,7 @@ export default function MeetingResult() {
                 <ul className="grid gap-2">
                   {segs.map((s, i) => (
                     <li key={i} className="flex flex-wrap items-baseline gap-2">
-                      {!image ? <span className="font-pixel text-sm text-(--mk-sky)">[{formatClock(s.start)}]</span> : null}
+                      {!image ? <span className="font-pixel text-sm text-[#000080]">[{formatClock(s.start)}]</span> : null}
                       <span>{s.text}</span>
                       {s.confidence !== undefined && s.confidence < LOW_CONFIDENCE ? <PxBadge tone="pink">확인 필요</PxBadge> : null}
                     </li>

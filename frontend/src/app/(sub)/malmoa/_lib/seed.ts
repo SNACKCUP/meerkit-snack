@@ -1,5 +1,5 @@
 import { minutesTemplate } from "./sample";
-import type { Meeting, MinutesDoc, XpEntry } from "./types";
+import type { Meeting, MinutesDoc } from "./types";
 
 const ago = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
 
@@ -16,15 +16,6 @@ export function seedMeetings(): Meeting[] {
     done("seed-1", "말모아_녹음_예시.webm", "recording", 60 * 52, 547_000, 70),
   ];
 }
-
-export function seedXpLog(): XpEntry[] {
-  return [
-    { id: "seed-x2", at: ago(60 * 30), amount: 35, reason: "회의 변환 완료" },
-    { id: "seed-x1", at: ago(60 * 52), amount: 25, reason: "회의 변환 완료" },
-  ];
-}
-
-export const SEED_XP = 60;
 
 export function seedMinutes(): Record<string, MinutesDoc> {
   return { "seed-2": { markdown: minutesTemplate("주간 스프린트 회의.m4a"), generatedAt: ago(60 * 29), model: "데모 모델", edited: false } };

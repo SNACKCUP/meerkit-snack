@@ -13,12 +13,12 @@ export function MeetingRow({ meeting: m }: { meeting: Meeting }) {
   const retry = useMalmoa((s) => s.retry);
   return (
     <li className="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0">
-      <span className="grid size-10 shrink-0 place-items-center border-2 border-border bg-muted text-(--mk-sky)">
+      <span className="grid size-10 shrink-0 place-items-center w98-out text-black">
         <PixelIcon name={m.source === "image" ? "camera" : "mic"} size={20} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">{m.fileName}</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-[#404040]">
           {[formatWhen(m.createdAt), formatDuration(m.durationSec), formatBytes(m.sizeBytes)].filter(Boolean).join(" · ")}
           {m.stage ? ` · ${m.stage}` : ""}
         </p>
