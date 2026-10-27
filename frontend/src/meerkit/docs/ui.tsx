@@ -77,7 +77,7 @@ function CopyButton({ text }: { text: string }) {
 export function CodeBlock({ code, title }: { code: string; title?: string }) {
   const text = code.replace(/^\n|\n$/g, "");
   return (
-    <div className="overflow-hidden rounded-2xl bg-primary text-[#e8e9ef]">
+    <div className="overflow-hidden rounded-2xl bg-[#12141a] text-[#e8e9ef] dark:border dark:border-white/10">
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
         <span className="font-mono text-xs text-white/50">{title ?? ""}</span>
         <CopyButton text={text} />
@@ -100,7 +100,7 @@ export function PkgTabs({ command }: { command: string }) {
   const runner = managers.find(([name]) => name === active)![1];
   const text = command.replace(/^npx/, runner);
   return (
-    <div className="overflow-hidden rounded-2xl bg-primary text-[#e8e9ef]">
+    <div className="overflow-hidden rounded-2xl bg-[#12141a] text-[#e8e9ef] dark:border dark:border-white/10">
       <div className="flex items-center justify-between border-b border-white/10 px-3 py-2">
         <div className="flex gap-1">
           {managers.map(([name]) => (

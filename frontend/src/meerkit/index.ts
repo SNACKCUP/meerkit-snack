@@ -37,3 +37,5 @@ export { StatusScreen } from "./status/StatusScreen";
 export { ProfileImageField } from "./auth/components/ProfileImageField";
 export { PhoneInput, PhoneInputSplit } from "./phone";
 export { ForgotIdForm } from "./auth/components/ForgotIdForm";
+export { ThemeToggle } from "./theme/ThemeToggle";
+export { themeInitScript } from "./theme/theme";

@@ -2,11 +2,13 @@ import type { ComponentType } from "react";
 
 import { AuthDialogDoc, LoginFormDoc, MemberTableDoc, RoleSelectDoc, RouteGuardsDoc, SignupFormDoc, UserAvatarDoc, UserMenuDoc } from "./components";
 import { GuideAddRole, GuideCallApi, GuideProtectPage, Security } from "./guides";
-import { ApiReference, Authentication, DataModel, Roles } from "./core";
+import { Authentication, DataModel, Roles } from "./core";
 import { Deployment, Installation, Introduction, ProjectStructure, Theming } from "./getting-started";
 import { LoginLockoutDoc, MemberDirectoryDoc, PasswordResetDoc, ProfileDoc, TermsAgreementDoc } from "./flows";
 import { VoiceDoc } from "./voice";
 import { LoadingDoc } from "./loading";
+import { ApiOverviewDoc, ApiSpecPage } from "./api-spec";
+import { ComponentsListDoc } from "./components-list";
 import { DateDoc } from "./date";
 import { ProfileImageDoc } from "./profile-image";
 import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, NicknameDoc, RoleManagerDoc } from "./extras";
@@ -24,7 +26,11 @@ export const docContent: Record<string, ComponentType> = {
   authentication: Authentication,
   roles: Roles,
   "data-model": DataModel,
-  "api-reference": ApiReference,
+  "api-overview": ApiOverviewDoc,
+  "api-health": () => <ApiSpecPage tag="health" />,
+  "api-auth": () => <ApiSpecPage tag="auth" />,
+  "api-users-me": () => <ApiSpecPage tag="users (me)" />,
+  "api-users-admin": () => <ApiSpecPage tag="users (admin)" />,
   "login-lockout": LoginLockoutDoc,
   security: Security,
   "guide-protect-page": GuideProtectPage,
@@ -36,6 +42,7 @@ export const docContent: Record<string, ComponentType> = {
   "address-field": AddressFieldDoc,
   "file-dropzone": FileDropzoneDoc,
   loading: LoadingDoc,
+  components: ComponentsListDoc,
   date: DateDoc,
   "profile-image": ProfileImageDoc,
   voice: VoiceDoc,

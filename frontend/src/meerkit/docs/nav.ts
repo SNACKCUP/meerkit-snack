@@ -38,7 +38,6 @@ export const docGroups: DocGroup[] = [
       { slug: "authentication", title: "Authentication", description: "회원가입, 로그인, 토큰 흐름과 보안 규칙을 설명합니다." },
       { slug: "roles", title: "Roles & Permissions", description: "역할 4종과 CRUD 권한, 가드 사용법을 설명합니다." },
       { slug: "data-model", title: "Data Model", description: "users, roles 테이블과 필드를 정리합니다." },
-      { slug: "api-reference", title: "API Reference", description: "백엔드 엔드포인트와 요청·응답 예시입니다." },
       { slug: "login-lockout", title: "Login Lockout", description: "n번 연속 실패하면 m분 동안 로그인을 잠그고, 새로고침해도 유지하는 방법입니다." },
       { slug: "security", title: "Security", description: "킷이 맡는 보안과 내 서비스가 직접 챙겨야 할 보안 체크리스트입니다." },
     ],
@@ -54,6 +53,7 @@ export const docGroups: DocGroup[] = [
   {
     label: "Components",
     items: [
+      { slug: "components", title: "Overview", description: "킷이 제공하는 모든 컴포넌트를 한눈에 봅니다." },
       { slug: "login-form", title: "Login Form", description: "아이디와 비밀번호로 로그인하는 폼입니다.", audience: "user" },
       { slug: "signup-form", title: "Signup Form", description: "아이디, 이름, 이메일, 비밀번호를 받는 가입 폼입니다.", audience: "user" },
       { slug: "email-verification", title: "Email Verification", description: "이메일 인증번호 받기·확인 버튼. 서비스에 따라 켜고 끌 수 있습니다.", audience: "user" },
@@ -84,6 +84,16 @@ export const docGroups: DocGroup[] = [
       { slug: "ai-prompt-input", title: "AI Prompt Input", description: "AI에게 질문하거나 코멘트를 남기는 입력 폼. 글 입력, 파일 첨부, 에이전트 선택, 보내기·중지를 한 덩어리로 묶었습니다." },
       { slug: "thinking-indicator", title: "Thinking Indicator", description: "AI가 답을 준비하는 동안 보여 주는 \"생각 중\" 애니메이션입니다." },
       { slug: "voice", title: "Voice", description: "마이크로 말하면 입력창에 글로 들어가고, 목소리 크기에 따라 컬러 파동이 일렁입니다." },
+    ],
+  },
+  {
+    label: "API",
+    items: [
+      { slug: "api-overview", title: "Overview", description: "백엔드 Swagger 명세를 옮긴 API 문서의 공통 규칙과 묶음 목록입니다." },
+      { slug: "api-health", title: "Health", description: "서버 상태 확인 API입니다." },
+      { slug: "api-auth", title: "Auth", description: "회원가입, 로그인, 토큰 재발급, 이메일 인증, 비밀번호 찾기·재설정 API입니다." },
+      { slug: "api-users-me", title: "Users · 내 정보", description: "내 정보 조회·수정, 비밀번호 변경, 탈퇴 API입니다." },
+      { slug: "api-users-admin", title: "Users · 관리자", description: "멤버 검색, 역할 변경, 활성/비활성, 삭제 API입니다 (MASTER 전용)." },
     ],
   },
   {
