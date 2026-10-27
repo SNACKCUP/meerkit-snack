@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,6 @@ interface Win {
   z: number;
 }
 
-const TASKBAR = 36;
 const KEY_STEP = 16;
 const query = "(min-width: 768px)";
 const subscribe = (cb: () => void) => {
@@ -44,7 +43,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), M
 // 바탕화면: 창을 끌어 옮기고, 최소화·최대화·닫기·크기 조절을 할 수 있다.
 // 좁은 화면(모바일)에서는 창을 위에서 아래로 쌓기만 하고 끌기는 끈다.
 // 위치·크기는 계속 바뀌는 값이라 style로 준다 (CLAUDE.md "인라인 스타일 금지"의 예외: 끌기 좌표).
-export function Desk({ items, className }: { items: DeskItem[]; className?: string }) {
+export function Desk({ items, className, areaClassName }: { items: DeskItem[]; className?: string; areaClassName?: string }) {
   const floating = useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false);
   // 바탕화면이 좁으면(1060px 미만) 창을 겹쳐 쌓고, 넓으면 정해 둔 자리에 펼친다. (이 화면은 브라우저 데이터를 기다린 뒤 그려지므로 서버 HTML과 어긋나지 않는다)
   const [wins, setWins] = useState<Record<string, Win>>(() => {
@@ -69,6 +68,25 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
   const zRef = useRef(items.length + 1);
   const deskRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ id: string; mode: "move" | "size"; sx: number; sy: number; ox: number; oy: number; ow: number; oh: number } | null>(null);
+
+  // 바탕화면 크기가 바뀌면(창 크기 조절, 화면 회전) 창이 밖으로 나가지 않게 다시 맞춘다
+  useEffect(() => {
+    const desk = deskRef.current;
+    if (!desk || !floating) return;
+    const fit = () =>
+      setWins((cur) =>
+        Object.fromEntries(
+          Object.entries(cur).map(([id, w]) => {
+            const h = w.h ?? desk.querySelector<HTMLElement>(`[data-win="${id}"]`)?.offsetHeight ?? 160;
+            const width = Math.min(w.w, desk.clientWidth);
+            return [id, { ...w, w: width, h: w.h === null ? null : Math.min(w.h, desk.clientHeight), x: clamp(w.x, 0, desk.clientWidth - width), y: clamp(w.y, 0, desk.clientHeight - h) }];
+          }),
+        ),
+      );
+    const ro = new ResizeObserver(fit);
+    ro.observe(desk);
+    return () => ro.disconnect();
+  }, [floating]);
 
   const patch = (id: string, p: Partial<Win>) => setWins((s) => ({ ...s, [id]: { ...s[id], ...p } }));
   const front = (id: string) => {
@@ -100,9 +118,11 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
     const dx = e.clientX - d.sx;
     const dy = e.clientY - d.sy;
     if (d.mode === "move") {
-      patch(d.id, { x: clamp(d.ox + dx, 80 - d.ow, desk.clientWidth - 80), y: clamp(d.oy + dy, 0, desk.clientHeight - TASKBAR - 28) });
+      patch(d.id, { x: clamp(d.ox + dx, 0, desk.clientWidth - d.ow), y: clamp(d.oy + dy, 0, desk.clientHeight - d.oh) });
     } else {
-      patch(d.id, { w: Math.max(item.minW ?? 260, d.ow + dx), h: Math.max(item.minH ?? 160, d.oh + dy) });
+      const minW = item.minW ?? 260;
+      const minH = item.minH ?? 160;
+      patch(d.id, { w: clamp(d.ow + dx, minW, desk.clientWidth - d.ox), h: clamp(d.oh + dy, minH, desk.clientHeight - d.oy) });
     }
   }
   const end = () => {
@@ -114,7 +134,10 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
     const d = { ArrowLeft: [-KEY_STEP, 0], ArrowRight: [KEY_STEP, 0], ArrowUp: [0, -KEY_STEP], ArrowDown: [0, KEY_STEP] }[e.key];
     if (!d) return;
     e.preventDefault();
-    patch(id, { x: w.x + d[0], y: Math.max(0, w.y + d[1]) });
+    const desk = deskRef.current;
+    const h = e.currentTarget.closest("section")?.offsetHeight ?? 0;
+    if (!desk) return;
+    patch(id, { x: clamp(w.x + d[0], 0, desk.clientWidth - w.w), y: clamp(w.y + d[1], 0, desk.clientHeight - h) });
   }
 
   const topbar = (it: DeskItem, w: Win) => {
@@ -157,7 +180,8 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
   }
 
   return (
-    <div ref={deskRef} className={cn("relative overflow-hidden", className)}>
+    <div className={className}>
+    <div ref={deskRef} className={cn("relative overflow-hidden", areaClassName)}>
       <ul className="absolute left-2 top-3 z-0 grid gap-4" aria-label="바탕화면 아이콘">
         {items.map((it) => (
           <li key={it.id}>
@@ -175,10 +199,11 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
         return (
           <section
             key={it.id}
+            data-win={it.id}
             aria-label={it.title}
             hidden={hidden}
             onPointerDownCapture={() => it.id !== topId && front(it.id)}
-            style={w.max ? { left: 0, top: 0, width: "100%", height: `calc(100% - ${TASKBAR}px)`, zIndex: w.z } : { left: w.x, top: w.y, width: w.w, height: w.h ?? undefined, zIndex: w.z }}
+            style={w.max ? { left: 0, top: 0, width: "100%", height: "100%", zIndex: w.z } : { left: w.x, top: w.y, width: w.w, height: w.h ?? undefined, zIndex: w.z }}
             className={cn("w98-out absolute flex flex-col p-[3px] text-black shadow-[2px_2px_0_0_rgba(0,0,0,0.45)]", hidden && "hidden")}
           >
             {topbar(it, w)}
@@ -197,7 +222,10 @@ export function Desk({ items, className }: { items: DeskItem[]; className?: stri
         );
       })}
 
-      <nav aria-label="작업 표시줄" className="w98-out absolute inset-x-0 bottom-0 z-[999] flex h-9 items-center gap-1 overflow-x-auto px-1">
+    </div>
+
+      {/* 작업 표시줄: 스크롤해도 화면 아래에 붙어 있다 (바탕화면이 화면에 보이는 동안) */}
+      <nav aria-label="작업 표시줄" className="w98-out sticky bottom-0 z-[999] flex h-9 items-center gap-1 overflow-x-auto px-1">
         {items.filter((it) => wins[it.id].open).map((it) => {
           const w = wins[it.id];
           const pressed = it.id === topId;

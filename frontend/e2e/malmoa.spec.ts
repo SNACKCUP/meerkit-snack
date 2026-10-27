@@ -95,10 +95,10 @@ test("녹음 화면: 창을 끌어 옮기고, 닫았다가 아이콘으로 다�
   const b = (await bar.boundingBox())!;
   await page.mouse.move(b.x + 60, b.y + 10);
   await page.mouse.down();
-  await page.mouse.move(b.x + 20, b.y + 80, { steps: 5 });
+  await page.mouse.move(b.x + 20, b.y - 60, { steps: 5 });
   await page.mouse.up();
   const after = await win.boundingBox();
-  expect(after!.y).toBeGreaterThan(before!.y + 40);
+  expect(after!.y).toBeLessThan(before!.y - 30);
 
   await page.getByRole("button", { name: "메모장 닫기" }).click();
   await expect(win).toBeHidden();
@@ -112,4 +112,32 @@ test("메모장: 녹음 중이면 녹음 시각이 찍힌다", async ({ page }) 
   await expect(page.getByRole("button", { name: "녹음 종료" })).toBeVisible();
   await page.getByRole("button", { name: "녹음 시각 넣기" }).click();
   await expect(page.getByRole("textbox", { name: "메모" })).toHaveValue(/\[녹음 \d\d:\d\d:\d\d\]/);
+});
+
+test("녹음 화면: 창은 바탕화면 밖으로 나가지 않고, 작업 표시줄은 화면 아래에 붙는다", async ({ page }) => {
+  await page.goto("/malmoa/home");
+  await page.getByRole("list", { name: "바탕화면 아이콘" }).waitFor();
+  const win = page.getByRole("region", { name: "녹음기" });
+  const desk = page.getByRole("list", { name: "바탕화면 아이콘" }).locator("..");
+  const b = (await win.locator("header").boundingBox())!;
+  await page.mouse.move(b.x + 80, b.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(2000, 2000, { steps: 8 });
+  await page.mouse.up();
+  const w = (await win.boundingBox())!;
+  const d = (await desk.boundingBox())!;
+  expect(w.x + w.width).toBeLessThanOrEqual(d.x + d.width + 1);
+  expect(w.y + w.height).toBeLessThanOrEqual(d.y + d.height + 1);
+  const bar = page.getByRole("navigation", { name: "작업 표시줄" });
+  expect(await bar.evaluate((el) => getComputedStyle(el).position)).toBe("sticky");
+});
+
+test("녹음 후 미리듣기 플레이어(기본 audio 컨트롤 아님)가 나온다", async ({ page }) => {
+  await page.goto("/malmoa/home");
+  await page.getByRole("button", { name: "녹음 시작" }).click();
+  await page.waitForTimeout(1500);
+  await page.getByRole("button", { name: "녹음 종료" }).click();
+  const player = page.getByRole("group", { name: "녹음 미리듣기" });
+  await expect(player.getByRole("button", { name: "재생" })).toBeVisible();
+  await expect(player.getByRole("slider", { name: /재생 위치/ })).toBeVisible();
 });

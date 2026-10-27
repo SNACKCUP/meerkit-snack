@@ -284,3 +284,24 @@
 @media (scripting: enabled) {
   .mp-root [data-rise]:not([data-in]) { opacity: 0; }
 }
+
+/* Windows 98 슬라이더(<input type="range">): 움푹 들어간 홈 + 튀어나온 손잡이 */
+.w98-range { appearance: none; -webkit-appearance: none; height: 20px; background: transparent; cursor: pointer; }
+.w98-range:focus-visible { outline: 1px dotted #000; outline-offset: 2px; }
+.w98-range::-webkit-slider-runnable-track {
+  height: 4px; background: #fff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, inset 2px 2px #0a0a0a, inset -2px -2px #dfdfdf;
+}
+.w98-range::-moz-range-track {
+  height: 4px; background: #fff;
+  box-shadow: inset 1px 1px #808080, inset -1px -1px #fff, inset 2px 2px #0a0a0a, inset -2px -2px #dfdfdf;
+}
+.w98-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 11px; height: 20px; margin-top: -8px; border: 0; border-radius: 0; background: #c0c0c0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+.w98-range::-moz-range-thumb {
+  width: 11px; height: 20px; border: 0; border-radius: 0; background: #c0c0c0;
+  box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+}
+.w98-range:disabled { opacity: 0.5; cursor: default; }

@@ -8,7 +8,7 @@ import { formatClock, recordingFileName } from "../_lib/format";
 import { useRecorderPrefs } from "../_lib/prefs";
 import { REC_ERROR_TEXT, useRecorder } from "../_lib/recorder";
 import { useMalmoa } from "../_lib/store";
-import { PixelIcon, PxBar, PxButton, PxPanel } from "./px";
+import { PixelIcon, PxAudio, PxBar, PxButton, PxPanel } from "./px";
 
 export function RecorderPanel({ bare }: { bare?: boolean } = {}) {
   const r = useRecorder();
@@ -104,7 +104,7 @@ export function RecorderPanel({ bare }: { bare?: boolean } = {}) {
 
         {r.state === "stopped" && r.recording ? (
           <div className="grid gap-3">
-            {url ? <audio controls src={url} className="w-full" aria-label="녹음 미리듣기" /> : null}
+            {url ? <PxAudio src={url} label="녹음 미리듣기" durationHint={r.recording.durationSec} /> : null}
             <div className="flex flex-wrap gap-3">
               <PxButton onClick={convert}><PixelIcon name="doc" size={18} />텍스트로 변환</PxButton>
               <PxButton variant="ghost" onClick={download}>파일 저장</PxButton>

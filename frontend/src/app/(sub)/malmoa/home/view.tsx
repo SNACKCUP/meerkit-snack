@@ -24,7 +24,7 @@ export default function HomePage() {
         <h1 className="mp-title font-pixel text-3xl">녹음</h1>
         <p className="mp-title mt-1 text-sm">창을 끌어 옮기고, 크기를 바꾸고, 닫았다가 왼쪽 아이콘으로 다시 열 수 있습니다.</p>
       </div>
-      <Desk items={ITEMS} className="md:h-[820px]" />
+      <Desk items={ITEMS} areaClassName="md:h-[790px]" />
     </div>
   );
 }
