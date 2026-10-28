@@ -105,7 +105,7 @@ export function HeroStage() {
   return (
     <div ref={stage} className="relative mx-auto h-[480px] w-full max-w-[600px]" aria-hidden>
       {/* 정돈된 요구사항 표 */}
-      <div data-card className="absolute left-1/2 top-[56px] -translate-x-1/2 rounded-[28px] border-[1.5px] border-[#111] bg-white p-4">
+      <div data-card className="absolute left-1/2 top-[56px] -translate-x-1/2 rounded-[28px] border-2 border-[#111] bg-white p-4 shadow-[6px_6px_0_#111]">
         <div className="flex h-9 items-center justify-between px-2">
           <span className="text-sm font-extrabold">요구사항정의서</span>
           <span className="text-[11px] text-[#6c6a62]">쇼핑몰 리뉴얼</span>

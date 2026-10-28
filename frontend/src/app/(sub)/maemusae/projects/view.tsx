@@ -34,7 +34,7 @@ export default function ProjectsPage() {
       {hasAny && (
         <div data-rise>
           <label htmlFor="project-search" className="sr-only">프로젝트 검색</label>
-          <Input id="project-search" value={q} placeholder="프로젝트 검색" onChange={(e) => setQ(e.target.value)} className="h-11 max-w-sm rounded-full border-[1.5px] border-[#111] bg-white px-5" />
+          <Input id="project-search" value={q} placeholder="프로젝트 검색" onChange={(e) => setQ(e.target.value)} className="h-11 max-w-sm rounded-full border-2 border-[#111] bg-white px-5 shadow-[3px_3px_0_#111]" />
         </div>
       )}
 
@@ -54,11 +54,11 @@ export default function ProjectsPage() {
             const st = DOC_STATUS[doc?.status ?? "empty"];
             return (
               <li key={p.id}>
-                <Link href={`/maemusae/projects/${p.id}`} className="group grid items-center gap-3 rounded-[24px] border-[1.5px] border-[#111] bg-white px-6 py-5 transition-transform hover:-translate-y-0.5 sm:grid-cols-[1.6fr_1.1fr_auto_auto]">
+                <Link href={`/maemusae/projects/${p.id}`} className="group grid items-center gap-3 rounded-[24px] border-2 border-[#111] bg-white px-6 py-5 shadow-[4px_4px_0_#111] transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#111] sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_11.5rem_6.5rem]">
                   <span className="text-[17px] font-semibold tracking-tight">{p.name}</span>
-                  <span className="text-sm text-[#6c6a62]">{fmtRange(p.startDate, p.endDate)}</span>
+                  <span className="text-sm tabular-nums text-[#6c6a62]">{fmtRange(p.startDate, p.endDate)}</span>
                   <span className="flex gap-2"><Pill tone={role === "ADMIN" ? "yellow" : "plain"}>{ROLE_LABEL[role]}</Pill><Pill tone={st.tone}>{st.label}</Pill></span>
-                  <span className="text-sm text-[#6c6a62]">멤버 {p.members.filter((m) => m.status === "active").length}명 <span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
+                  <span className="text-sm text-[#6c6a62] sm:text-right">멤버 {p.members.filter((m) => m.status === "active").length}명 <span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
                 </Link>
               </li>
             );

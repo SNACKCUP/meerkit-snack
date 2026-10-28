@@ -3,15 +3,15 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export const card = "rounded-[28px] border-[1.5px] border-[#111] bg-white p-6";
+export const card = "rounded-[24px] border-2 border-[#111] bg-white p-6 shadow-[5px_5px_0_#111]";
 export const pill = "inline-flex items-center whitespace-nowrap rounded-full border-[1.5px] border-[#111] px-3 py-1 text-xs font-medium";
 
-const btnBase = "inline-flex items-center justify-center gap-2 rounded-full border-[1.5px] border-[#111] font-semibold transition-transform enabled:hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-40";
+const btnBase = "inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#111] font-semibold shadow-[3px_3px_0_#111] transition-[transform,box-shadow] duration-150 enabled:hover:-translate-x-0.5 enabled:hover:-translate-y-0.5 enabled:hover:shadow-[5px_5px_0_#111] enabled:active:translate-x-0.5 enabled:active:translate-y-0.5 enabled:active:shadow-none disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none";
 const variants = {
   primary: "bg-[#ff5a14] text-white",
   dark: "bg-[#111] text-white",
   outline: "bg-white text-[#111]",
-  ghost: "border-transparent bg-transparent text-[#111] hover:bg-[#ebeae4]",
+  ghost: "border-transparent bg-transparent text-[#111] shadow-none enabled:hover:translate-x-0 enabled:hover:translate-y-0 enabled:hover:bg-[#ebeae4] enabled:hover:shadow-none",
 } as const;
 const sizes = { sm: "px-3.5 py-1.5 text-xs", md: "px-5 py-2.5 text-sm", lg: "px-7 py-3.5 text-[15px]" } as const;
 

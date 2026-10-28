@@ -36,14 +36,14 @@ export default function MembersPage() {
 
           <ul className={`${card} grid gap-0 divide-y divide-[#111]/15 p-0`} data-rise>
             {project.members.map((m) => (
-              <li key={m.id} className="grid items-center gap-3 px-6 py-4 sm:grid-cols-[1.4fr_1.2fr_auto_auto]">
+              <li key={m.id} className="grid items-center gap-3 px-6 py-4 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)_7rem_6rem]">
                 <span className="flex items-center gap-3">
                   <UserAvatar user={{ name: m.name, nickname: null, avatar_url: null }} size="sm" />
                   <span className="font-semibold">{m.name}</span>
                 </span>
                 <span className="text-sm text-[#6c6a62]">
                   {m.email}
-                  {m.status === "invited" && m.expiresAt && <span className="ml-2"><Pill tone="yellow">초대 대기 · {fmtDate(m.expiresAt)}까지</Pill></span>}
+                  {m.status === "invited" && m.expiresAt && <span className="mt-1 block"><Pill tone="yellow">초대 대기 · {fmtDate(m.expiresAt)}까지</Pill></span>}
                 </span>
                 <NativeSelect
                   aria-label={`${m.name} 권한`}
@@ -53,12 +53,12 @@ export default function MembersPage() {
                     if (!r.ok) toast.error(r.error);
                     else toast.success(`${m.name}님을 ${ROLE_LABEL[e.target.value as ProjectRole]}(으)로 바꿨어요.`);
                   }}
-                  className="w-28 rounded-full border-[1.5px] border-[#111]"
+                  className="w-28 rounded-full border-2 border-[#111]"
                 >
                   <option value="ADMIN">관리자</option>
                   <option value="MEMBER">일반</option>
                 </NativeSelect>
-                <Btn size="sm" variant="ghost" onClick={() => setRemoving(m)}>{m.status === "invited" ? "초대 취소" : "내보내기"}</Btn>
+                <Btn size="sm" variant="ghost" className="justify-self-end" onClick={() => setRemoving(m)}>{m.status === "invited" ? "초대 취소" : "내보내기"}</Btn>
               </li>
             ))}
           </ul>
