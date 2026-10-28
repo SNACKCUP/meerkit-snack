@@ -28,7 +28,8 @@ export default defineMeerkitConfig({
         required: true,
         href: "/privacy",
       },
-      { id: "marketing", label: "마케팅 정보 수신 동의", required: false },
+      // 마케팅 메일 기능이 생기면 주석을 풀어 다시 켭니다 (백엔드 terms 표의 marketing 행은 남아 있음)
+      // { id: "marketing", label: "마케팅 정보 수신 동의", required: false },
     ],
   },
 
