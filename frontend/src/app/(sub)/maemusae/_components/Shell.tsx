@@ -16,6 +16,8 @@ import { Logo } from "./Logo";
 
 const NAV = [
   { href: "/maemusae/about", label: "소개" },
+  { href: "/maemusae/guide", label: "가이드" },
+  { href: "/maemusae/pricing", label: "요금제" },
   { href: "/maemusae/projects", label: "프로젝트" },
 ];
 
