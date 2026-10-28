@@ -196,6 +196,29 @@ def verify_email_code(db: Session, email: str, code: str) -> str:
     return create_email_verification_token(row.id, email)
 
 
+def issue_verified_email_proof(db: Session, email: str) -> str:
+    """서비스가 다른 방법(예: 초대 링크 토큰)으로 메일함 소유를 이미 확인한 이메일에 가입 증표를 줍니다.
+
+    인증번호 확인(verify_email_code)과 같은 "확인됨" 기록을 남기고 같은 1회용 증표를 돌려주므로,
+    가입(signup)·만료·정리 명령은 그대로 동작합니다. HTTP로 열지 말고, 메일함 소유를 확인한 서비스 코드에서만 부르세요.
+    """
+    email = email.strip().lower()
+    if repository.get_by_email(db, email):
+        raise AuthError("EMAIL_TAKEN", "이미 가입된 이메일입니다.")
+    now = _now()
+    row = EmailVerification(
+        email=email,
+        code_hash=hash_secret(generate_token()),  # 입력할 번호가 없으므로 아무도 모르는 값
+        expires_at=now,
+        verified_at=now,
+        created_at=now,
+    )
+    auth_repository.add(db, row)
+    db.commit()
+    logger.info("확인된 이메일 증표 발급 verification_id=%s", row.id)
+    return create_email_verification_token(row.id, email)
+
+
 def consume_email_verification(db: Session, token: str | None, email: str) -> None:
     """가입할 때 증표를 확인하고 사용 처리합니다. commit은 가입과 함께 합니다."""
     decoded = decode_email_verification_token(token) if token else None
