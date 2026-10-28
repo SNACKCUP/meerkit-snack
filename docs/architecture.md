@@ -156,7 +156,7 @@ backend/
 | 항목 | 규칙 |
 |---|---|
 | 역할 | `MASTER`(1) / `OWNER`(2) / `VIEWER`(3) / `WRITER`(4). 한 사람이 여러 역할을 가질 수 있음(`user_roles`). 가입하면 `VIEWER`. 역할별 세부 권한은 아직 없음 |
-| 관리자 | `permissions/roles.py`의 `ADMIN_ROLE = "MASTER"`. 관리자 API는 `require_admin`으로 검사 |
+| 관리자 | `permissions/roles.py`의 `ADMIN_ROLE = "MASTER"`. 관리자 API는 `require_admin`으로 검사. 서비스 전체 관리자만 뜻하며, 서브 서비스 안 리소스 단위 권한(예: 매무새 프로젝트 관리자/일반)은 서비스가 자기 테이블로 정함. MASTER는 그런 리소스를 보기만 함 |
 | 가입 | 이메일 인증(`/auth/email/send-code` → `/auth/email/verify-code` → 증표) + 필수 약관(`terms`, `privacy`) 동의. 동의 기록은 `user_term_agreements`(약관 버전별) |
 | 인증번호 | 6자리, 10분, 5회까지. DB에는 HMAC 해시만. 같은 이메일 60초 간격·하루 10회 |
 | 비밀번호 찾기 | 가입 여부와 관계없이 항상 같은 응답(202). 링크 토큰은 해시 저장, 30분, 한 번만, 새 링크를 보내면 이전 링크 무효 |
