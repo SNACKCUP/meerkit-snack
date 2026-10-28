@@ -6,11 +6,15 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/meerkit";
+import { cn } from "@/lib/utils";
 
 import { ProjectFormDialog } from "../_components/dialogs";
 import { Btn, PageHead, Pill, card, fmtRange } from "../_components/ui";
 import { DOC_STATUS, ROLE_LABEL } from "../_lib/labels";
 import { roleOf, useCurrentUser, useMaemusae } from "../_lib/store";
+
+const STATUS_BAND = { plain: "bg-[#e3dfd1]", yellow: "bg-[#f2f69a]", dark: "bg-[#ff5a14]", orange: "bg-[#ff5a14]" } as const;
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -47,22 +51,44 @@ export default function ProjectsPage() {
       ) : mine.length === 0 ? (
         <p className="py-10 text-center text-sm text-[#6c6a62]" data-rise>“{q}”에 맞는 프로젝트가 없어요.</p>
       ) : (
-        <ul className="grid gap-3" data-rise>
+        <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" data-rise>
           {mine.map((p) => {
             const role = roleOf(p, user.id)!;
-            const doc = docs[p.id];
-            const st = DOC_STATUS[doc?.status ?? "empty"];
+            const st = DOC_STATUS[docs[p.id]?.status ?? "empty"];
+            const active = p.members.filter((m) => m.status === "active");
             return (
               <li key={p.id}>
-                <Link href={`/maemusae/projects/${p.id}`} className="group grid items-center gap-3 rounded-[24px] border-2 border-[#111] bg-white px-6 py-5 shadow-[4px_4px_0_#111] transition-[transform,box-shadow] duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#111] sm:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_11.5rem_6.5rem]">
-                  <span className="text-[17px] font-semibold tracking-tight">{p.name}</span>
-                  <span className="text-sm tabular-nums text-[#6c6a62]">{fmtRange(p.startDate, p.endDate)}</span>
-                  <span className="flex gap-2"><Pill tone={role === "ADMIN" ? "yellow" : "plain"}>{ROLE_LABEL[role]}</Pill><Pill tone={st.tone}>{st.label}</Pill></span>
-                  <span className="text-sm text-[#6c6a62] sm:text-right">멤버 {p.members.filter((m) => m.status === "active").length}명 <span className="ml-2 transition-transform group-hover:translate-x-1">→</span></span>
+                <Link href={`/maemusae/projects/${p.id}`} className="group flex h-full flex-col overflow-hidden rounded-[24px] border-2 border-[#111] bg-white shadow-[6px_6px_0_#111] transition-[transform,box-shadow] duration-150 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0_#111]">
+                  <div className={cn("flex items-center justify-between gap-2 border-b-2 border-[#111] px-5 py-3", STATUS_BAND[st.tone])}>
+                    <Pill tone={st.tone === "dark" ? "plain" : "dark"}>{st.label}</Pill>
+                    <Pill tone={role === "ADMIN" ? "orange" : "plain"}>{ROLE_LABEL[role]}</Pill>
+                  </div>
+                  <div className="grid flex-1 content-between gap-10 px-5 py-6">
+                    <h2 className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.04em]">{p.name}</h2>
+                    <p className="w-fit rounded-full bg-[#ebeae4] px-3 py-1 text-xs font-semibold tabular-nums text-[#55534c]">{fmtRange(p.startDate, p.endDate)}</p>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 border-t-2 border-dashed border-[#111] px-5 py-4">
+                    <span className="flex items-center gap-3">
+                      <span className="flex -space-x-2">
+                        {active.slice(0, 4).map((m) => (
+                          <UserAvatar key={m.id} user={{ name: m.name, nickname: null, avatar_url: null }} size="sm" className="ring-2 ring-white" />
+                        ))}
+                      </span>
+                      <span className="text-xs font-semibold text-[#55534c]">멤버 {active.length}명</span>
+                    </span>
+                    <span aria-hidden className="grid size-9 place-items-center rounded-full border-2 border-[#111] bg-white text-base font-bold transition-colors group-hover:bg-[#ff5a14] group-hover:text-white">→</span>
+                  </div>
                 </Link>
               </li>
             );
           })}
+          <li>
+            <button type="button" onClick={() => setOpen(true)} className="grid h-full min-h-[220px] w-full place-items-center content-center gap-3 rounded-[24px] border-2 border-dashed border-[#111] bg-transparent p-6 text-center transition-colors hover:bg-[#f2f69a]">
+              <span aria-hidden className="grid size-12 place-items-center rounded-full border-2 border-[#111] bg-white text-2xl font-bold shadow-[3px_3px_0_#111]">+</span>
+              <span className="text-base font-extrabold">새 프로젝트</span>
+              <span className="text-xs text-[#6c6a62]">이름과 기간만 정하면 돼요</span>
+            </button>
+          </li>
         </ul>
       )}
 
