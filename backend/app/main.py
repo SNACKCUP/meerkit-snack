@@ -26,7 +26,13 @@ class ServiceUnavailableError(AppError):
 def create_app() -> FastAPI:
     setup_logging()
     check_startup()  # 운영(APP_ENV=production)에서 위험한 설정이면 시작하지 않음
-    app = FastAPI(title="MeerKit")
+    docs = settings.api_docs_enabled
+    app = FastAPI(
+        title="MeerKit",
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
+    )
     register_exception_handlers(app)
     # 나중에 추가한 미들웨어가 바깥을 감쌉니다. CORS 를 가장 바깥에 두어 500 응답에도 CORS 헤더가 붙게 합니다.
     app.add_middleware(RequestContextMiddleware)
@@ -41,6 +47,8 @@ def create_app() -> FastAPI:
 
     @app.get("/health", summary="살아 있는지 (DB 확인 없음)")
     def health():
+        if settings.app_commit:
+            return {"status": "ok", "commit": settings.app_commit[:7]}
         return {"status": "ok"}
 
     @app.get("/health/ready", summary="요청을 받을 준비가 됐는지 (DB 연결까지 확인)")
