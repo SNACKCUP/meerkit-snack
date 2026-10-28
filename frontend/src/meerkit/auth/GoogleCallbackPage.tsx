@@ -33,8 +33,16 @@ export function GoogleCallbackPage() {
       <StatusScreen
         code="!"
         title="구글 로그인에 실패했습니다"
-        description={serverError ? "구글 인증을 마치지 못했습니다. 잠시 후 다시 시도해 주세요." : "로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요."}
-        actions={<Button onClick={() => router.replace(meerkitConfig.routes.home)}>처음으로</Button>}
+        description={
+          serverError
+            ? "구글 인증을 마치지 못했습니다. 잠시 후 다시 시도해 주세요."
+            : "로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요."
+        }
+        actions={
+          <Button onClick={() => router.replace(meerkitConfig.routes.home)}>
+            처음으로
+          </Button>
+        }
       />
     );
   }

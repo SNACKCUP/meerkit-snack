@@ -1,6 +1,8 @@
 import userConfig from "../../meerkit.config";
 
-const githubUrl = process.env.NEXT_PUBLIC_GITHUB_URL ?? "https://github.com/sensibly00-glitch/meerkit";
+const githubUrl =
+  process.env.NEXT_PUBLIC_GITHUB_URL ??
+  "https://github.com/sensibly00-glitch/meerkit";
 
 export const meerkitConfig = {
   apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api",
@@ -16,7 +18,10 @@ export const meerkitConfig = {
   signup: {
     passwordConfirm: userConfig.signup?.passwordConfirm ?? false,
     optionalFields: userConfig.signup?.optionalFields ?? [],
-    name: { min: userConfig.signup?.name?.min ?? 2, max: userConfig.signup?.name?.max ?? 10 },
+    name: {
+      min: userConfig.signup?.name?.min ?? 2,
+      max: userConfig.signup?.name?.max ?? 10,
+    },
     phoneInput: userConfig.signup?.phoneInput ?? "single",
     terms: userConfig.signup?.terms ?? [],
     addressType: userConfig.signup?.addressType ?? "basic",
@@ -33,7 +38,10 @@ export const meerkitConfig = {
   ai: {
     playground: userConfig.ai?.playground ?? true,
     voice: {
-      colors: userConfig.ai?.voice?.colors && userConfig.ai.voice.colors.length >= 2 ? userConfig.ai.voice.colors : ["#60a5fa", "#a78bfa", "#f472b6", "#2dd4bf"],
+      colors:
+        userConfig.ai?.voice?.colors && userConfig.ai.voice.colors.length >= 2
+          ? userConfig.ai.voice.colors
+          : ["#60a5fa", "#a78bfa", "#f472b6", "#2dd4bf"],
     },
   },
   login: {

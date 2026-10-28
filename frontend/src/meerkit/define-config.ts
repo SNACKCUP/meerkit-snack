@@ -2,9 +2,23 @@
 export type ThemeMode = "meerkit" | "shadcn";
 
 /** 로딩 표시 스타일 9종 (Loader 참고) */
-export type LoaderVariant = "ring" | "dash" | "dots" | "bars" | "pulse" | "spokes" | "grid" | "progress" | "morph";
+export type LoaderVariant =
+  | "ring"
+  | "dash"
+  | "dots"
+  | "bars"
+  | "pulse"
+  | "spokes"
+  | "grid"
+  | "progress"
+  | "morph";
 
-export type SignupOptionalField = "nickname" | "phone" | "address" | "birth_date" | "gender";
+export type SignupOptionalField =
+  | "nickname"
+  | "phone"
+  | "address"
+  | "birth_date"
+  | "gender";
 
 /**
  * 주소 입력 방식.
