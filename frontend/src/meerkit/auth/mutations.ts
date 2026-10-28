@@ -5,7 +5,18 @@ import { toast } from "sonner";
 import { authApi } from "../api/auth";
 import { usersApi } from "../api/users";
 import { meerkitConfig } from "../config";
-import type { ChangePasswordInput, EmailCodeInput, ForgotIdInput, ForgotPasswordInput, LoginInput, ResetPasswordInput, SignupInput, UpdateProfileInput, VerifyEmailCodeInput, WithdrawInput } from "../types";
+import type {
+  ChangePasswordInput,
+  EmailCodeInput,
+  ForgotIdInput,
+  ForgotPasswordInput,
+  LoginInput,
+  ResetPasswordInput,
+  SignupInput,
+  UpdateProfileInput,
+  VerifyEmailCodeInput,
+  WithdrawInput,
+} from "../types";
 import { useAuthDialog } from "./dialog-store";
 import { useLockoutStore } from "./lockout";
 import { meKey } from "./queries";
@@ -30,7 +41,11 @@ export function useLogin() {
       if (status === 429 || status === 423) {
         // 서버가 이미 잠갔다면 서버가 알려 준 시간(Retry-After, 초)을 따른다
         const retry = Number(error.response.headers["retry-after"]);
-        lockFor(Number.isFinite(retry) && retry > 0 ? retry * 1000 : meerkitConfig.login.lockMinutes * 60_000);
+        lockFor(
+          Number.isFinite(retry) && retry > 0
+            ? retry * 1000
+            : meerkitConfig.login.lockMinutes * 60_000,
+        );
       } else if (status === 400 || status === 401) {
         recordFailure(); // 아이디·비밀번호가 틀린 경우만 센다
       }
@@ -38,7 +53,7 @@ export function useLogin() {
   });
 }
 
-// 구글 로그인: 서버가 인증을 시작하므로 브라우저를 서버 주소로 보낸다. 끝나면 /auth/google/callback 으로 돌아온다.
+// 구글 로그인: 서버가 인증을 시작하므로 브라우저를 서버 주소로 보낸다. 끝나면 /api/auth/google/callback 으로 돌아온다.
 export function useGoogleLogin() {
   return () => {
     window.location.href = authApi.googleLoginUrl();
@@ -50,7 +65,10 @@ export function useSignup() {
   return useMutation({
     mutationFn: async (input: SignupInput) => {
       await authApi.signup(input);
-      await login.mutateAsync({ user_id: input.user_id, password: input.password });
+      await login.mutateAsync({
+        user_id: input.user_id,
+        password: input.password,
+      });
     },
   });
 }
@@ -69,28 +87,40 @@ export function useLogout() {
 }
 
 export function useForgotId() {
-  return useMutation({ mutationFn: (input: ForgotIdInput) => authApi.forgotId(input) });
+  return useMutation({
+    mutationFn: (input: ForgotIdInput) => authApi.forgotId(input),
+  });
 }
 
 export function useForgotPassword() {
-  return useMutation({ mutationFn: (input: ForgotPasswordInput) => authApi.forgotPassword(input) });
+  return useMutation({
+    mutationFn: (input: ForgotPasswordInput) => authApi.forgotPassword(input),
+  });
 }
 
 // 아이디 중복 확인 (버튼을 누를 때만 부르므로 mutation 으로 둔다)
 export function useCheckUserId() {
-  return useMutation({ mutationFn: (userId: string) => authApi.checkUserId(userId) });
+  return useMutation({
+    mutationFn: (userId: string) => authApi.checkUserId(userId),
+  });
 }
 
 export function useSendEmailCode() {
-  return useMutation({ mutationFn: (input: EmailCodeInput) => authApi.sendEmailCode(input) });
+  return useMutation({
+    mutationFn: (input: EmailCodeInput) => authApi.sendEmailCode(input),
+  });
 }
 
 export function useVerifyEmailCode() {
-  return useMutation({ mutationFn: (input: VerifyEmailCodeInput) => authApi.verifyEmailCode(input) });
+  return useMutation({
+    mutationFn: (input: VerifyEmailCodeInput) => authApi.verifyEmailCode(input),
+  });
 }
 
 export function useResetPassword() {
-  return useMutation({ mutationFn: (input: ResetPasswordInput) => authApi.resetPassword(input) });
+  return useMutation({
+    mutationFn: (input: ResetPasswordInput) => authApi.resetPassword(input),
+  });
 }
 
 export function useUpdateProfile() {
