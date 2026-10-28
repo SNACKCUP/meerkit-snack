@@ -105,7 +105,7 @@ backend/
 │   │   └── cleanup.py     # 개인정보를 지운 회원의 소셜 연결 삭제
 │   ├── mail/              # 메일 발송 (킷). 어디서든 send_mail 하나로 사용
 │   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
-│   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
+│   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML) + register_template(서비스 양식 등록)
 │   │   └── backends.py    # console / smtp / fake (MAIL_BACKEND)
 │   ├── storage/           # 파일 저장소 (킷, core만 import). 설정 순서는 storage-setup.md
 │   │   ├── config.py      # STORAGE_* 설정 + 운영 검사(memory 금지, localhost 주소 금지)
@@ -163,7 +163,7 @@ backend/
 | 탈퇴 | `is_active=false` + `deactivated_at` 기록(관리자 삭제도 같음). 아이디·이메일은 계속 점유 |
 | 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `uv run python -m app.users.purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록(행은 남김). 이어서 `uv run python -m app.auth.cleanup`이 탈퇴 회원의 재설정 토큰과 `EMAIL_VERIFICATION_RETENTION_DAYS`(7일) 지난 인증번호 기록을, `uv run python -m app.social.cleanup`이 소셜 연결을 지움. 모두 `--dry-run` 지원, `.github/workflows/account-purge.yml`이 매일 차례로 실행 |
 | 소셜 로그인 | 서버가 시작하고 끝냄: `GET /auth/{provider}/login` → 공급자 → `GET /auth/{provider}/callback`이 리프레시 쿠키를 심고 프론트 `/auth/{provider}/callback`으로 302 (실패는 `?error=코드`). 연결은 `social_accounts`(`provider`+`provider_user_id` 유일). 소셜로만 가입한 계정은 `users.has_password=false`라 아이디 로그인·비밀번호 변경·탈퇴 확인이 막히고, 비밀번호 찾기로 비밀번호를 만들면 풀림. 명세는 [social-oauth-setup.md](social-oauth-setup.md) |
-| 메일 | `app.mail.send_mail`만 사용. 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 실제 발송 설정(도메인·DNS·키)은 [mail-setup.md](mail-setup.md) |
+| 메일 | `app.mail.send_mail`만 사용. 서비스 메일 양식은 킷 파일에 넣지 않고 `app.mail.register_template("접두어_이름", 만드는함수)`로 앱 시작 때 등록(같은 이름은 에러). 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 실제 발송 설정(도메인·DNS·키)은 [mail-setup.md](mail-setup.md) |
 
 ### 인증·회원 API (`/api` 아래)
 

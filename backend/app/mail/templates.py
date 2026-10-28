@@ -1,5 +1,9 @@
-"""메일 템플릿. 이름 → (제목, 본문) 을 만드는 함수입니다. 본문은 텍스트와 HTML 두 가지를 만듭니다."""
+"""메일 템플릿. 이름 → (제목, 본문) 을 만드는 함수입니다. 본문은 텍스트와 HTML 두 가지를 만듭니다.
 
+서비스(서브 서비스) 메일 양식은 이 파일에 넣지 않고 register_template()로 등록합니다.
+"""
+
+import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from html import escape
@@ -59,10 +63,28 @@ def _password_reset(data: dict[str, Any]) -> Rendered:
     )
 
 
-TEMPLATES: dict[str, Callable[[dict[str, Any]], Rendered]] = {
+Builder = Callable[[dict[str, Any]], Rendered]
+
+TEMPLATES: dict[str, Builder] = {
     "email_code": _email_code,
     "password_reset": _password_reset,
 }
+
+_NAME_PATTERN = re.compile(r"[a-z][a-z0-9_]{0,63}")
+
+
+def register_template(name: str, builder: Builder) -> None:
+    """서비스가 자기 메일 양식을 등록합니다. 킷은 서비스 양식의 내용을 모릅니다.
+
+    이름은 영문 소문자로 시작하고 소문자·숫자·_만 씁니다. 서비스 접두어를 붙여 주세요 (예: mms_invite).
+    같은 이름이 이미 있으면(킷 기본 양식 포함) ValueError를 던져 서로 덮어쓰지 않게 합니다.
+    앱 시작 때(서비스 모듈을 import 할 때) 한 번 부릅니다.
+    """
+    if not _NAME_PATTERN.fullmatch(name):
+        raise ValueError(f"메일 템플릿 이름 형식이 맞지 않습니다: {name!r}")
+    if name in TEMPLATES:
+        raise ValueError(f"이미 등록된 메일 템플릿입니다: {name}")
+    TEMPLATES[name] = builder
 
 
 def render(template: str, data: dict[str, Any]) -> Rendered:
