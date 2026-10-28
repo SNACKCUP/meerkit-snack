@@ -28,8 +28,15 @@ def _api_key(provider: str) -> str:
     return ""
 
 
-def get_chat_model() -> BaseChatModel:
+# 사용자가 직접 키를 넣어 쓸 수 있는 공급자. 다른 공급자를 열려면 여기에 더하고 위 안내(uv add ...)를 따릅니다.
+BYOK_PROVIDERS = {"openai"}
+
+
+def get_chat_model(*, api_key: str | None = None, model_name: str | None = None) -> BaseChatModel:
     """설정값(LLM_PROVIDER, LLM_MODEL, 키, 온도, 시간 제한)으로 모델을 만듭니다.
+
+    api_key 를 주면 서버 키 대신 그 키를 씁니다 (사용자가 입력한 키). 키는 저장하지 않고 로그에도 남기지 않습니다.
+    model_name 을 주면 LLM_MODEL 대신 그 모델을 씁니다 (허용 여부는 호출하는 쪽에서 검사).
 
     FastAPI 의존성으로도 쓸 수 있습니다: model = Depends(get_chat_model)
     키가 없거나 공급자 설정이 잘못되면 503 LLM_NOT_CONFIGURED (다른 기능은 그대로 동작).
@@ -39,12 +46,12 @@ def get_chat_model() -> BaseChatModel:
     provider = llm_settings.llm_provider
     if provider == "fake":
         return FakeChatModel()
-    key = _api_key(provider)
+    key = api_key or _api_key(provider)
     if not key:
         raise not_configured()
     try:
         return init_chat_model(
-            llm_settings.llm_model,
+            model_name or llm_settings.llm_model,
             model_provider=provider,
             api_key=key,
             temperature=llm_settings.llm_temperature,

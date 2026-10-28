@@ -72,6 +72,8 @@ export interface MeerkitUserConfig {
     variant?: LoaderVariant;
   };
   ai?: {
+    /** 웰컴 페이지의 AI 테스트(API 키 입력 + 질문 한 번). 기본 true. 쓰지 않으면 false */
+    playground?: boolean;
     voice?: {
       /** 음성 입력 파동 색(CSS 색, 2개 이상). 왼쪽에서 오른쪽으로 번지며 서로 섞인다. 기본: 파랑, 보라, 분홍, 청록 */
       colors?: string[];

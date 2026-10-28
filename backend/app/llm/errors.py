@@ -40,6 +40,28 @@ def input_too_long(limit: int) -> LLMInputTooLongError:
     )
 
 
+def unsupported_provider() -> LLMError:
+    e = LLMError("LLM_UNSUPPORTED_PROVIDER", "지원하지 않는 AI 공급자입니다.")
+    e.status_code = 400
+    return e
+
+
+def key_required() -> LLMError:
+    e = LLMError("LLM_KEY_REQUIRED", "API 키를 입력해 주세요.")
+    e.status_code = 400
+    return e
+
+
+def key_invalid() -> LLMError:
+    e = LLMError("LLM_KEY_INVALID", "API 키가 올바르지 않거나 사용할 수 없습니다. 키를 다시 확인해 주세요.")
+    e.status_code = 401
+    return e
+
+
+def key_quota_exceeded() -> LLMRateLimitedError:
+    return LLMRateLimitedError("LLM_QUOTA_EXCEEDED", "입력한 API 키의 사용 한도를 모두 썼습니다. 공급자 사이트에서 한도를 확인해 주세요.")
+
+
 def _names(exc: BaseException) -> set[str]:
     # 공급자 SDK 를 import 하지 않고 예외 클래스 이름으로 구분합니다 (openai·anthropic 모두 같은 이름을 씀)
     return {cls.__name__ for cls in type(exc).__mro__}

@@ -40,3 +40,6 @@ export { ForgotIdForm } from "./auth/components/ForgotIdForm";
 export { ThemeToggle } from "./theme/ThemeToggle";
 export { themeInitScript } from "./theme/theme";
 export { GoogleButton } from "./auth/components/GoogleButton";
+export { ApiKeyInput } from "./ai/ApiKeyInput";
+export { LlmPlayground } from "./ai/LlmPlayground";
+export { useLlmKeyStore } from "./ai/llm-key-store";
