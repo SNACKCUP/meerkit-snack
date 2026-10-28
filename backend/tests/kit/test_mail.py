@@ -1,7 +1,10 @@
 import logging
 
+import pytest
+
 from app.core.config import settings
-from app.mail import send_mail
+from app.mail import Rendered, register_template, send_mail
+from app.mail import templates as mail_templates
 
 
 def test_send_mail_renders_template_into_outbox(mail_outbox):
@@ -44,3 +47,38 @@ def test_console_backend_hides_body_outside_local(caplog, monkeypatch):
         send_mail("a@example.com", "email_code", {"code": "555111", "expire_minutes": 10})
     assert "a@example.com" in caplog.text
     assert "555111" not in caplog.text
+
+
+@pytest.fixture
+def restore_templates():
+    """테스트에서 등록한 양식을 끝나면 지웁니다 (등록 목록은 앱 전역)."""
+    before = dict(mail_templates.TEMPLATES)
+    yield
+    mail_templates.TEMPLATES.clear()
+    mail_templates.TEMPLATES.update(before)
+
+
+def _invite(data):
+    return Rendered(subject=f"{data['project']} 초대", text=data["link"], html=f"<p>{data['link']}</p>")
+
+
+def test_registered_template_is_sent_like_kit_templates(mail_outbox, restore_templates):
+    register_template("svc_invite", _invite)
+    assert send_mail("a@example.com", "svc_invite", {"project": "쇼핑몰", "link": "http://localhost/i/t"})
+    [message] = mail_outbox
+    assert message.subject == "쇼핑몰 초대"
+    assert message.template == "svc_invite"
+
+
+def test_duplicate_or_kit_name_cannot_be_overwritten(restore_templates):
+    register_template("svc_invite", _invite)
+    with pytest.raises(ValueError):
+        register_template("svc_invite", _invite)
+    with pytest.raises(ValueError):
+        register_template("email_code", _invite)
+
+
+@pytest.mark.parametrize("name", ["", "Invite", "1invite", "svc-invite", "svc invite"])
+def test_template_name_format_is_checked(name, restore_templates):
+    with pytest.raises(ValueError):
+        register_template(name, _invite)
