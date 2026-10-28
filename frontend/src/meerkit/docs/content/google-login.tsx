@@ -8,7 +8,7 @@ export function GoogleLoginDoc() {
   return (
     <>
       <P>
-        로그인 폼 아래에 <Ic>구글 계정으로 로그인하기</Ic> 버튼을 붙이는 옵션입니다. 구글 인증과 토큰 발급은 <strong>서버가 전부 처리</strong>하고,
+        로그인·가입 폼 아래에 <Ic>구글 계정으로 로그인하기</Ic>(가입 화면에서는 <Ic>구글 계정으로 가입하기</Ic>) 버튼을 붙이는 옵션입니다. 구글 인증과 토큰 발급은 <strong>서버가 전부 처리</strong>하고,
         프론트는 서버 주소로 이동했다가 돌아오는 화면만 맡습니다. 프론트에는 구글 클라이언트 ID나 비밀값이 필요 없습니다.
       </P>
       <H2>켜기</H2>
@@ -16,7 +16,7 @@ export function GoogleLoginDoc() {
         title="meerkit.config.ts"
         code={`login: {\n  social: { google: true }, // 기본 false\n},`}
       />
-      <P>켜면 로그인 창과 <Ic>AuthPanel</Ic>의 로그인 폼 아래에 버튼이 생깁니다. 끄면 버튼도, 돌아오는 주소(<Ic>/auth/google/callback</Ic>)도 없습니다.</P>
+      <P>켜면 로그인 창과 <Ic>AuthPanel</Ic>의 로그인·가입 폼 아래에 버튼이 생깁니다. 두 버튼은 같은 주소로 이동하며, 처음 온 구글 계정이면 서버가 계정을 만듭니다. 끄면 버튼도, 돌아오는 주소(<Ic>/auth/google/callback</Ic>)도 없습니다.</P>
       <H2>미리보기</H2>
       <Preview code={`<LoginForm onSubmit={login} onGoogle={() => (window.location.href = "/api/auth/google/login")} />`}>
         <div className="mx-auto w-full max-w-sm">

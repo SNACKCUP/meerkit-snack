@@ -53,6 +53,7 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword, onFindId }: AuthP
   return (
     <SignupForm
       onSubmit={signup.mutate}
+      onGoogle={meerkitConfig.login.social.google ? googleLogin : undefined}
       pending={signup.isPending}
       error={errorMessage(signup.error)}
       passwordConfirm={meerkitConfig.signup.passwordConfirm}

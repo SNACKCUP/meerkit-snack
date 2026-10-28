@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { GoogleButton } from "./GoogleButton";
+import { SocialLogin } from "./SocialLogin";
 import { formatRemaining, useRemainingLock } from "../lockout";
 import type { LoginInput } from "../../types";
 
@@ -87,16 +87,7 @@ export function LoginForm({ onSubmit, pending, error, lockedUntil = null, attemp
         {locked ? `잠김 ${formatRemaining(remaining)}` : pending ? "로그인 중…" : "로그인"}
       </Button>
 
-      {onGoogle && (
-        <>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground" role="separator">
-            <span className="h-px flex-1 bg-border" />
-            또는 소셜 로그인으로 시작하기
-            <span className="h-px flex-1 bg-border" />
-          </div>
-          <GoogleButton onClick={onGoogle} disabled={pending} />
-        </>
-      )}
+      {onGoogle && <SocialLogin onGoogle={onGoogle} disabled={pending} />}
     </form>
   );
 }

@@ -58,7 +58,7 @@ export const docGroups: DocGroup[] = [
       { slug: "signup-form", title: "Signup Form", description: "아이디, 이름, 이메일, 비밀번호를 받는 가입 폼입니다.", audience: "user" },
       { slug: "email-verification", title: "Email Verification", description: "이메일 인증번호 받기·확인 버튼. 서비스에 따라 켜고 끌 수 있습니다.", audience: "user" },
       { slug: "terms-agreement", title: "Terms Agreement", description: "가입 시 약관 동의를 받는 체크박스 영역과, 체크박스·라디오 컴포넌트입니다.", audience: "user" },
-      { slug: "google-login", title: "Google Login", description: "로그인 폼 아래에 구글 계정으로 로그인하는 버튼을 붙이는 옵션입니다.", audience: "user" },
+      { slug: "google-login", title: "Google Login", description: "로그인·가입 폼 아래에 구글 계정으로 시작하는 버튼을 붙이는 옵션입니다.", audience: "user" },
       { slug: "password-reset", title: "Password Reset", description: "이메일 링크로 비밀번호를 다시 정하는 비밀번호 찾기·재설정 화면입니다.", audience: "user" },
       { slug: "profile", title: "Profile & Password", description: "내 정보 수정과 비밀번호 변경 화면입니다.", audience: "user" },
       { slug: "nickname", title: "Nickname", description: "닉네임 입력, 자동 생성 버튼, 마이페이지에서의 닉네임 변경입니다.", audience: "user" },
