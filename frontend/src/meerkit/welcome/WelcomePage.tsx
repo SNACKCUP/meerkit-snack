@@ -8,6 +8,7 @@ import { UserMenu } from "../auth/components/UserMenu";
 import { useAuthDialog } from "../auth/dialog-store";
 import { useAuth } from "../auth/hooks";
 import { useLogout } from "../auth/mutations";
+import { LlmPlayground } from "../ai/LlmPlayground";
 import { LogoMark } from "../brand/LogoMark";
 import { meerkitConfig } from "../config";
 import { GhostCards } from "./GhostCards";
@@ -62,6 +63,11 @@ export function WelcomePage() {
             </div>
           )}
         </div>
+        {meerkitConfig.ai.playground && !isLoading && (
+          <div className="mk-rise w-full pt-4" style={delay(5)}>
+            <LlmPlayground className="mx-auto" />
+          </div>
+        )}
       </div>
     </main>
   );

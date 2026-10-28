@@ -84,6 +84,7 @@ export const docGroups: DocGroup[] = [
     items: [
       { slug: "ai-prompt-input", title: "AI Prompt Input", description: "AI에게 질문하거나 코멘트를 남기는 입력 폼. 글 입력, 파일 첨부, 에이전트 선택, 보내기·중지를 한 덩어리로 묶었습니다." },
       { slug: "thinking-indicator", title: "Thinking Indicator", description: "AI가 답을 준비하는 동안 보여 주는 \"생각 중\" 애니메이션입니다." },
+      { slug: "api-key-input", title: "API Key Input", description: "사용자가 자기 AI API 키를 넣는 입력 칸과, 웰컴 페이지의 AI 테스트(LlmPlayground)입니다. 로그인 안내와 토큰 사용량 표시를 포함합니다." },
       { slug: "voice", title: "Voice", description: "마이크로 말하면 입력창에 글로 들어가고, 목소리 크기에 따라 컬러 파동이 일렁입니다." },
     ],
   },
@@ -95,6 +96,7 @@ export const docGroups: DocGroup[] = [
       { slug: "api-auth", title: "Auth", description: "회원가입, 로그인, 토큰 재발급, 이메일 인증, 비밀번호 찾기·재설정 API입니다." },
       { slug: "api-users-me", title: "Users · 내 정보", description: "내 정보 조회·수정, 비밀번호 변경, 탈퇴 API입니다." },
       { slug: "api-users-admin", title: "Users · 관리자", description: "멤버 검색, 역할 변경, 활성/비활성, 삭제 API입니다 (MASTER 전용)." },
+      { slug: "api-llm", title: "LLM", description: "내 API 키로 AI에게 한 번 묻고 답과 토큰 사용량을 받는 API입니다 (로그인 필요)." },
     ],
   },
   {

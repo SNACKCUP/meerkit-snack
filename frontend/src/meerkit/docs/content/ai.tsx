@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { AiPromptInput, type AiAgent } from "../../ai/AiPromptInput";
+import { ApiKeyInput } from "../../ai/ApiKeyInput";
 import { ThinkingIndicator } from "../../ai/ThinkingIndicator";
 import { ORB_STATES, ThinkingOrb, type OrbState } from "../../ai/ThinkingOrb";
 import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
@@ -75,7 +76,7 @@ export function AiPromptInputDoc() {
     <>
       <DocLinks items={[links.component("textarea", "Textarea"), links.component("dropdown-menu", "Dropdown Menu"), links.component("button", "Button")]} />
       <Callout>
-        <strong>UI만 제공합니다.</strong> AI 호출과 응답 생성은 들어 있지 않습니다. 입력한 내용은 <Ic>onSubmit</Ic>으로 넘겨 줄 뿐이니, 실제 AI 연결(요청 보내기, 응답 받기·스트리밍)은 서비스에서 구현해 주세요. 미리보기의 응답 대기는 화면을 보여 주기 위한 데모입니다.
+        <strong>UI만 제공합니다.</strong> AI 호출과 응답 생성은 들어 있지 않습니다. 입력한 내용은 <Ic>onSubmit</Ic>으로 넘겨 줄 뿐이니, 실제 AI 연결(요청 보내기, 응답 받기·스트리밍)은 서비스에서 구현해 주세요. 미리보기의 응답 대기는 화면을 보여 주기 위한 데모입니다. 서버의 <Ic>/api/llm/chat</Ic>까지 이어 둔 예는 <Ic>API Key Input</Ic> 문서의 <Ic>LlmPlayground</Ic>를 참고하세요.
       </Callout>
 
       <P>
@@ -336,6 +337,91 @@ export function ThinkingIndicatorDoc() {
       </UL>
       <Badge variant="secondary">Tip</Badge>
       <P>작업이 오래 걸리는 경우(수십 초 이상)에는 문구만 돌리지 말고, 어떤 단계인지 알려 주는 문구(예: &quot;문서 3개를 읽는 중&quot;)를 서버에서 받아 <Ic>labels</Ic>로 넘기면 체감 시간이 줄어듭니다. 단계에 맞춰 <Ic>orbState</Ic>도 함께 바꿔 보세요(찾는 중 → <Ic>searching</Ic>, 작성 중 → <Ic>composing</Ic>).</P>
+    </>
+  );
+}
+
+export function ApiKeyInputDoc() {
+  return (
+    <>
+      <P>
+        <strong>사용자가 자기 AI API 키를 넣는 입력 칸</strong>입니다. 로그인 전에도 화면에 보이지만, 입력하려고 하면 &quot;로그인이 필요해요&quot; 안내가 먼저 뜨고, 로그인한 뒤에만 키를 저장할 수 있습니다.
+        저장한 키는 <Ic>LlmPlayground</Ic>(웰컴 페이지의 AI 테스트)가 <Ic>POST /api/llm/chat</Ic>을 부를 때 헤더로 실어 보냅니다.
+      </P>
+      <Callout tone="warn">
+        <strong>키는 브라우저 메모리에만 둡니다.</strong> localStorage, sessionStorage, 쿠키에 저장하지 않고 새로고침하거나 로그아웃하면 지워집니다. 서버도 키를 저장하거나 로그에 남기지 않습니다.
+        요청 주소(URL)와 본문에는 넣지 않고 <Ic>X-LLM-API-Key</Ic> 헤더로만 보냅니다.
+      </Callout>
+
+      <H2>Preview</H2>
+      <P>로그인하지 않은 상태에서 칸을 눌러 보세요. 취소는 닫기, 확인은 로그인 창을 엽니다. 로그인한 뒤에는 키를 입력하고 저장할 수 있습니다.</P>
+      <Preview code={`<ApiKeyInput />`}>
+        <div className="mx-auto w-full max-w-md"><ApiKeyInput /></div>
+      </Preview>
+
+      <H2>What users can do</H2>
+      <DocTable
+        head={["동작", "방법"]}
+        rows={[
+          ["로그인 전에 입력 시도", "칸을 누르면 로그인 안내 창이 뜹니다. 취소하면 닫히고, 확인하면 로그인 창이 열립니다."],
+          ["키 저장", "로그인한 뒤 키(sk-...)를 입력하고 저장을 누릅니다. 모양이 맞지 않으면 안내가 나옵니다."],
+          ["키 보기·가리기", "칸 오른쪽의 눈 아이콘으로 입력한 글자를 확인합니다."],
+          ["키 지우기", "저장하면 앞 3자리와 뒤 4자리만 보이고, 지우기를 누르면 사라집니다."],
+        ]}
+      />
+
+      <H2>How to use</H2>
+      <CodeBlock
+        title="어느 화면에서든"
+        code={`import { ApiKeyInput, useLlmKeyStore } from "@/meerkit";\n\n<ApiKeyInput />\n\n// 저장된 키 읽기 (메모리에서만)\nconst apiKey = useLlmKeyStore((s) => s.apiKey);`}
+      />
+      <PropsTable rows={[["className", "string", "바깥 요소에 붙일 클래스."]]} />
+
+      <H2>LlmPlayground</H2>
+      <P>
+        <Ic>ApiKeyInput</Ic>, <Ic>AiPromptInput</Ic>, <Ic>ThinkingIndicator</Ic>을 묶어 서버의 <Ic>/api/llm/chat</Ic>까지 이어 둔 <strong>AI 테스트</strong>입니다. 웰컴 페이지에 기본으로 들어 있습니다.
+        로그인 전에는 키 칸만 보이고, 로그인하면 질문 입력창이 열리며, 응답 카드 아래에 이번 응답의 토큰 수와 예상 비용, 이 탭에서의 누적 합계가 나옵니다.
+      </P>
+      <CodeBlock title="meerkit.config.ts" code={`ai: {\n  playground: false, // 웰컴 페이지의 AI 테스트를 숨깁니다. 기본 true\n},`} />
+
+      <H2>사용량과 예상 비용</H2>
+      <UL>
+        <li>토큰 수는 AI 응답이 돌려준 값(입력·출력·합계)을 그대로 보여 줍니다. 서버에 기록하지 않고, 이 탭의 메모리에서만 합산합니다.</li>
+        <li>예상 비용은 <Ic>ai/pricing.ts</Ic>의 모델별 단가(USD, 토큰 100만 개당)로 계산하는 <strong>참고용 값</strong>입니다. 공급자 요금은 바뀔 수 있으니 모델을 늘리거나 단가가 달라지면 이 파일을 고치세요.</li>
+        <li>사용 기록 저장, 이용 이력, 한도는 이 기능에 들어 있지 않습니다.</li>
+      </UL>
+
+      <H2>서버와 주고받는 것</H2>
+      <DocTable
+        head={["구분", "내용"]}
+        rows={[
+          ["요청", "POST /api/llm/chat · 로그인 필요 · 헤더 X-LLM-API-Key · 본문 { message, model }"],
+          ["응답", "{ reply, model, usage: { input_tokens, output_tokens, total_tokens } }"],
+          ["허용 모델", "gpt-4o-mini, gpt-4o (목록에 없으면 422). 공급자는 현재 OpenAI만 열려 있습니다."],
+        ]}
+      />
+      <H3>오류와 안내 문구</H3>
+      <DocTable
+        head={["code", "상태", "뜻"]}
+        rows={[
+          ["LLM_KEY_REQUIRED", "400", "키 헤더가 없습니다."],
+          ["LLM_KEY_INVALID", "401", "키가 올바르지 않거나 사용할 수 없습니다."],
+          ["LLM_QUOTA_EXCEEDED", "429", "입력한 키의 크레딧·한도를 모두 썼습니다 (공급자 사이트에서 충전·확인)."],
+          ["LLM_RATE_LIMITED", "429", "짧은 시간에 요청이 많습니다. 잠시 뒤 다시 시도합니다."],
+          ["LLM_INPUT_TOO_LONG", "413", "입력이 너무 깁니다."],
+          ["LLM_TIMEOUT", "504", "응답이 늦어지고 있습니다."],
+        ]}
+      />
+
+      <H2>백엔드에서 쓰기</H2>
+      <CodeBlock
+        title="backend"
+        code={`from app.llm import chat_once\n\nreply = chat_once("안녕", api_key=사용자가_넣은_키, model_name="gpt-4o-mini", provider="openai")\nreply.text           # 답\nreply.usage.total_tokens  # 토큰 수`}
+      />
+      <P>
+        다른 공급자(Anthropic 등)를 열려면 <Ic>langchain-anthropic</Ic>을 추가하고 <Ic>app/llm/client.py</Ic>의 <Ic>BYOK_PROVIDERS</Ic>에 이름을 더합니다. 키와 질문·응답 내용은 로그에 남기지 않습니다.
+      </P>
+      <DocLinks items={[links.component("input", "Input"), links.component("dialog", "Dialog")]} />
     </>
   );
 }
