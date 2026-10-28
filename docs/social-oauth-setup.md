@@ -45,7 +45,7 @@ backend/tests/social/
 └── test_social_accounts.py  # 공급자와 무관한 규칙, 비밀번호 없는 계정, cleanup
 ```
 
-- **층 위치:** `social`은 `core`, `users`, `auth`만 import 합니다. 토큰 발급(`auth.service.issue_tokens`)과 `auth.router.set_refresh_cookie`를 재사용합니다. `social`을 import 하는 킷은 없습니다. `tests/test_import_rules.py`에 `"social": {"core", "users", "auth"}`를 추가했습니다.
+- **층 위치:** `social`은 `core`, `users`, `auth`만 import 합니다. 토큰 발급(`auth.service.issue_tokens`)과 `auth.router.set_refresh_cookie`를 재사용합니다. `social`을 import 하는 킷은 없습니다. `tests/test_import_rules.py`에 `"social": {"core", "users", "auth"}`를 추가했습니다. 이유와 검토한 대안은 [social-import-layer.md](social-import-layer.md)에 있습니다.
 - **설정 분리:** `storage`·`llm`처럼 `social/config.py`가 자기 설정을 직접 읽습니다. `core/config.py`는 바꾸지 않았습니다. 프론트 주소는 기존 `FRONTEND_BASE_URL`을 씁니다.
 - **주의:** `app/social/__init__.py`에서 router를 import 하지 않습니다. `alembic/env.py`가 `app.social.models`를 import 할 때 `router → auth → mail`까지 함께 로드되면, `env.py`의 `fileConfig()`(`disable_existing_loggers=True`)가 그 사이 만들어진 `app.*` 로거를 꺼 버려 로그 테스트가 실패합니다. 라우터는 `from app.social.router import router`로 가져옵니다.
 
@@ -261,6 +261,7 @@ SOCIAL_HTTP_TIMEOUT_SECONDS=10
 | `docs/architecture.md` | 킷 다이어그램·폴더 구조·인증 방식·API 표에 `social` 추가 |
 | `CLAUDE.md` | 킷 위치·의존 방향에 `social` 추가 |
 | `docs/social-oauth-setup.md` | 이 문서 |
+| `docs/social-import-layer.md` (새 파일) | 층 표에 `social`을 추가한 근거 (팀 협의용) |
 
 **바꾸지 않은 것:** `frontend/` 전체, `backend/app/core/`.
 
