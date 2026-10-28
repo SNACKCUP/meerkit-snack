@@ -89,8 +89,8 @@ export default function ProjectsPage() {
           <p className="text-sm leading-relaxed text-[#6c6a62]">고객 문서를 올리려면 먼저 프로젝트가 필요해요.<br />기간과 이름만 정하면 돼요.</p>
           <Btn variant="primary" size="lg" onClick={() => setOpen(true)}>프로젝트 등록</Btn>
         </div>
-      ) : mine.length === 0 ? (
-        <p className="py-10 text-center text-sm text-[#6c6a62]" data-rise>{q.trim() ? `“${q}”에 맞는 프로젝트가 없어요.` : "이 상태의 프로젝트가 없어요."}</p>
+      ) : mine.length === 0 && q.trim() ? (
+        <p className="py-10 text-center text-sm text-[#6c6a62]" data-rise>“{q}”에 맞는 프로젝트가 없어요.</p>
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" data-rise>
           {mine.map((p) => {
