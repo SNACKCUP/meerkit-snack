@@ -19,6 +19,7 @@ flowchart TB
         auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정 · 인증 기록 정리"]
         perm["permissions<br/>require_roles · require_admin · ADMIN_ROLE"]
         account["account<br/>/api/users/me · /api/users (HTTP 연결 층)"]
+        social["social<br/>소셜 로그인 (Google, 이후 Kakao·Naver) · social_accounts"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
         mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
         storage["storage<br/>get_storage · S3 호환(Supabase Storage)/memory"]
@@ -33,23 +34,26 @@ flowchart TB
     account --> auth
     account --> users
     perm --> auth
+    social --> auth
+    social --> users
     perm --> users
     auth --> users
     auth --> mail
     users --> storage
     users --> core
     auth --> core
+    social --> core
     perm --> core
     mail --> core
     llm --> core
     storage --> core
 ```
 
-- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
+- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). `social`은 `core`·`users`·`auth`만 쓰고, `social`을 import 하는 킷은 없습니다(`app/api.py`만 라우터 등록). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
 - `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사(permissions)가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
 
 - 화살표는 "import 한다"는 뜻입니다.
-- **킷(`core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`, `storage`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
+- **킷(`core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
 - `features/` 안의 기능끼리도 서로 import 하지 않습니다. 공통으로 필요해지면 공통 기반으로 올립니다.
 - 각 모듈 안에서는 `router → service → repository` 방향으로만 import 합니다.
 - 프론트엔드도 같습니다: 킷(`src/meerkit`)은 `src/app`(라우트·서비스 화면)을 import 하지 않고, `src/app`은 킷을 `@/meerkit`(공개 API)으로만 씁니다. ESLint가 검사합니다.
@@ -92,6 +96,13 @@ backend/
 │   ├── account/           # 회원 API(HTTP) 연결 층 (킷)
 │   │   ├── me_router.py   # /api/users/me: 내 정보 조회·수정, 프로필 이미지 올리기·삭제, 비밀번호 변경, 탈퇴
 │   │   └── admin_router.py  # /api/users: 멤버 검색·역할·활성/비활성·삭제, /api/users/roles
+│   ├── social/            # 소셜 로그인 (킷, core·users·auth만 import). 명세는 social-oauth-setup.md
+│   │   ├── router.py      # GET /api/auth/{provider}/login · callback (302 응답)
+│   │   ├── service.py     # 공급자와 무관한 계정 규칙: 연결 찾기 → 검증된 이메일 연결 → 신규 가입
+│   │   ├── state.py       # state·PKCE·약관 동의를 담은 서명 쿠키
+│   │   ├── providers/     # 공급자별 파일 (google.py). 새 공급자는 파일 하나 + 목록 한 줄
+│   │   ├── config.py      # SOCIAL_REDIRECT_BASE_URL, GOOGLE_CLIENT_ID·SECRET + 운영 검사
+│   │   └── cleanup.py     # 개인정보를 지운 회원의 소셜 연결 삭제
 │   ├── mail/              # 메일 발송 (킷). 어디서든 send_mail 하나로 사용
 │   │   ├── service.py     # send_mail(to, template, data): 실패해도 예외 없이 False + 로그
 │   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML)
@@ -122,6 +133,7 @@ backend/
 └── tests/
     ├── conftest.py        # 테스트 DB(테스트마다 롤백), TestClient, 로그인 헬퍼
     ├── kit/               # auth, users, mail, 잠금, 비밀번호, 파기 테스트
+    ├── social/            # 소셜 로그인 (Google 응답은 httpx.MockTransport 로 흉내)
     └── features/
 ```
 
@@ -149,7 +161,8 @@ backend/
 | 인증번호 | 6자리, 10분, 5회까지. DB에는 HMAC 해시만. 같은 이메일 60초 간격·하루 10회 |
 | 비밀번호 찾기 | 가입 여부와 관계없이 항상 같은 응답(202). 링크 토큰은 해시 저장, 30분, 한 번만, 새 링크를 보내면 이전 링크 무효 |
 | 탈퇴 | `is_active=false` + `deactivated_at` 기록(관리자 삭제도 같음). 아이디·이메일은 계속 점유 |
-| 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `uv run python -m app.users.purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록(행은 남김). 이어서 `uv run python -m app.auth.cleanup`이 탈퇴 회원의 재설정 토큰과 `EMAIL_VERIFICATION_RETENTION_DAYS`(7일) 지난 인증번호 기록을 지움. 둘 다 `--dry-run` 지원, `.github/workflows/account-purge.yml`이 매일 차례로 실행 |
+| 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `uv run python -m app.users.purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록(행은 남김). 이어서 `uv run python -m app.auth.cleanup`이 탈퇴 회원의 재설정 토큰과 `EMAIL_VERIFICATION_RETENTION_DAYS`(7일) 지난 인증번호 기록을, `uv run python -m app.social.cleanup`이 소셜 연결을 지움. 모두 `--dry-run` 지원, `.github/workflows/account-purge.yml`이 매일 차례로 실행 |
+| 소셜 로그인 | 서버가 시작하고 끝냄: `GET /auth/{provider}/login` → 공급자 → `GET /auth/{provider}/callback`이 리프레시 쿠키를 심고 프론트 `/auth/{provider}/callback`으로 302 (실패는 `?error=코드`). 연결은 `social_accounts`(`provider`+`provider_user_id` 유일). 소셜로만 가입한 계정은 `users.has_password=false`라 아이디 로그인·비밀번호 변경·탈퇴 확인이 막히고, 비밀번호 찾기로 비밀번호를 만들면 풀림. 명세는 [social-oauth-setup.md](social-oauth-setup.md) |
 | 메일 | `app.mail.send_mail`만 사용. 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 실제 발송 설정(도메인·DNS·키)은 [mail-setup.md](mail-setup.md) |
 
 ### 인증·회원 API (`/api` 아래)
@@ -163,6 +176,8 @@ backend/
 | `POST /auth/signup` | `{user_id, email, password, name, agreed_terms, email_verification_token, 선택 항목}` → 201 User |
 | `POST /auth/login` `{user_id, password}` | → `{access_token}` + 리프레시 쿠키 / 401 / 429 |
 | `POST /auth/refresh`, `POST /auth/logout` | 토큰 갱신, 로그아웃 |
+| `GET /auth/{provider}/login[?agreed_terms=terms,privacy]` | 소셜 로그인 시작 → 302 공급자 화면 / 404(꺼진 공급자) |
+| `GET /auth/{provider}/callback` | 공급자가 호출 → 302 프론트 `/auth/{provider}/callback[?error=]` + 리프레시 쿠키 |
 | `POST /auth/password/forgot` `{email}` | 항상 202 |
 | `POST /auth/password/reset` `{token, password}` | 204 / 400 |
 | `GET /users/me`, `PATCH /users/me` | 내 정보 조회·수정 (이메일 변경은 새 이메일 증표 필요). `GET /auth/me`는 임시 유지 |

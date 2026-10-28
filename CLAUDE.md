@@ -82,8 +82,8 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 ## 1. 위치 규칙
 
 - 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `src/app/`에는 킷을 연결하는 얇은 파일만 둔다.
-- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `llm`, `mail`, `storage`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
-- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만, `users`는 `storage`도 씀 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
+- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
+- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만, `users`는 `storage`도 씀, `social`은 `core`·`users`·`auth`만 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
 
 | 만들 것             | 위치                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------- |

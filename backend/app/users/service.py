@@ -7,7 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppError
-from app.core.security import hash_password, verify_password
+from app.core.security import generate_token, hash_password, verify_password
 from app.storage import get_storage
 from app.users import avatar, repository
 from app.users.models import Role, Term, User
@@ -29,6 +29,7 @@ _STATUS = {
     "EMAIL_TAKEN": 409,
     "NICKNAME_TAKEN": 409,
     "INVALID_PASSWORD": 400,
+    "PASSWORD_NOT_SET": 400,
     "USER_DELETED": 409,
 }
 
@@ -52,16 +53,19 @@ def create_user(
     *,
     login_id: str,
     email: str,
-    password: str,
+    password: str | None,
     name: str,
     profile: dict[str, Any] | None = None,
     roles: list[str] | None = None,
     agreed_terms: list[str] | None = None,
     email_verified: bool = False,
+    commit: bool = True,
 ) -> User:
     """가입 규칙(중복 검사, 약관, 기본 역할). commit까지 합니다.
 
     agreed_terms 가 None 이면 약관 검사를 하지 않습니다 (시드·테스트처럼 서버가 직접 만드는 계정).
+    password 가 None 이면 비밀번호 없는 계정(소셜 가입)으로 만듭니다: has_password=false, 로그인에 못 쓰는 해시.
+    commit=False 면 flush 까지만 합니다. 부르는 쪽이 다른 행(소셜 연결 등)과 한 트랜잭션으로 저장할 때 씁니다.
     """
     login_id = login_id.strip().lower()
     email = email.strip().lower()
@@ -74,15 +78,21 @@ def create_user(
         raise UserError("NICKNAME_TAKEN", "이미 사용 중인 닉네임입니다.")
     terms = _check_terms(db, agreed_terms) if agreed_terms is not None else []
     user = User(
-        login_id=login_id, email=email, hashed_password=hash_password(password), name=name, **profile
+        login_id=login_id,
+        email=email,
+        hashed_password=hash_password(password if password is not None else generate_token()),
+        has_password=password is not None,
+        name=name,
+        **profile,
     )
     if email_verified:
         user.email_verified_at = datetime.now(UTC)
     user.roles = repository.get_roles_by_codes(db, roles or [DEFAULT_ROLE])
     repository.add(db, user)
     repository.add_term_agreements(db, user.id, [term.id for term in terms])
-    db.commit()
-    db.refresh(user)
+    if commit:
+        db.commit()
+        db.refresh(user)
     return user
 
 
@@ -185,6 +195,9 @@ def _deactivate(user: User) -> None:
 
 
 def withdraw(db: Session, user: User, password: str) -> None:
+    if not user.has_password:
+        # 소셜로만 가입한 계정은 확인할 비밀번호가 없음. 비밀번호 재설정 메일로 먼저 비밀번호를 만들어야 함
+        raise UserError("PASSWORD_NOT_SET", "비밀번호가 없는 계정입니다. 비밀번호를 먼저 설정해 주세요.")
     if not verify_password(password, user.hashed_password):
         raise UserError("INVALID_PASSWORD", "비밀번호가 올바르지 않습니다.")
     _deactivate(user)

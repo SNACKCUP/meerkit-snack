@@ -5,6 +5,7 @@ APP_DIR = Path(__file__).resolve().parents[1] / "app"
 
 # 공통 기반(킷)의 층. 각 패키지는 오른쪽에 적은 패키지만 import 할 수 있습니다.
 # 의존 방향: core ← users ← auth ← permissions ← account,  mail·llm·storage 는 core 만.
+# social(소셜 로그인)은 auth 의 토큰·쿠키를 재사용하고, social 을 import 하는 킷은 없습니다.
 # users 는 프로필 이미지 파일을 위해 storage 를 씁니다 (auth 가 mail 을 쓰는 것과 같은 방식).
 # 이 표를 바꾸려면 팀과 먼저 협의합니다 (공통 모듈은 서로 최대한 독립).
 ALLOWED_KIT_IMPORTS: dict[str, set[str]] = {
@@ -16,6 +17,7 @@ ALLOWED_KIT_IMPORTS: dict[str, set[str]] = {
     "auth": {"core", "users", "mail"},
     "permissions": {"core", "users", "auth"},
     "account": {"core", "users", "auth", "permissions"},
+    "social": {"core", "users", "auth"},
 }
 KIT_PACKAGES = list(ALLOWED_KIT_IMPORTS)
 APP_IMPORT = re.compile(r"^\s*(?:from|import)\s+app\.([a-z_]+)", re.MULTILINE)
