@@ -1,7 +1,7 @@
 {
   "title": "MeerKit",
   "version": "0.1.0",
-  "generatedFrom": "/private/tmp/claude-501/-Users-iseung-yeol-project-goorm-sprint2-meerkit/74870037-cdff-439c-926f-1455b78e6053/scratchpad/openapi-fresh.json",
+  "generatedFrom": "http://localhost:8000/openapi.json",
   "groups": [
     {
       "tag": "health",
@@ -971,6 +971,127 @@
           ]
         },
         {
+          "method": "POST",
+          "path": "/api/users/me/avatar",
+          "summary": "프로필 이미지 올리기 (JPG·PNG·WEBP, 2MB 이하)",
+          "description": "multipart/form-data 의 `file` 하나를 받습니다. 서버가 파일 내용으로 형식을 다시 확인하고, 위치정보(EXIF)를 지운 512px WEBP 로 바꿔 저장합니다. 이전 이미지는 지워집니다. 오류: 413 IMAGE_TOO_LARGE, 415 UNSUPPORTED_IMAGE_TYPE, 422 INVALID_IMAGE, 503 STORAGE_NOT_CONFIGURED",
+          "auth": true,
+          "params": [],
+          "body": {
+            "contentType": "multipart/form-data",
+            "schema": "Body_upload_avatar_api_users_me_avatar_post",
+            "fields": [
+              {
+                "name": "file",
+                "type": "string",
+                "required": true,
+                "description": "이미지 파일 (JPG, PNG, WEBP · 2MB 이하)",
+                "constraints": "",
+                "example": "string"
+              }
+            ],
+            "example": {
+              "file": "string"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/users/me/avatar",
+          "summary": "프로필 이미지 삭제",
+          "description": "",
+          "auth": true,
+          "params": [],
+          "body": null,
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "UserRead",
+              "example": {
+                "id": 12,
+                "user_id": "kim_2024",
+                "email": "kim@example.com",
+                "name": "김미어",
+                "nickname": "행복한미어캣",
+                "phone": "010-1234-5678",
+                "postcode": "06236",
+                "address": "서울 강남구 테헤란로 123",
+                "address_detail": "4층 401호",
+                "birth_date": "1995-04-12",
+                "gender": "female",
+                "avatar_url": null,
+                "email_verified": true,
+                "roles": [
+                  {
+                    "id": 3,
+                    "name": "VIEWER"
+                  }
+                ],
+                "is_active": true,
+                "created_at": "2026-10-27T04:35:54Z",
+                "updated_at": "2026-10-27T04:40:12Z",
+                "locked_until": null,
+                "deactivated_at": null,
+                "deleted_at": null
+              }
+            }
+          ]
+        },
+        {
           "method": "PATCH",
           "path": "/api/users/me/password",
           "summary": "비밀번호 변경 (다른 기기의 로그인은 풀리고, 이 기기는 새 리프레시 쿠키를 받음)",
@@ -1376,6 +1497,91 @@
               "description": "성공",
               "schema": null,
               "example": null
+            },
+            {
+              "status": "422",
+              "description": "요청 형식 오류",
+              "schema": "HTTPValidationError",
+              "example": {
+                "detail": [
+                  {
+                    "loc": [
+                      "string"
+                    ],
+                    "msg": "string",
+                    "type": "string",
+                    "input": null,
+                    "ctx": {}
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tag": "llm",
+      "title": "llm",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/api/llm/chat",
+          "summary": "내 API 키로 AI에게 한 번 묻기 (로그인 필요)",
+          "description": "",
+          "auth": true,
+          "params": [
+            {
+              "name": "x-llm-api-key",
+              "in": "header",
+              "type": "string",
+              "required": false,
+              "description": "",
+              "constraints": "최대 300자",
+              "example": "string"
+            }
+          ],
+          "body": {
+            "contentType": "application/json",
+            "schema": "ChatRequest",
+            "fields": [
+              {
+                "name": "message",
+                "type": "string",
+                "required": true,
+                "description": "",
+                "constraints": "최소 1자, 최대 20000자",
+                "example": "string"
+              },
+              {
+                "name": "model",
+                "type": "\"gpt-4o-mini\" | \"gpt-4o\"",
+                "required": false,
+                "description": "",
+                "constraints": "기본 \"gpt-4o-mini\"",
+                "example": "gpt-4o-mini"
+              }
+            ],
+            "example": {
+              "message": "string",
+              "model": "gpt-4o-mini"
+            },
+            "required": true
+          },
+          "responses": [
+            {
+              "status": "200",
+              "description": "성공",
+              "schema": "ChatResponse",
+              "example": {
+                "reply": "string",
+                "model": "string",
+                "usage": {
+                  "input_tokens": 0,
+                  "output_tokens": 0,
+                  "total_tokens": 0
+                }
+              }
             },
             {
               "status": "422",

@@ -13,7 +13,7 @@ import { ComponentsListDoc } from "./components-list";
 import { DateDoc } from "./date";
 import { ProfileImageDoc } from "./profile-image";
 import { AddressFieldDoc, EmailVerificationDoc, FileDropzoneDoc, NicknameDoc, RoleManagerDoc } from "./extras";
-import { AiPromptInputDoc, ThinkingIndicatorDoc } from "./ai";
+import { AiPromptInputDoc, ApiKeyInputDoc, ThinkingIndicatorDoc } from "./ai";
 import { Faq, Hooks } from "./reference";
 import { MemberAiUsageDoc, MemberAiUsageHistoryDoc } from "./usage";
 
@@ -64,6 +64,8 @@ export const docContent: Record<string, ComponentType> = {
   "route-guards": RouteGuardsDoc,
   "ai-prompt-input": AiPromptInputDoc,
   "thinking-indicator": ThinkingIndicatorDoc,
+  "api-key-input": ApiKeyInputDoc,
+  "api-llm": () => <ApiSpecPage tag="llm" />,
   hooks: Hooks,
   faq: Faq,
 };
