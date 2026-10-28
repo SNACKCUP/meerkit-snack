@@ -14,6 +14,11 @@ import { useMaemusae, useCurrentUser } from "../_lib/store";
 import { THEME_STYLE, THEME_VARS } from "../_lib/theme";
 import { Logo } from "./Logo";
 
+const NAV = [
+  { href: "/maemusae/about", label: "소개" },
+  { href: "/maemusae/projects", label: "프로젝트" },
+];
+
 // 매무새 전체의 틀: 전용 색과 글꼴을 한 번만 입히고, 상단 바와 데모 계정 전환을 둔다.
 export function Shell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -51,7 +56,9 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="flex flex-wrap items-center gap-x-5 gap-y-3 rounded-[28px] border-2 border-[#111] bg-white px-4 py-2.5 shadow-[5px_5px_0_#111] sm:rounded-full sm:pl-6 sm:pr-3">
           <Link href="/maemusae" aria-label="매무새 홈" className="flex items-center"><Logo /></Link>
           <nav className="flex items-center gap-2 text-[13px]" aria-label="주요 메뉴">
-            <Link href="/maemusae/projects" className={cn("rounded-full border-2 px-3.5 py-1 font-semibold transition-colors", path.startsWith("/maemusae/projects") ? "border-[#111] bg-[#f2f69a]" : "border-transparent hover:border-[#111]")}>프로젝트</Link>
+            {NAV.map((n) => (
+              <Link key={n.href} href={n.href} aria-current={path.startsWith(n.href) ? "page" : undefined} className={cn("rounded-full border-2 px-3.5 py-1 font-semibold transition-colors", path.startsWith(n.href) ? "border-[#111] bg-[#f2f69a]" : "border-transparent hover:border-[#111]")}>{n.label}</Link>
+            ))}
           </nav>
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <label className="flex items-center gap-2 rounded-full border-2 border-dashed border-[#111] bg-[#f2f69a] py-0.5 pl-3 pr-0.5 text-[11px] font-bold">
