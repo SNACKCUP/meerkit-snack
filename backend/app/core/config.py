@@ -1,3 +1,4 @@
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/.env.example 의 예시 값. 운영에서 이 값 그대로면 시작을 막습니다.
@@ -17,6 +18,9 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 30  # 액세스 토큰 유효 시간(분)
     refresh_token_expire_days: int = 14  # 리프레시 토큰(httpOnly 쿠키) 유효 기간(일)
     cookie_secure: bool = False  # 배포(https)에서는 true
+    api_docs_enabled: bool = True  # false면 /docs, /redoc, /openapi.json 을 숨김 (운영에서 API 목록 비공개)
+    # 지금 돌고 있는 코드의 커밋. Render 는 RENDER_GIT_COMMIT 을 자동으로 넣어 줌. /health 에 보여 배포 확인에 씀
+    app_commit: str = Field("", validation_alias=AliasChoices("APP_COMMIT", "RENDER_GIT_COMMIT"))
     cors_origins: str = "http://localhost:3000"  # 여러 개면 쉼표로 구분
     # 로그인 잠금: 연속 N회 실패하면 M분 잠금 (프론트 meerkit.config.ts의 login과 같은 값). 0이면 끔
     login_lock_max_attempts: int = 5
@@ -52,11 +56,20 @@ class Settings(BaseSettings):
     mail_daily_limit: int = 10
 
 
-    # 로컬 테스트용 관리자 시드 계정 (uv run python -m app.users.seed)
+    # 관리자 시드 계정 (uv run python -m app.users.seed). 로컬은 .env, 운영은 seed-admin 워크플로
     seed_admin_user_id: str = "admin"
     seed_admin_email: str = "admin@example.com"
     seed_admin_password: str = ""
     seed_admin_name: str = "관리자"
+
+    @field_validator("database_url", "test_database_url")
+    @classmethod
+    def _use_psycopg_driver(cls, v: str) -> str:
+        """Supabase 등이 주는 postgresql:// 주소를 우리 드라이버(psycopg 3) 주소로 바꿉니다."""
+        for prefix in ("postgresql://", "postgres://"):
+            if v.startswith(prefix):
+                return "postgresql+psycopg://" + v[len(prefix):]
+        return v
 
     @property
     def cors_origin_list(self) -> list[str]:

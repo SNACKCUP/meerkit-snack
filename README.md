@@ -164,7 +164,9 @@ meerkit/
 - [새 기능 추가하기](docs/how-to-add-feature.md): 이 킷을 Fork 해서 내 서비스를 만드는 순서
 - [향후 확장](docs/future-extensions.md): 이번 범위에서 제외한 항목
 - [메일 발송 설정 가이드](docs/mail-setup.md): 도메인 → Resend → DNS → `.env` 순서로 실제 메일 보내기
-- [테이블 명세서](docs/MeerKit_테이블명세서.xlsx): DB 테이블·컬럼·관계 (엑셀, 마이그레이션 5aeec7c9a772 기준)
+- [파일 저장소 설정 가이드](docs/storage-setup.md): 프로필 이미지용 Supabase Storage 버킷·키
+- [운영 배포 가이드](docs/deployment.md): Supabase → Render → Vercel → DNS, 승인 후 배포하는 워크플로
+- [테이블 명세서](docs/MeerKit_테이블명세서.xlsx): DB 테이블·컬럼·관계 (엑셀, 마이그레이션 d129bc5cc95b 기준)
 - [협업 규칙](CONTRIBUTING.md): 브랜치, 커밋, PR 규칙
 - [AI 작업 규칙](CLAUDE.md): Claude Code 등 AI 도구가 따르는 위치·의존·범위 규칙
 

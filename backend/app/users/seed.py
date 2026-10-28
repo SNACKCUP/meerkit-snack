@@ -1,8 +1,9 @@
-"""로컬 테스트용 관리자(MASTER) 계정 만들기. 여러 번 실행해도 안전합니다.
+"""관리자(MASTER) 계정 만들기. 여러 번 실행해도 안전합니다.
 
     uv run python -m app.users.seed
 
-.env 의 SEED_ADMIN_USER_ID, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD 를 사용합니다 (로컬 전용 값).
+.env(또는 환경변수)의 SEED_ADMIN_USER_ID, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD 를 사용합니다.
+로컬에서는 .env 의 로컬 전용 값, 운영에서는 Actions 의 seed-admin 워크플로로 한 번 실행합니다 (docs/deployment.md).
 """
 
 import sys
@@ -15,7 +16,7 @@ from app.users import repository, roles, service
 
 def main() -> int:
     if not settings.seed_admin_password:
-        print("SEED_ADMIN_PASSWORD 가 비어 있습니다. backend/.env 에 로컬용 비밀번호를 넣어 주세요.")
+        print("SEED_ADMIN_PASSWORD 가 비어 있습니다. backend/.env(운영은 Secret)에 비밀번호를 넣어 주세요.")
         return 1
     with SessionLocal() as db:
         if repository.get_by_login_id(db, settings.seed_admin_user_id) or repository.get_by_email(
