@@ -90,3 +90,17 @@ def test_fake_provider_needs_no_key(client, make_user, login, monkeypatch):
     response = _post(client, login("chat06"), key=None)
     assert response.status_code == 200
     assert response.json()["reply"]
+
+
+def test_exhausted_credit_is_reported_as_quota_not_rate_limit(client, make_user, login, monkeypatch):
+    monkeypatch.setattr(llm_settings, "llm_provider", "openai")
+    make_user("chat07")
+
+    class RateLimitError(Exception):
+        code = "credit_balance_exhausted"
+
+    with override_chat_model(FakeChatModel(responses=[RateLimitError("credit exhausted sk-test-SECRET")])):
+        response = _post(client, login("chat07"))
+    assert response.status_code == 429
+    assert response.json()["code"] == "LLM_QUOTA_EXCEEDED"
+    assert "SECRET" not in response.text

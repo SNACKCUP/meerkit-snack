@@ -78,7 +78,7 @@ def chat_once(
             raise key_required()
 
     started = time.perf_counter()
-    outcome, code = "error", None
+    outcome, code, provider_code = "error", None, None
     try:
         model = get_chat_model(api_key=api_key if use_user_key else None, model_name=model_name)
         response = model.invoke([SystemMessage(SYSTEM_PROMPT), HumanMessage(message)])
@@ -93,6 +93,8 @@ def chat_once(
     except Exception as exc:
         error = translate(exc)
         code = error.code
+        # 원인을 구분할 수 있게 공급자의 오류 코드만 남깁니다 (메시지에는 키 일부가 들어 있을 수 있어 남기지 않음)
+        provider_code = f"{type(exc).__name__}/{getattr(exc, 'code', None)}"
         if use_user_key and code == "LLM_AUTH_FAILED":
             raise key_invalid() from exc
         if use_user_key and code == "LLM_QUOTA_EXCEEDED":
@@ -102,10 +104,11 @@ def chat_once(
         raise error from exc
     finally:
         logger.info(
-            "LLM chat provider=%s model=%s outcome=%s code=%s ms=%d",
+            "LLM chat provider=%s model=%s outcome=%s code=%s provider_error=%s ms=%d",
             llm_settings.llm_provider,
             model_name or llm_settings.llm_model,
             outcome,
             code,
+            provider_code,
             (time.perf_counter() - started) * 1000,
         )
