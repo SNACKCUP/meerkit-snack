@@ -39,3 +39,4 @@ export { PhoneInput, PhoneInputSplit } from "./phone";
 export { ForgotIdForm } from "./auth/components/ForgotIdForm";
 export { ThemeToggle } from "./theme/ThemeToggle";
 export { themeInitScript } from "./theme/theme";
+export { GoogleButton } from "./auth/components/GoogleButton";

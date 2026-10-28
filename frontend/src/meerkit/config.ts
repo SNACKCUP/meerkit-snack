@@ -38,12 +38,14 @@ export const meerkitConfig = {
   login: {
     maxAttempts: userConfig.login?.maxAttempts ?? 5,
     lockMinutes: userConfig.login?.lockMinutes ?? 5,
+    social: { google: userConfig.login?.social?.google ?? false },
   },
   routes: {
     home: "/",
     me: "/me",
     adminMembers: "/admin/members",
     resetPassword: "/reset-password",
+    googleCallback: "/auth/google/callback",
     terms: "/terms",
     privacy: "/privacy",
     docs: "/docs",

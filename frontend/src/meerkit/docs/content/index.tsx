@@ -4,6 +4,7 @@ import { AuthDialogDoc, LoginFormDoc, MemberTableDoc, RoleSelectDoc, RouteGuards
 import { GuideAddRole, GuideCallApi, GuideProtectPage, Security } from "./guides";
 import { Authentication, DataModel, Roles } from "./core";
 import { Deployment, Installation, Introduction, ProjectStructure, Theming } from "./getting-started";
+import { GoogleLoginDoc } from "./google-login";
 import { LoginLockoutDoc, MemberDirectoryDoc, PasswordResetDoc, ProfileDoc, TermsAgreementDoc } from "./flows";
 import { VoiceDoc } from "./voice";
 import { LoadingDoc } from "./loading";
@@ -48,6 +49,7 @@ export const docContent: Record<string, ComponentType> = {
   voice: VoiceDoc,
   "terms-agreement": TermsAgreementDoc,
   "password-reset": PasswordResetDoc,
+  "google-login": GoogleLoginDoc,
   profile: ProfileDoc,
   nickname: NicknameDoc,
   "auth-dialog": AuthDialogDoc,
