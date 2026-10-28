@@ -1,3 +1,8 @@
+import pytest
+
+from app.auth.service import AuthError, issue_verified_email_proof
+
+
 def test_signup_then_login_and_me(client, signup, login):
     response = signup("Writer01", email="New@Example.com", name="소영", nickname="미어캣")
     assert response.status_code == 201, response.text
@@ -86,3 +91,43 @@ def test_access_token_cannot_be_used_as_refresh(client, make_user, login):
     access = headers["Authorization"].removeprefix("Bearer ")
     client.cookies.set("meerkit_refresh", access, path="/api/auth")
     assert client.post("/api/auth/refresh").status_code == 401
+
+
+def _signup_with_proof(client, login_id: str, email: str, proof: str):
+    return client.post(
+        "/api/auth/signup",
+        json={
+            "user_id": login_id,
+            "email": email,
+            "password": "password123",
+            "name": "초대받은사람",
+            "agreed_terms": ["terms", "privacy"],
+            "email_verification_token": proof,
+        },
+    )
+
+
+def test_verified_email_proof_works_with_normal_signup_once(client, db, mail_outbox):
+    proof = issue_verified_email_proof(db, "Invited@Example.com")
+    assert mail_outbox == []  # 인증번호 메일을 보내지 않음
+
+    response = _signup_with_proof(client, "invited01", "invited@example.com", proof)
+    assert response.status_code == 201, response.text
+    assert response.json()["email_verified"] is True
+
+    again = _signup_with_proof(client, "invited02", "invited@example.com", proof)
+    assert again.status_code != 201
+
+
+def test_verified_email_proof_is_bound_to_its_email(client, db):
+    proof = issue_verified_email_proof(db, "invited@example.com")
+    response = _signup_with_proof(client, "other01", "other@example.com", proof)
+    assert response.status_code == 400
+    assert response.json()["code"] == "EMAIL_VERIFICATION_REQUIRED"
+
+
+def test_verified_email_proof_rejects_registered_email(db, make_user):
+    make_user("taken01")
+    with pytest.raises(AuthError) as error:
+        issue_verified_email_proof(db, "taken01@example.com")
+    assert error.value.code == "EMAIL_TAKEN"
