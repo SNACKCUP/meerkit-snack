@@ -56,6 +56,8 @@ class User(TimestampMixin, Base):
     login_id: Mapped[str] = mapped_column(String(30), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))  # 원문 비밀번호는 저장하지 않음
+    # false면 소셜 로그인으로만 가입해 비밀번호가 없는 계정 (hashed_password 는 아무도 모르는 값의 해시)
+    has_password: Mapped[bool] = mapped_column(Boolean, server_default=true())
     name: Mapped[str] = mapped_column(String(50))
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())  # false면 관리자가 막은 계정
 

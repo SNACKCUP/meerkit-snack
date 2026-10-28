@@ -47,6 +47,7 @@ _STATUS = {
     "INVALID_RESET_TOKEN": 400,
     "INVALID_PASSWORD": 400,
     "SAME_PASSWORD": 400,
+    "PASSWORD_NOT_SET": 400,
     "EMAIL_VERIFICATION_REQUIRED": 400,
 }
 
@@ -84,7 +85,8 @@ def _record_login_failure(db: Session, user: User) -> None:
 
 def authenticate(db: Session, login_id: str, password: str) -> User:
     user = repository.get_by_login_id(db, login_id.strip().lower())
-    if user is None or user.deleted_at is not None:
+    # 소셜로만 가입한 계정(has_password=false)은 없는 계정과 같은 응답 (가입 방식을 알려 주지 않음)
+    if user is None or user.deleted_at is not None or not user.has_password:
         verify_dummy_password(password)
         raise AuthError("INVALID_CREDENTIALS", "아이디 또는 비밀번호가 올바르지 않습니다.")
     if user.locked_until is not None and user.locked_until > _now():
@@ -224,6 +226,7 @@ INVALID_RESET_MESSAGE = "링크가 만료되었거나 이미 사용되었습니�
 def _set_password(db: Session, user: User, new_password: str) -> None:
     now = _now()
     user.hashed_password = hash_password(new_password)
+    user.has_password = True  # 소셜 가입 계정도 재설정 메일로 비밀번호를 만들면 아이디 로그인 가능
     user.password_changed_at = now  # 이전에 발급된 토큰(다른 기기 로그인)은 더 이상 통하지 않음
     user.failed_login_count = 0
     user.locked_until = None
@@ -274,6 +277,8 @@ def reset_password(db: Session, token: str, new_password: str) -> None:
 
 
 def change_password(db: Session, user: User, current_password: str, new_password: str) -> None:
+    if not user.has_password:
+        raise AuthError("PASSWORD_NOT_SET", "비밀번호가 없는 계정입니다. 비밀번호 찾기로 먼저 설정해 주세요.")
     if not verify_password(current_password, user.hashed_password):
         raise AuthError("INVALID_PASSWORD", "현재 비밀번호가 올바르지 않습니다.")
     if current_password == new_password:
