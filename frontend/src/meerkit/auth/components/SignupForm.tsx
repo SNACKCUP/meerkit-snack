@@ -14,6 +14,7 @@ import type { AddressSearchProvider, AddressSearchResult } from "./address-searc
 import { EmailVerificationField } from "./EmailVerificationField";
 import { generateNickname } from "../nickname";
 import { DEFAULT_NAME_RANGE, OptionalFields, collectOptional, emptyOptionalValues, validateName, validateOptional, type OptionalValues } from "./OptionalFields";
+import { SocialLogin } from "./SocialLogin";
 import { TextField } from "./TextField";
 import { TermsAgreement } from "./TermsAgreement";
 
@@ -24,6 +25,8 @@ export interface EmailVerificationHandlers {
 }
 
 interface SignupFormProps {
+  /** 있으면 폼 아래에 "소셜 로그인" 구분선과 [구글 계정으로 가입하기] 버튼을 보여 준다. 구글 계정으로 처음 오면 서버가 계정을 만든다 */
+  onGoogle?: () => void;
   onSubmit: (input: SignupInput) => void;
   pending?: boolean;
   error?: string | null;
@@ -83,6 +86,7 @@ export function SignupForm({
   addressSearch,
   onSearchAddress,
   addressSearchProvider,
+  onGoogle,
 }: SignupFormProps) {
   const [form, setForm] = useState({ user_id: "", email: "", name: "", password: "", password_confirm: "" });
   const [optional, setOptional] = useState<OptionalValues>(() => ({
@@ -214,6 +218,7 @@ export function SignupForm({
       <TermsAgreement terms={terms} value={agreed} onChange={setAgreedTerms} invalid={termsInvalid} />
       {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
       <Button type="submit" disabled={pending}>{pending ? "가입 중…" : "회원가입"}</Button>
+      {onGoogle && <SocialLogin onGoogle={onGoogle} disabled={pending} googleLabel="구글 계정으로 가입하기" />}
     </form>
   );
 }

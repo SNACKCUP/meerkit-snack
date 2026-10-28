@@ -13,7 +13,7 @@ import { errorMessage } from "../../api/error";
 import { meerkitConfig } from "../../config";
 import { useAuthDialog } from "../dialog-store";
 import { useLoginLockout } from "../lockout";
-import { useCheckUserId, useForgotId, useForgotPassword, useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
+import { useCheckUserId, useForgotId, useForgotPassword, useGoogleLogin, useLogin, useSendEmailCode, useSignup, useVerifyEmailCode } from "../mutations";
 import { ForgotIdForm } from "./ForgotIdForm";
 import { ForgotPasswordForm } from "./ForgotPasswordForm";
 import { LoginForm } from "./LoginForm";
@@ -29,6 +29,7 @@ const copy = {
 export function AuthDialog() {
   const { open, mode, closeDialog, setMode } = useAuthDialog();
   const login = useLogin();
+  const googleLogin = useGoogleLogin();
   const signup = useSignup();
   const forgot = useForgotPassword();
   const forgotId = useForgotId();
@@ -56,11 +57,13 @@ export function AuthDialog() {
               attemptsLeft={lock.attemptsLeft}
               onForgotPassword={() => setMode("forgot")}
               onFindId={() => setMode("findId")}
+              onGoogle={meerkitConfig.login.social.google ? googleLogin : undefined}
             />
           )}
           {mode === "signup" && (
             <SignupForm
               onSubmit={signup.mutate}
+              onGoogle={meerkitConfig.login.social.google ? googleLogin : undefined}
               pending={signup.isPending}
               error={errorMessage(signup.error)}
               passwordConfirm={meerkitConfig.signup.passwordConfirm}
