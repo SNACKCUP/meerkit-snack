@@ -101,7 +101,7 @@ export interface MeerkitUserConfig {
     /**
      * 소셜 로그인. 켜면 로그인 폼 아래에 [구글 계정으로 로그인하기] 버튼이 생긴다.
      * 서버가 GET /auth/google/login 으로 구글 인증을 시작하고, 끝나면 리프레시 쿠키를 심은 뒤
-     * /api/auth/google/callback 으로 돌려보내야 한다 (docs의 Google Login 참고). 기본 꺼짐.
+     * /auth/google/callback 으로 돌려보내야 한다 (docs의 Google Login 참고). 기본 꺼짐.
      */
     social?: { google?: boolean };
   };

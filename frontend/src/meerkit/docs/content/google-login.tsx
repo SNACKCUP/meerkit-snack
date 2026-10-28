@@ -33,7 +33,7 @@ export function GoogleLoginDoc() {
         켜면 로그인 창과 <Ic>AuthPanel</Ic>의 로그인·가입 폼 아래에 버튼이
         생깁니다. 두 버튼은 같은 주소로 이동하며, 처음 온 구글 계정이면 서버가
         계정을 만듭니다. 끄면 버튼도, 돌아오는 주소(
-        <Ic>/api/auth/google/callback</Ic>)도 없습니다.
+        <Ic>/auth/google/callback</Ic>)도 없습니다.
       </P>
       <H2>미리보기</H2>
       <Preview
@@ -72,7 +72,7 @@ export function GoogleLoginDoc() {
         </li>
         <li>
           서버가 계정을 찾거나 만들고 <strong>리프레시 쿠키(httpOnly)</strong>를
-          심은 뒤 프론트의 <Ic>/api/auth/google/callback</Ic>으로
+          심은 뒤 프론트의 <Ic>/auth/google/callback</Ic>으로
           리다이렉트합니다.
         </li>
         <li>
@@ -98,11 +98,11 @@ export function GoogleLoginDoc() {
           ],
           [
             "성공",
-            "리프레시 쿠키를 심고 프론트 /api/auth/google/callback 으로 302.",
+            "리프레시 쿠키를 심고 프론트 /auth/google/callback 으로 302.",
           ],
           [
             "실패",
-            "프론트 /api/auth/google/callback?error=코드 로 302. 코드는 access_denied, state_mismatch 등 서버가 정합니다.",
+            "프론트 /auth/google/callback?error=코드 로 302. 코드는 access_denied, state_mismatch 등 서버가 정합니다.",
           ],
           [
             "처음 온 구글 계정",

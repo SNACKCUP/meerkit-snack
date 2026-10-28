@@ -16,7 +16,7 @@ import { api } from "./client";
 export const authApi = {
   signup: (input: SignupInput) =>
     api.post<User>("/auth/signup", input).then((r) => r.data),
-  // 구글 로그인은 서버가 인증을 시작한다. 브라우저를 이 주소로 보내면 구글 → 서버 → /api//auth/google/callback 순서로 돌아온다
+  // 구글 로그인은 서버가 인증을 시작한다. 브라우저를 이 주소로 보내면 구글 → 서버 → /auth/google/callback 순서로 돌아온다
   googleLoginUrl: () => `${meerkitConfig.apiBaseUrl}/auth/google/login`,
   login: (input: LoginInput) =>
     api.post<TokenResponse>("/auth/login", input).then((r) => r.data),

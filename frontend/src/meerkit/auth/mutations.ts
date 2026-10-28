@@ -53,7 +53,7 @@ export function useLogin() {
   });
 }
 
-// 구글 로그인: 서버가 인증을 시작하므로 브라우저를 서버 주소로 보낸다. 끝나면 /api/auth/google/callback 으로 돌아온다.
+// 구글 로그인: 서버가 인증을 시작하므로 브라우저를 서버 주소로 보낸다. 끝나면 /auth/google/callback 으로 돌아온다.
 export function useGoogleLogin() {
   return () => {
     window.location.href = authApi.googleLoginUrl();

@@ -10,7 +10,7 @@ from app.users import repository as user_repository
 from app.users.models import UserTermAgreement
 
 TERMS = "terms,privacy"
-FRONT_CALLBACK = "http://localhost:3000/api/auth/google/callback"
+FRONT_CALLBACK = "http://localhost:3000/auth/google/callback"
 
 
 def error_of(response) -> str | None:

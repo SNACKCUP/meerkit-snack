@@ -54,7 +54,7 @@ export const meerkitConfig = {
     me: "/me",
     adminMembers: "/admin/members",
     resetPassword: "/reset-password",
-    googleCallback: "/api/auth/google/callback",
+    googleCallback: "/auth/google/callback",
     terms: "/terms",
     privacy: "/privacy",
     docs: "/docs",

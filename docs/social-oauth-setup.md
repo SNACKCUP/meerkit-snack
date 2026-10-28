@@ -16,7 +16,7 @@
 ```text
 브라우저 ──GET /api/auth/google/login──▶ 서버 ──302──▶ Google
 Google ──302 /api/auth/google/callback?code&state──▶ 서버 (토큰 교환·프로필·계정 처리, 쿠키 설정)
-서버 ──302 /api/auth/google/callback[?error=...]──▶ 프론트 ──POST /api/auth/refresh──▶ 액세스 토큰
+서버 ──302 /auth/google/callback[?error=...]──▶ 프론트 ──POST /api/auth/refresh──▶ 액세스 토큰
 ```
 
 ## 폴더 구조 (독립 킷 모듈)
@@ -71,7 +71,7 @@ class SocialProfile:
     profile_image_url: str | None = None
 ```
 
-**새 공급자 추가 순서 (Kakao 예):** `providers/kakao.py`에 `OAuthProvider`를 상속해 만들기 → `providers/__init__.py`의 목록에 추가 → `social/config.py`에 `kakao_client_id`·`kakao_client_secret` 추가 → `.env.example`에 변수 추가 → `tests/social/`에 응답 흉내 테스트 추가. 테이블·service·router는 바꾸지 않습니다. 단, 프론트에는 지금 Google 버튼과 `/api/auth/google/callback` 화면만 있으므로, Kakao·Naver를 실제로 쓰려면 그때 프론트에 버튼과 콜백 화면을 따로 추가해야 합니다.
+**새 공급자 추가 순서 (Kakao 예):** `providers/kakao.py`에 `OAuthProvider`를 상속해 만들기 → `providers/__init__.py`의 목록에 추가 → `social/config.py`에 `kakao_client_id`·`kakao_client_secret` 추가 → `.env.example`에 변수 추가 → `tests/social/`에 응답 흉내 테스트 추가. 테이블·service·router는 바꾸지 않습니다. 단, 프론트에는 지금 Google 버튼과 `/auth/google/callback` 화면만 있으므로, Kakao·Naver를 실제로 쓰려면 그때 프론트에 버튼과 콜백 화면을 따로 추가해야 합니다.
 
 ## 공급자별 설정
 
@@ -98,7 +98,7 @@ class SocialProfile:
 | Kakao  | `http://localhost:3000/api/auth/kakao/callback`  |
 | Naver  | `http://localhost:3000/api/auth/naver/callback`  |
 
-> **할 일:** 지금 Google Console에 등록된 `http://localhost:3000/api/auth/google/callback`은 **프론트 화면 주소**입니다. 위의 `/api/...` 주소로 바꿔야 실제 로그인이 됩니다. 프론트 화면 주소는 서버가 마지막에 302로 보내는 곳이며, 공급자 콘솔에는 등록하지 않습니다.
+> **주의:** 공급자 콘솔에는 위의 `/api/...` 주소(서버가 받는 곳)만 등록합니다. 프론트 화면 주소 `http://localhost:3000/auth/google/callback`은 서버가 마지막에 302로 보내는 곳이므로 콘솔에 등록하지 않습니다.
 
 Redirect URI는 공급자 콘솔, 인증 요청, 토큰 교환 요청에서 글자 하나까지 같아야 합니다. 운영 Redirect URI, 동의 화면, 승인된 도메인은 배포 전에 따로 등록합니다.
 
