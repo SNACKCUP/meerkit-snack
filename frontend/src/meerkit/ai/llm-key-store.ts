@@ -4,7 +4,7 @@ import { useAuthStore } from "../auth/store";
 import { estimateCost, type Usage } from "./pricing";
 
 interface LlmKeyState {
-  /** 사용자가 입력한 API 키. 메모리에만 둔다(persist 금지): 새로고침하면 사라진다 */
+  /** 체험용: 사용자가 입력한 API 키. 메모리에만 둔다(persist 금지): 새로고침하면 사라진다. 실제 서비스는 서버가 사용자별로 암호화해 저장한다 */
   apiKey: string;
   /** 이 탭에서 쓴 토큰과 예상 비용 합계 (저장하지 않음) */
   total: { input: number; output: number; cost: number; calls: number };

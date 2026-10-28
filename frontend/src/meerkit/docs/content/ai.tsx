@@ -9,7 +9,7 @@ import { AiPromptInput, type AiAgent } from "../../ai/AiPromptInput";
 import { ApiKeyInput } from "../../ai/ApiKeyInput";
 import { ThinkingIndicator } from "../../ai/ThinkingIndicator";
 import { ORB_STATES, ThinkingOrb, type OrbState } from "../../ai/ThinkingOrb";
-import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
+import { Callout, CodeBlock, DocLinks, DocTable, H2, H3, Ic, links, OL, P, Preview, PreviewWide, PropsTable, UL } from "../ui";
 
 const agents: AiAgent[] = [
   { id: "auto", label: "Agent (auto)", description: "질문에 맞는 방식을 자동으로 고릅니다" },
@@ -345,12 +345,13 @@ export function ApiKeyInputDoc() {
   return (
     <>
       <P>
-        <strong>사용자가 자기 AI API 키를 넣는 입력 칸</strong>입니다. 로그인 전에도 화면에 보이지만, 입력하려고 하면 &quot;로그인이 필요해요&quot; 안내가 먼저 뜨고, 로그인한 뒤에만 키를 저장할 수 있습니다.
-        저장한 키는 <Ic>LlmPlayground</Ic>(웰컴 페이지의 AI 테스트)가 <Ic>POST /api/llm/chat</Ic>을 부를 때 헤더로 실어 보냅니다.
+        <strong>사용자가 자기 AI API 키를 넣는 입력 칸</strong>입니다. 로그인 전에도 화면에 보이지만, 입력하려고 하면 &quot;로그인이 필요해요&quot; 안내가 먼저 뜨고, 로그인한 뒤에만 키를 입력할 수 있습니다.
+        웰컴 페이지의 <Ic>LlmPlayground</Ic>(AI 테스트)는 입력한 키를 <Ic>POST /api/llm/chat</Ic>을 부를 때 헤더로 실어 보냅니다.
       </P>
       <Callout tone="warn">
-        <strong>키는 브라우저 메모리에만 둡니다.</strong> localStorage, sessionStorage, 쿠키에 저장하지 않고 새로고침하거나 로그아웃하면 지워집니다. 서버도 키를 저장하거나 로그에 남기지 않습니다.
-        요청 주소(URL)와 본문에는 넣지 않고 <Ic>X-LLM-API-Key</Ic> 헤더로만 보냅니다.
+        <strong>이 방식은 체험용입니다.</strong> 웰컴 페이지의 AI 테스트에서는 키를 서버에 저장하지 않고 <strong>브라우저 메모리에만</strong> 두며(localStorage, sessionStorage, 쿠키 모두 사용 안 함),
+        새로고침하거나 로그아웃하면 지워집니다. 요청 주소(URL)와 본문에는 넣지 않고 <Ic>X-LLM-API-Key</Ic> 헤더로만 보냅니다.
+        <strong> 실제 서비스에서는 키를 브라우저에 두지 말고, 사용자 계정에 연결해 서버 DB에 암호화해서 저장하세요.</strong> 아래 &quot;실제 서비스에서는&quot;을 참고하세요.
       </Callout>
 
       <H2>Preview</H2>
@@ -390,6 +391,20 @@ export function ApiKeyInputDoc() {
         <li>예상 비용은 <Ic>ai/pricing.ts</Ic>의 모델별 단가(USD, 토큰 100만 개당)로 계산하는 <strong>참고용 값</strong>입니다. 공급자 요금은 바뀔 수 있으니 모델을 늘리거나 단가가 달라지면 이 파일을 고치세요.</li>
         <li>사용 기록 저장, 이용 이력, 한도는 이 기능에 들어 있지 않습니다.</li>
       </UL>
+
+      <H2>실제 서비스에서는</H2>
+      <P>키를 브라우저에 오래 두면 화면을 건드리는 스크립트(XSS)나 확장 프로그램, 공유 PC에서 새어 나갈 수 있습니다. 실제 서비스에서는 <strong>서버가 키를 맡는</strong> 구조를 권장합니다.</P>
+      <OL>
+        <li>사용자가 키를 <strong>한 번만</strong> 입력하고 HTTPS로 서버에 보냅니다. 서버는 입력한 키가 유효한지 가볍게 확인합니다.</li>
+        <li>서버는 키를 <strong>암호화</strong>해서 사용자 계정에 연결해 DB에 저장합니다. 암호화 키는 DB가 아니라 환경변수나 비밀 관리 서비스에 둡니다.</li>
+        <li>이후 AI 요청은 브라우저가 키 없이 보내고, 서버가 로그인한 사용자의 저장된 키를 꺼내 호출합니다.</li>
+        <li>화면에는 <Ic>sk-…1234</Ic>처럼 앞뒤 일부만 돌려주고, 키 전체는 어떤 응답·로그에도 담지 않습니다.</li>
+        <li>사용자가 키를 바꾸거나 지울 수 있게 하고, 탈퇴하면 함께 지웁니다.</li>
+      </OL>
+      <Callout>
+        <strong>현재 킷에는 이 저장 기능(키 테이블, 암호화, 키 등록·삭제 API)이 들어 있지 않습니다.</strong> 킷이 제공하는 것은 입력 칸(<Ic>ApiKeyInput</Ic>), 체험용 호출(<Ic>/api/llm/chat</Ic>), 모델 호출 모듈(<Ic>app/llm</Ic>)입니다.
+        서비스에 붙일 때는 위 순서로 서버 저장을 구현하고, <Ic>ApiKeyInput</Ic>의 저장 동작만 서버 호출로 바꾸면 됩니다.
+      </Callout>
 
       <H2>서버와 주고받는 것</H2>
       <DocTable

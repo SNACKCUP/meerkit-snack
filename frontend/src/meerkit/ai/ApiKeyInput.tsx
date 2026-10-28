@@ -21,7 +21,7 @@ interface ApiKeyInputProps {
 }
 
 // API 키를 입력받는 칸. 로그인 전에도 보이지만, 입력하려 하면 로그인 안내가 먼저 뜬다.
-// 키는 메모리에만 두고(새로고침하면 지워짐) 요청할 때 헤더로만 보낸다.
+// 체험용: 키는 메모리에만 두고(새로고침하면 지워짐) 요청할 때 헤더로만 보낸다. 실제 서비스에서는 서버가 사용자별로 암호화해 저장하는 방식을 쓴다(문서 참고).
 export function ApiKeyInput({ className }: ApiKeyInputProps) {
   const { isAuthenticated } = useAuth();
   const apiKey = useLlmKeyStore((s) => s.apiKey);
@@ -102,7 +102,7 @@ export function ApiKeyInput({ className }: ApiKeyInputProps) {
           {error ? (
             <p role="alert" className="text-xs text-destructive">{error}</p>
           ) : (
-            <p className="text-xs text-muted-foreground">키는 이 브라우저 메모리에만 두고 서버에 저장하지 않아요. 새로고침하면 지워져요.</p>
+            <p className="text-xs text-muted-foreground">체험용: 키는 이 브라우저 메모리에만 두고 서버에 저장하지 않아요. 새로고침하면 지워져요.</p>
           )}
         </>
       )}

@@ -194,11 +194,18 @@ function EndpointView({ ep }: { ep: Endpoint }) {
   );
 }
 
+// 예정 API 중 서버에 이미 생긴 것(같은 메서드·경로)은 빼고 합친다
+function endpointsOf(group: { tag: string; endpoints: unknown[] }): Endpoint[] {
+  const real = group.endpoints as Endpoint[];
+  const has = new Set(real.map((e) => `${e.method} ${e.path}`));
+  return [...real, ...(PLANNED[group.tag] ?? []).filter((e) => !has.has(`${e.method} ${e.path}`))];
+}
+
 /** 백엔드 Swagger 명세를 묶음(tag)별로 보여 주는 페이지 본문 */
 export function ApiSpecPage({ tag }: { tag: string }) {
   const group = spec.groups.find((g) => g.tag === tag);
   if (!group) return <P>명세를 찾을 수 없습니다.</P>;
-  const endpoints = [...(group.endpoints as Endpoint[]), ...(PLANNED[tag] ?? [])];
+  const endpoints = endpointsOf(group);
   return (
     <>
       <P>{DESCRIPTIONS[tag]}. 줄을 누르면 요청과 응답이 펼쳐집니다.</P>
@@ -232,7 +239,7 @@ export function ApiOverviewDoc() {
       <H2>묶음</H2>
       <DocTable
         head={["묶음", "개수", "설명"]}
-        rows={spec.groups.map((g) => [<Ic key={g.tag}>{g.title}</Ic>, `${g.endpoints.length + (PLANNED[g.tag]?.length ?? 0)}개`, DESCRIPTIONS[g.tag] ?? ""])}
+        rows={spec.groups.map((g) => [<Ic key={g.tag}>{g.title}</Ic>, `${endpointsOf(g).length}개`, DESCRIPTIONS[g.tag] ?? ""])}
       />
     </>
   );
@@ -243,11 +250,12 @@ const DESCRIPTIONS: Record<string, string> = {
   auth: "회원가입, 로그인, 토큰 재발급, 이메일 인증, 비밀번호 찾기·재설정",
   "users (me)": "내 정보 조회·수정, 비밀번호 변경, 탈퇴",
   "users (admin)": "멤버 검색, 역할 변경, 활성/비활성, 삭제 (MASTER 전용)",
+  llm: "내 API 키로 AI에게 한 번 묻고 답과 토큰 사용량 받기 (로그인 필요)",
 };
 
 /** 컴포넌트 문서 맨 아래: 이 컴포넌트가 호출하는 API */
 export function LinkedApis({ apis }: { apis: string[] }) {
-  const all = spec.groups.flatMap((g) => [...(g.endpoints as Endpoint[]), ...(PLANNED[g.tag] ?? [])].map((ep) => ({ tag: g.tag, ep })));
+  const all = spec.groups.flatMap((g) => endpointsOf(g).map((ep) => ({ tag: g.tag, ep })));
   const rows = apis.map((key) => all.find(({ ep }) => `${ep.method} ${ep.path}` === key)).filter((r) => !!r);
   if (rows.length === 0) return null;
   return (
