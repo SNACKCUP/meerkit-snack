@@ -71,7 +71,7 @@ export default function AboutView() {
       <section aria-label="매무새 한눈에" data-reveal className="grid gap-4 sm:grid-cols-3">
         {[["3단계", "올리고, 가려내고, 확정해요"], ["3종 문서", "요구사항정의서 · 기능정의서 · 중간보고서"], ["2가지 권한", "관리자와 일반 멤버"]].map(([n, d], i) => (
           <div key={n} className={cn(card, i === 1 && "bg-[#f2f69a] sm:-rotate-1", i === 2 && "sm:rotate-1")}>
-            <p className="text-5xl font-extrabold tracking-[-0.05em] sm:text-6xl">{n}</p>
+            <p className="text-3xl font-extrabold tracking-[-0.04em] sm:text-4xl">{n}</p>
             <p className="mt-3 text-sm text-[#55534c]">{d}</p>
           </div>
         ))}
@@ -115,12 +115,12 @@ export default function AboutView() {
         <div className="grid items-stretch gap-6 lg:grid-cols-[1fr_auto_1fr]">
           <div data-reveal className="grid content-center gap-3 rounded-[24px] border-2 border-dashed border-[#111] p-6 sm:-rotate-1">
             <Pill className="w-fit">고객의 말</Pill>
-            <p className="text-2xl font-semibold leading-snug tracking-tight sm:text-3xl">“로그인 안 해도 일단 담아 둘 수 있었으면 해요”</p>
+            <p className="text-lg font-semibold leading-snug tracking-tight sm:text-xl lg:whitespace-nowrap lg:text-[19px]">“로그인 안 해도 일단 담아 둘 수 있었으면 해요”</p>
           </div>
           <span aria-hidden className="grid place-items-center text-4xl font-extrabold text-[#ff5a14] max-lg:rotate-90">→</span>
           <div data-reveal className={cn(card, "grid gap-3 bg-[#f2f69a] sm:rotate-1")}>
             <div className="flex flex-wrap items-center gap-2"><Pill tone="dark">REQ-001</Pill><Pill>기능</Pill><Pill>높음</Pill></div>
-            <p className="text-2xl font-extrabold leading-snug tracking-tight sm:text-3xl">비회원도 장바구니에 상품을 담을 수 있다</p>
+            <p className="text-lg font-extrabold leading-snug tracking-tight sm:text-xl lg:whitespace-nowrap lg:text-[19px]">비회원도 장바구니에 상품을 담을 수 있다</p>
             <p className="text-sm text-[#55534c]">로그인하지 않아도 상품을 담고, 로그인하면 그대로 이어진다.</p>
           </div>
         </div>
