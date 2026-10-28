@@ -77,6 +77,8 @@ Settings → Environments → **New environment** `production`:
 | `MAIL_BACKEND` 외 `MAIL_*` | [mail-setup.md](mail-setup.md) 6장, 키는 운영용 `meerkit-prod` |
 | `STORAGE_*` 7개 | [storage-setup.md](storage-setup.md) 운영 설정 3장 |
 | `OPENAI_API_KEY` | AI 기능을 쓸 때 (없으면 AI만 503) |
+| `SOCIAL_REDIRECT_BASE_URL` | 구글 로그인을 쓸 때 `https://meerkit.dev/api/auth` |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | 구글 로그인을 쓸 때. 운영용 OAuth 클라이언트를 따로 만들고 승인된 Redirect URI에 `https://meerkit.dev/api/auth/google/callback` 등록 ([social-oauth-setup.md](social-oauth-setup.md)). 비우면 구글 로그인만 꺼짐 |
 | `API_DOCS_ENABLED` | `true` 또는 `false` (Swagger 공개 여부) |
 
 5. Create를 누르면 Render가 한 번 바로 배포합니다. 아직 테이블이 없어 가입 같은 기능은 실패하지만 `/health`는 응답합니다
@@ -122,6 +124,7 @@ Environment `production`에 Secret `SEED_ADMIN_PASSWORD`, Variable `SEED_ADMIN_U
 - [ ] 가입 인증 메일 수신, Gmail "원본 보기"에서 SPF·DKIM·DMARC PASS
 - [ ] 로그인 뒤 새로고침해도 유지 (쿠키 `Secure`·`HttpOnly`)
 - [ ] 비밀번호 찾기 링크가 `https://meerkit.dev/...`
+- [ ] (구글 로그인을 켰다면) 구글 로그인 → `https://meerkit.dev`로 돌아와 로그인 상태
 - [ ] 프로필 이미지 주소가 `https://<ref>.supabase.co/storage/...`
 - [ ] 관리자 멤버 관리 화면
 - [ ] Render 로그가 JSON이고 `request_id`가 있으며, 비밀번호·인증번호·키가 없음
