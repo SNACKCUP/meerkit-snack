@@ -2,7 +2,15 @@
 
 from fastapi import APIRouter
 
+from app.features.maemusae.invitations.router import (
+    link_router as invitation_link_router,
+)
+from app.features.maemusae.invitations.router import (
+    project_router as project_invitations_router,
+)
 from app.features.maemusae.projects.router import router as projects_router
 
 router = APIRouter(prefix="/mms")
 router.include_router(projects_router)
+router.include_router(project_invitations_router)
+router.include_router(invitation_link_router)

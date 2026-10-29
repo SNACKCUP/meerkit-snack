@@ -34,3 +34,26 @@ class LastProjectAdminError(ConflictError):
 class InvalidPeriodError(BadRequestError):
     def __init__(self):
         super().__init__("INVALID_PERIOD", "종료일은 시작일과 같거나 뒤여야 합니다.")
+
+
+class InvitationInvalidError(NotFoundError):
+    # 없는·만료된·취소된·이미 쓴 토큰을 구분하지 않고 같은 응답을 줍니다 (토큰 상태를 알려 주지 않음)
+    def __init__(self):
+        super().__init__("INVITATION_INVALID", "초대 링크가 만료되었거나 더 이상 쓸 수 없습니다. 관리자에게 다시 초대를 요청하세요.")
+
+
+class InvitationNotFoundError(NotFoundError):
+    def __init__(self):
+        super().__init__("INVITATION_NOT_FOUND", "대기 중인 초대를 찾을 수 없습니다.")
+
+
+class AlreadyMemberError(ConflictError):
+    def __init__(self):
+        super().__init__("ALREADY_MEMBER", "이미 이 프로젝트의 멤버입니다.")
+
+
+class InvitationEmailMismatchError(ForbiddenError):
+    def __init__(self):
+        super().__init__(
+            "INVITATION_EMAIL_MISMATCH", "초대받은 이메일과 로그인한 계정의 이메일이 다릅니다. 초대받은 이메일의 계정으로 로그인하세요."
+        )

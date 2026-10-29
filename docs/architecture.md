@@ -26,11 +26,13 @@ flowchart TB
         codes["codes<br/>공통코드 (owner: MEERKIT/MMS) · require_code · 조회·관리 API"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
-        mms["features/maemusae<br/>/api/mms · 프로젝트·멤버 · 프로젝트 접근 검사"]
+        mms["features/maemusae<br/>/api/mms · 프로젝트·멤버·초대 · 프로젝트 접근 검사"]
         req["features/requirements<br/>예전 계약 스텁 (새 /api/mms 로 바뀌면 삭제)"]
     end
     mms --> core
     mms --> users
+    mms --> auth
+    mms --> mail
     req --> core
     account --> core
     account --> auth
@@ -130,8 +132,9 @@ backend/
 │       │   ├── router.py      # /mms 아래에 기능별 라우터를 붙임 (api.py 는 이것 하나만 등록)
 │       │   ├── access.py      # 프로젝트 접근 검사: project_viewer / project_member / project_admin
 │       │   ├── errors.py      # 매무새 오류 코드 (PROJECT_NOT_FOUND 등, AppError 계열)
-│       │   └── projects/      # 프로젝트·멤버: models, schemas, repository, service, router
-│       │                      # 이후 invitations/, documents/(파서), analysis/(체인·프롬프트)가 같은 모양으로 붙음
+│       │   ├── projects/      # 프로젝트·멤버: models, schemas, repository, service, router
+│       │   └── invitations/   # 이메일 초대 (토큰 해시·7일·1회, 초대 링크 가입 증표, 메일 양식 mms_invite 등록)
+│       │                      # 이후 documents/(파서), analysis/(체인·프롬프트)가 같은 모양으로 붙음
 │       └── requirements/      # 예전 계약 스텁 (로그인 필요). 새 /api/mms API 로 바뀌면 삭제
 │           ├── router.py
 │           ├── service.py     # 고정 예시 데이터
