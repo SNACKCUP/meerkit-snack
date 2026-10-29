@@ -6,16 +6,17 @@ MeerKit을 Fork 해서 내 서비스를 만들 때 따라 하는 순서입니다
 ## 0. 서브 서비스가 필요 없다면 먼저 지우기
 
 ```bash
+rm -rf backend/app/features/maemusae backend/tests/features/maemusae
 rm -rf backend/app/features/requirements backend/tests/features/requirements
 rm -rf "frontend/src/app/(service)/requirements"
 ```
 
-그리고 아래 두 파일에서 `requirements` 관련 줄을 지웁니다.
+그리고 아래 두 파일에서 `maemusae`, `requirements` 관련 줄을 지웁니다.
 
 - `backend/app/api.py`
 - `backend/alembic/env.py`
 
-서브 서비스 테이블 마이그레이션이 이미 있다면, 새 마이그레이션으로 테이블을 지우거나 새 프로젝트라면 `alembic/versions/`를 비우고 다시 생성합니다.
+서브 서비스 테이블(`mms_` 로 시작) 마이그레이션이 이미 있다면, 새 마이그레이션으로 테이블을 지우거나 새 프로젝트라면 `alembic/versions/`를 비우고 다시 생성합니다.
 
 ## 1. 백엔드 기능 폴더 만들기
 
@@ -73,8 +74,6 @@ def get_meeting(db, meeting_id: int):
 - 상태별 예외: `BadRequestError` 400, `UnauthorizedError` 401, `ForbiddenError` 403, `NotFoundError` 404, `ConflictError` 409, `ValidationError` 422, `RateLimitedError` 429(`retry_after=초`).
 - `code`는 영문 대문자 상수(예: `MEETING_NOT_FOUND`)로, 프론트와 로그에서 오류를 구분하는 값입니다. `detail`은 사용자에게 그대로 보여 줄 문장입니다.
 - 지금 있는 `HTTPException`도 같은 형식으로 감싸지므로 급하게 바꿀 필요는 없습니다.
-
-> 참고: 서브 서비스 매무새(`features/requirements`)는 아직 예전 방식(`NotFoundError(Exception)` + router의 `HTTPException` 변환)입니다. 응답 형식은 전역 핸들러가 이미 통일하므로 동작에는 문제가 없고, `AppError`로 옮기는 작업은 매무새 담당이 **나중에 따로** 진행합니다 (공통 기반 작업 S1에서는 매무새 코드를 건드리지 않음).
 
 ### models.py 예시
 

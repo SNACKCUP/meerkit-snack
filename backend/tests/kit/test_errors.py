@@ -35,11 +35,6 @@ def test_forbidden_from_permissions(client, make_user, login):
     _assert_error(client.get("/api/users", headers=login("user01")), 403, "FORBIDDEN")
 
 
-def test_service_http_exception_also_unified(client):
-    """매무새(서비스)는 수정하지 않았지만, 기존 HTTPException(404)도 같은 형식으로 나옵니다."""
-    _assert_error(client.get("/api/requirements/documents/999999"), 404, "NOT_FOUND")
-
-
 def test_validation_error_has_readable_detail_and_fields(client):
     response = client.post("/api/auth/login", json={"user_id": "a"})
     body = _assert_error(response, 422, "VALIDATION_ERROR")

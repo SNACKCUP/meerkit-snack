@@ -6,7 +6,9 @@
 """
 
 from datetime import UTC, datetime
+from pathlib import Path
 
+from app.core.exceptions import AppError, NotFoundError
 from app.features.requirements.schemas import (
     ConfirmResult,
     DocumentRead,
@@ -26,8 +28,20 @@ EXAMPLE_DOCUMENT_ID = 1
 _CREATED_AT = datetime(2026, 10, 20, 9, 0, tzinfo=UTC)
 
 
-class NotFoundError(Exception):
-    pass
+# 매무새 오류 코드. 프론트·로그에서 구분하는 값이라 한곳에 모아 둡니다.
+DOCUMENT_NOT_FOUND = "DOCUMENT_NOT_FOUND"
+REQUIREMENT_NOT_FOUND = "REQUIREMENT_NOT_FOUND"
+UNSUPPORTED_FILE_TYPE = "UNSUPPORTED_FILE_TYPE"
+
+
+def check_file_type(filename: str) -> None:
+    """허용한 확장자가 아니면 415. 업로드 전에 부릅니다."""
+    if Path(filename).suffix.lower() not in ALLOWED_EXTENSIONS:
+        raise AppError(
+            UNSUPPORTED_FILE_TYPE,
+            "지원하지 않는 파일 형식입니다. txt, md, docx, pdf 파일만 올릴 수 있습니다.",
+            status_code=415,  # 킷에 415 전용 클래스가 없어서 AppError에 상태 코드를 직접 줍니다
+        )
 
 
 def _example_document(**overrides) -> DocumentRead:
@@ -85,7 +99,7 @@ def _example_requirements() -> list[RequirementRead]:
 
 def _check_document(document_id: int) -> None:
     if document_id != EXAMPLE_DOCUMENT_ID:
-        raise NotFoundError(f"문서 {document_id}를 찾을 수 없습니다.")
+        raise NotFoundError(DOCUMENT_NOT_FOUND, f"문서 {document_id}를 찾을 수 없습니다.")
 
 
 def upload_document(filename: str, content_type: str, size_bytes: int) -> DocumentRead:
@@ -124,7 +138,7 @@ def update_requirement(
     for requirement in _example_requirements():
         if requirement.id == requirement_id:
             return requirement.model_copy(update=body.model_dump(exclude_unset=True))
-    raise NotFoundError(f"요구사항 {requirement_id}를 찾을 수 없습니다.")
+    raise NotFoundError(REQUIREMENT_NOT_FOUND, f"요구사항 {requirement_id}를 찾을 수 없습니다.")
 
 
 def confirm_requirements(document_id: int, requirement_ids: list[int]) -> ConfirmResult:
@@ -132,7 +146,7 @@ def confirm_requirements(document_id: int, requirement_ids: list[int]) -> Confir
     known_ids = {r.id for r in _example_requirements()}
     unknown = set(requirement_ids) - known_ids
     if unknown:
-        raise NotFoundError(f"요구사항 {sorted(unknown)}를 찾을 수 없습니다.")
+        raise NotFoundError(REQUIREMENT_NOT_FOUND, f"요구사항 {sorted(unknown)}를 찾을 수 없습니다.")
     confirmed = len(set(requirement_ids))
     return ConfirmResult(
         document_id=document_id,

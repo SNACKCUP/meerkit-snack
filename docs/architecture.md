@@ -26,11 +26,12 @@ flowchart TB
         codes["codes<br/>공통코드 (owner: MEERKIT/MMS) · require_code · 조회·관리 API"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
-        req["features/requirements<br/>업로드 · 분류 · 확정 · 기능정의서 · Excel"]
+        mms["features/maemusae<br/>/api/mms · 프로젝트·멤버 · 프로젝트 접근 검사"]
+        req["features/requirements<br/>예전 계약 스텁 (새 /api/mms 로 바뀌면 삭제)"]
     end
+    mms --> core
+    mms --> users
     req --> core
-    req --> auth
-    req --> llm
     account --> core
     account --> auth
     account --> users
@@ -125,17 +126,17 @@ backend/
 │   │   ├── errors.py      # LLMError(AppError)와 공급자 오류 → 사용자 문구 변환
 │   │   └── testing.py     # FakeChatModel: 키 없이 정해 둔 응답 (테스트, LLM_PROVIDER=fake)
 │   └── features/
-│       └── requirements/
+│       ├── maemusae/          # 서브 서비스 매무새 (/api/mms, 테이블은 mms_ 로 시작)
+│       │   ├── router.py      # /mms 아래에 기능별 라우터를 붙임 (api.py 는 이것 하나만 등록)
+│       │   ├── access.py      # 프로젝트 접근 검사: project_viewer / project_member / project_admin
+│       │   ├── errors.py      # 매무새 오류 코드 (PROJECT_NOT_FOUND 등, AppError 계열)
+│       │   └── projects/      # 프로젝트·멤버: models, schemas, repository, service, router
+│       │                      # 이후 invitations/, documents/(파서), analysis/(체인·프롬프트)가 같은 모양으로 붙음
+│       └── requirements/      # 예전 계약 스텁 (로그인 필요). 새 /api/mms API 로 바뀌면 삭제
 │           ├── router.py
-│           ├── service.py
-│           ├── repository.py  # DB를 쓰기 시작하면 추가
+│           ├── service.py     # 고정 예시 데이터
 │           ├── schemas.py
-│           ├── models.py
-│           ├── parser.py      # MarkItDown: txt/docx/pdf → 텍스트
-│           ├── chains.py      # 분류, 정제, 기능정의서 생성 체인
-│           ├── prompts/       # *.md 프롬프트
-│           ├── excel.py       # openpyxl로 표준 템플릿 채우기
-│           └── templates/     # 고정 표준 Excel 템플릿
+│           └── excel.py       # openpyxl로 표준 템플릿 채우기
 ├── alembic/
 └── tests/
     ├── conftest.py        # 테스트 DB(테스트마다 롤백), TestClient, 로그인 헬퍼

@@ -6,6 +6,7 @@ from app.auth.router import router as auth_router
 from app.codes.admin_router import router as codes_admin_router
 from app.codes.router import router as codes_router
 from app.features.llm_demo.router import router as llm_demo_router
+from app.features.maemusae.router import router as maemusae_router
 from app.features.requirements.router import router as requirements_router
 from app.social.router import router as social_router
 
@@ -21,5 +22,6 @@ api_router.include_router(codes_router)
 api_router.include_router(codes_admin_router)
 
 # 서비스 기능
+api_router.include_router(maemusae_router)  # 서브 서비스 매무새: /mms/...
 api_router.include_router(requirements_router)
 api_router.include_router(llm_demo_router)

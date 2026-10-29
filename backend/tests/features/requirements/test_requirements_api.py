@@ -1,8 +1,24 @@
 from io import BytesIO
 
+import pytest
 from openpyxl import load_workbook
 
 BASE = "/api/requirements"
+
+
+@pytest.fixture(autouse=True)
+def logged_in(client, make_user, login):
+    """매무새 API는 모두 로그인이 필요합니다. 이 파일의 요청은 일반 회원(VIEWER)으로 보냅니다."""
+    make_user("viewer01")
+    client.headers.update(login("viewer01"))
+
+
+def test_requirements_need_login(client):
+    client.headers.pop("Authorization")
+    response = client.get(f"{BASE}/documents")
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "UNAUTHORIZED"
 
 
 def test_upload_document(client):
@@ -21,6 +37,7 @@ def test_upload_rejects_unsupported_extension(client):
     response = client.post(f"{BASE}/documents", files=files)
 
     assert response.status_code == 415
+    assert response.json()["code"] == "UNSUPPORTED_FILE_TYPE"
 
 
 def test_list_documents(client):
@@ -41,6 +58,9 @@ def test_get_unknown_document_returns_404(client):
     response = client.get(f"{BASE}/documents/999")
 
     assert response.status_code == 404
+    body = response.json()
+    assert body["code"] == "DOCUMENT_NOT_FOUND"
+    assert body["detail"] == "문서 999를 찾을 수 없습니다."
 
 
 def test_analyze_document(client):
@@ -88,6 +108,7 @@ def test_update_unknown_requirement_returns_404(client):
     )
 
     assert response.status_code == 404
+    assert response.json()["code"] == "REQUIREMENT_NOT_FOUND"
 
 
 def test_confirm_requirements(client):
