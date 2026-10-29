@@ -124,6 +124,11 @@ public = true
 file_size_limit = "2MiB"
 allowed_mime_types = ["image/webp"]
 
+# 비공개 버킷: 고객 문서 원본(매무새). 공개 주소 없음, 서버가 권한 확인 후 읽어서 내려줌
+[storage.buckets.meerkit-private]
+public = false
+file_size_limit = "10MiB"
+
 # Uncomment to configure local storage buckets
 # [storage.buckets.images]
 # public = false

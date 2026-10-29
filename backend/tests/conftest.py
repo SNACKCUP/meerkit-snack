@@ -90,12 +90,13 @@ def isolate_storage(monkeypatch):
     from app.storage import backends
     from app.storage.config import storage_settings
 
+    caches = (backends._s3, backends._memory, backends._s3_private, backends._memory_private)
     monkeypatch.setattr(storage_settings, "storage_backend", "")
-    backends._s3.cache_clear()
-    backends._memory.cache_clear()
+    for cache in caches:
+        cache.cache_clear()
     yield
-    backends._s3.cache_clear()
-    backends._memory.cache_clear()
+    for cache in caches:
+        cache.cache_clear()
 
 
 @pytest.fixture
@@ -108,6 +109,18 @@ def storage():
     override_storage(memory)
     yield memory
     override_storage(None)
+
+
+@pytest.fixture
+def private_storage():
+    """비공개 메모리 저장소. private_storage.objects 로 올라간 파일을 확인합니다."""
+    from app.storage import override_private_storage
+    from app.storage.backends import MemoryStorage
+
+    memory = MemoryStorage()
+    override_private_storage(memory)
+    yield memory
+    override_private_storage(None)
 
 
 @pytest.fixture(autouse=True)
