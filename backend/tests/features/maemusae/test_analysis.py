@@ -134,7 +134,10 @@ def test_small_document_runs_once_and_saves_candidates(client, db, owner, docs_u
 
     first, second = _requirements(db, docs_url)
     assert (first.seq, first.name, first.kind, first.priority, first.is_manual) == (1, "이메일 회원가입", "FUNCTIONAL", "HIGH", False)
-    assert (second.kind, second.priority) == ("FUNCTIONAL", "MEDIUM")  # 목록에 없는 코드는 첫 구분·보통
+    assert (first.kind_defaulted, first.priority_defaulted) == (False, False)
+    # 목록에 없는 코드는 첫 구분·보통으로 넣고 "확인 필요" 표시
+    assert (second.kind, second.priority) == ("FUNCTIONAL", "MEDIUM")
+    assert (second.kind_defaulted, second.priority_defaulted) == (True, True)
     [evidence] = _sources(db, first)
     assert evidence.verified is True and evidence.end_source_page_id is None
     source = db.scalar(select(SourceFile).where(SourceFile.document_id == _doc_id(docs_url)))

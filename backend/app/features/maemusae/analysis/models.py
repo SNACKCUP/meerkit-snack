@@ -82,6 +82,10 @@ class Requirement(TimestampMixin, Base):
     ai_answer: Mapped[str | None] = mapped_column(Text)
     is_manual: Mapped[bool] = mapped_column(Boolean, server_default="false")  # 직접 추가한 후보 (이것만 삭제 가능)
     is_included: Mapped[bool] = mapped_column(Boolean, server_default="true")  # 체크 해제하면 확정에서 빠짐
+    # AI 가 목록에 없는 값을 답해서 서버가 기본값(첫 구분 / 보통)을 넣었으면 true. 화면이 그 칸에 "확인 필요"를 붙이고,
+    # 사람이 그 칸을 고치거나 그대로 확정하면 false (M3-2 수정 API). 10/29 SoYoung 결정 B
+    kind_defaulted: Mapped[bool] = mapped_column(Boolean, server_default="false")
+    priority_defaulted: Mapped[bool] = mapped_column(Boolean, server_default="false")
     created_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))  # AI 가 만들면 비움
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

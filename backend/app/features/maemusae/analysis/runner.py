@@ -81,6 +81,8 @@ class Candidate:
     priority: str
     question: str | None
     evidence: list[tuple[str, str]] = field(default_factory=list)  # (쪽 번호표, 문장)
+    kind_defaulted: bool = False  # 목록에 없는 값이라 기본값을 넣음 (화면에 "확인 필요")
+    priority_defaulted: bool = False
 
 
 def run_analysis(run_id: int) -> None:
@@ -155,17 +157,21 @@ def _candidate(item: ExtractedRequirement, tags: set[str], kinds: list[str], pri
     name = item.name.strip()[:NAME_MAX]
     if not name:
         return None
-    # AI 가 목록에 없는 코드를 대면 첫 구분 / 보통으로 (사람이 검토 화면에서 고침)
-    kind = item.kind if item.kind in kinds else kinds[0]
+    # AI 가 목록에 없는 코드를 대면 첫 구분 / 보통으로 넣고 표시해 둠 (관리자가 검토 화면에서 바로 알아보고 고침)
+    kind_defaulted = item.kind not in kinds
+    kind = kinds[0] if kind_defaulted else item.kind
+    priority_defaulted = item.priority not in priorities
     fallback = DEFAULT_PRIORITY if DEFAULT_PRIORITY in priorities else priorities[0]
-    priority = item.priority if item.priority in priorities else fallback
+    priority = fallback if priority_defaulted else item.priority
     evidence = []
     for ev in item.evidence:
         tag, quote = _tag(ev.page), ev.quote.strip()[:QUOTE_MAX]
         if tag in tags and quote and (tag, quote) not in evidence:  # 이 묶음에 없는 쪽 번호는 버림
             evidence.append((tag, quote))
     question = (item.question or "").strip() or None
-    return Candidate(name, item.description.strip(), kind, priority, question, evidence)
+    return Candidate(
+        name, item.description.strip(), kind, priority, question, evidence, kind_defaulted, priority_defaulted
+    )
 
 
 def _dedupe_lines(candidates: list[Candidate], with_description: bool) -> str:
@@ -225,6 +231,8 @@ def _save(
             priority=c.priority,
             description=c.description,
             ai_question=c.question,
+            kind_defaulted=c.kind_defaulted,
+            priority_defaulted=c.priority_defaulted,
         )
         repository.add(db, requirement)
         sources = []

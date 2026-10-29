@@ -59,6 +59,8 @@ def upgrade() -> None:
     sa.Column('ai_answer', sa.Text(), nullable=True),
     sa.Column('is_manual', sa.Boolean(), server_default='false', nullable=False),
     sa.Column('is_included', sa.Boolean(), server_default='true', nullable=False),
+    sa.Column('kind_defaulted', sa.Boolean(), server_default='false', nullable=False),
+    sa.Column('priority_defaulted', sa.Boolean(), server_default='false', nullable=False),
     sa.Column('created_by', sa.Integer(), nullable=True),
     sa.Column('updated_by', sa.Integer(), nullable=True),
     sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
