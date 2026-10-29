@@ -202,3 +202,25 @@ class RefineNeedsRequirementsError(BadRequestError):
 class RefineNothingNewError(BadRequestError):
     def __init__(self):
         super().__init__("REFINE_NOTHING_NEW", "반영할 내용이 없어요. 입력을 남기거나 문서를 새로 올린 뒤 다시 분류해 주세요.")
+
+
+class DocumentNotReadyError(ConflictError):
+    # 시작 전·분석 실패처럼 확정할 후보 목록이 아직 없는 상태
+    def __init__(self):
+        super().__init__("DOCUMENT_NOT_READY", "아직 확정할 수 없는 상태예요. AI 분석을 마치거나 후보를 직접 추가해 주세요.")
+
+
+class NothingToConfirmError(BadRequestError):
+    def __init__(self):
+        super().__init__("NOTHING_TO_CONFIRM", "체크된 후보가 없어요. 확정할 후보를 하나 이상 체크해 주세요.")
+
+
+class DocumentNotConfirmedError(ConflictError):
+    def __init__(self):
+        super().__init__("DOCUMENT_NOT_CONFIRMED", "확정된 문서가 아니에요.")
+
+
+class ConfirmedVersionNotFoundError(NotFoundError):
+    # Excel 은 확정 기록에서만 만듦 (버전 추가·저장 기록은 받지 않음)
+    def __init__(self):
+        super().__init__("CONFIRMED_VERSION_NOT_FOUND", "확정 기록을 찾을 수 없습니다.")

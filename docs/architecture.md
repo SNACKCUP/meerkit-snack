@@ -27,7 +27,6 @@ flowchart TB
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
         mms["features/maemusae<br/>/api/mms · 프로젝트·멤버·초대 · 문서·파일(쪽 단위 본문) · 프로젝트 접근 검사"]
-        req["features/requirements<br/>예전 계약 스텁 (새 /api/mms 로 바뀌면 삭제)"]
     end
     mms --> core
     mms --> users
@@ -35,7 +34,6 @@ flowchart TB
     mms --> mail
     mms --> storage
     mms --> codes
-    req --> core
     account --> core
     account --> auth
     account --> users
@@ -137,13 +135,12 @@ backend/
 │       │   ├── config.py      # MMS_* 설정 (파일 10MB·문서당 20개·본문 20만 자, 글자 수로 나눌 때 조각 크기)
 │       │   ├── projects/      # 프로젝트·멤버: models, schemas, repository, service, router
 │       │   ├── invitations/   # 이메일 초대 (토큰 해시·7일·1회, 초대 링크 가입 증표, 메일 양식 mms_invite 등록)
-│       │   └── documents/     # 문서(파일 카드)·올린 파일·쪽 단위 본문. parsing.py: MarkItDown 변환 + 쪽 나누기,
-│       │                      # 원본은 비공개 저장소(get_private_storage). 이후 analysis/(체인·프롬프트)가 같은 모양으로 붙음
-│       └── requirements/      # 예전 계약 스텁 (로그인 필요). 새 /api/mms API 로 바뀌면 삭제
-│           ├── router.py
-│           ├── service.py     # 고정 예시 데이터
-│           ├── schemas.py
-│           └── excel.py       # openpyxl로 표준 템플릿 채우기
+│       │   ├── documents/     # 문서(파일 카드)·올린 파일·쪽 단위 본문. parsing.py: MarkItDown 변환 + 쪽 나누기,
+│       │   │                  # 원본은 비공개 저장소(get_private_storage)
+│       │   ├── analysis/      # AI 분석·다시 분류 (응답 뒤에서 실행, 진행률), 요구사항 후보·근거
+│       │   ├── review/        # 후보 검토: 목록·수정(version)·일괄 수정·입력
+│       │   ├── versions/      # 버전 추가·버전 저장·버전 기록 (mms_document_versions)
+│       │   └── confirm/       # 요구사항 확정·확정 후 수정·확정한 문서·Excel(excel.py, openpyxl 고정 양식)
 ├── alembic/
 └── tests/
     ├── conftest.py        # 테스트 DB(테스트마다 롤백), TestClient, 로그인 헬퍼

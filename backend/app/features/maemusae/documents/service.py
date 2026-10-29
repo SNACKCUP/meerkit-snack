@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.codes import list_codes
 from app.features.maemusae.access import ProjectAccess
 from app.features.maemusae.config import mms_settings
+from app.features.maemusae.confirm import service as confirm_service
 from app.features.maemusae.documents import parsing, repository
 from app.features.maemusae.documents.models import (
     BUSY_STATUSES,
@@ -73,6 +74,7 @@ def _document_read(db: Session, document: Document, source_count: int, labels: d
         source_count=source_count,
         saved_at=document.saved_at,
         **versions_service.document_state(db, document),
+        **confirm_service.warning_counts(db, document),
         confirmed_at=document.confirmed_at,
         confirmed_by_name=repository.get_user_name(db, document.confirmed_by),
         updated_at=document.updated_at,

@@ -49,7 +49,7 @@ body:
       label: 완료 조건
       description: 무엇을 확인하면 끝났다고 할지
       placeholder: |
-        - GET /api/requirements 가 200과 목록을 돌려준다
+        - GET /api/mms/projects 가 200과 목록을 돌려준다
         - pytest, npm run build 통과
     validations:
       required: true
