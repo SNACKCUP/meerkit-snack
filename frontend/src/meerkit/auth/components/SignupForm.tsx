@@ -40,6 +40,11 @@ interface SignupFormProps {
   terms?: TermsItem[];
   /** 주면 이메일 옆에 인증번호 받기·확인 버튼이 생기고, 인증해야 가입할 수 있다 */
   emailVerification?: EmailVerificationHandlers;
+  /**
+   * 이미 확인된 이메일로 가입할 때 (예: 서비스의 초대 링크). 이메일 칸을 이 값으로 고정하고 인증번호 단계 없이
+   * token을 가입 요청의 증표로 보낸다. 서버가 증표의 이메일과 가입 이메일이 같은지 다시 확인한다.
+   */
+  presetEmail?: { email: string; token: string };
   /** 주면 아이디 옆에 [중복 확인] 버튼이 생기고, 사용 가능 확인을 받아야 가입할 수 있다. 쓸 수 있으면 true */
   checkUserId?: (userId: string) => Promise<boolean>;
   /** 이름 글자 수 제한. 기본 2~10자 */
@@ -79,6 +84,7 @@ export function SignupForm({
   addressType = "basic",
   terms = [],
   emailVerification,
+  presetEmail,
   checkUserId,
   nickname,
   nameRange = DEFAULT_NAME_RANGE,
@@ -88,14 +94,14 @@ export function SignupForm({
   addressSearchProvider,
   onGoogle,
 }: SignupFormProps) {
-  const [form, setForm] = useState({ user_id: "", email: "", name: "", password: "", password_confirm: "" });
+  const [form, setForm] = useState({ user_id: "", email: presetEmail?.email ?? "", name: "", password: "", password_confirm: "" });
   const [optional, setOptional] = useState<OptionalValues>(() => ({
     ...emptyOptionalValues,
     // 설정에서 켜 두면 닉네임을 미리 채운다 (사용자가 고칠 수 있다)
     nickname: nickname?.autoFill && optionalFields.includes("nickname") ? generateNickname() : "",
   }));
   const [agreed, setAgreed] = useState<string[]>([]);
-  const [emailToken, setEmailToken] = useState<string | null>(null);
+  const [emailToken, setEmailToken] = useState<string | null>(presetEmail?.token ?? null);
   const [invalid, setInvalid] = useState<string | null>(null);
   const [termsInvalid, setTermsInvalid] = useState(false);
   // 마지막으로 확인한 아이디와 결과. 아이디를 고치면 다시 확인해야 한다
@@ -130,7 +136,7 @@ export function SignupForm({
     if (nameProblem) return setInvalid(nameProblem);
     if (checkUserId && idStatus !== "available") return setInvalid("아이디 중복 확인을 해 주세요.");
     if (!EMAIL_PATTERN.test(form.email)) return setInvalid("이메일 형식이 올바르지 않습니다.");
-    if (emailVerification && !emailToken) return setInvalid("이메일 인증을 완료해 주세요.");
+    if (emailVerification && !presetEmail && !emailToken) return setInvalid("이메일 인증을 완료해 주세요.");
     if (form.password.length < 8) return setInvalid("비밀번호는 8자 이상이어야 합니다.");
     if (passwordConfirm && form.password !== form.password_confirm) return setInvalid("비밀번호가 일치하지 않습니다.");
     const optionalError = validateOptional(optional, optionalFields);
@@ -150,7 +156,7 @@ export function SignupForm({
       ...collectOptional(optional, optionalFields, addressType),
     };
     if (terms.length > 0) input.agreed_terms = agreed;
-    if (emailVerification && emailToken) input.email_verification_token = emailToken;
+    if ((emailVerification || presetEmail) && emailToken) input.email_verification_token = emailToken;
     onSubmit(input);
   }
 
@@ -185,7 +191,9 @@ export function SignupForm({
         {(!idStatus || idStatus === "checking") && <p className="text-xs text-muted-foreground">{USER_ID_HINT}</p>}
       </div>
       <TextField id="signup-name" name="name" label="이름" autoComplete="name" required maxLength={nameRange.max} placeholder={`${nameRange.min}~${nameRange.max}자`} value={form.name} onValueChange={setField} />
-      {emailVerification ? (
+      {presetEmail ? (
+        <TextField id="signup-email" name="email" label="이메일" type="email" autoComplete="email" required disabled value={presetEmail.email} onValueChange={setField} />
+      ) : emailVerification ? (
         <EmailVerificationField
           value={form.email}
           onChange={setEmail}

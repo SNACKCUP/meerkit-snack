@@ -17,10 +17,12 @@ interface AuthPanelProps {
   onForgotPassword?: () => void;
   /** 아이디 찾기 링크를 보여 줄 때 누르면 호출한다 */
   onFindId?: () => void;
+  /** 가입 모드에서 이메일을 고정하고 인증번호 대신 이 증표로 가입한다 (예: 서비스의 초대 링크). SignupForm의 presetEmail 참고 */
+  presetEmail?: { email: string; token: string };
 }
 
 /** 로그인·가입 폼을 모달 없이 페이지에 바로 놓는 부품. 로직은 AuthDialog와 같고, 폼 모양은 LoginForm·SignupForm이 정한다 */
-export function AuthPanel({ mode, onSuccess, onForgotPassword, onFindId }: AuthPanelProps) {
+export function AuthPanel({ mode, onSuccess, onForgotPassword, onFindId, presetEmail }: AuthPanelProps) {
   const login = useLogin();
   const googleLogin = useGoogleLogin();
   const signup = useSignup();
@@ -65,6 +67,7 @@ export function AuthPanel({ mode, onSuccess, onForgotPassword, onFindId }: AuthP
               phoneInput={meerkitConfig.signup.phoneInput}
       addressSearch={meerkitConfig.signup.addressSearch}
       checkUserId={(id) => checkId.mutateAsync(id)}
+      presetEmail={presetEmail}
       emailVerification={
         meerkitConfig.signup.emailVerification
           ? {

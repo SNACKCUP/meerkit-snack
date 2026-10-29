@@ -1,32 +1,11 @@
-// 매무새 화면이 쓰는 데이터 모양. 백엔드에 프로젝트·멤버·초대 API가 만들어지면 이 모양에 맞춰 연결한다.
+// 매무새 화면이 쓰는 데이터 모양.
+// 프로젝트·멤버·초대·문서·올린 파일은 서버 API 모양(api.ts)을 쓴다.
+// 아래 요구사항 후보·입력한 내용·확정 기록은 AI 분석(M3)·확정(M4) API가 생기기 전까지 브라우저 목 데이터(store.ts)로 흉내 낸다.
 
 export type ProjectRole = "ADMIN" | "MEMBER";
 
-export interface Member {
-  id: string;
-  /** 가입한 사용자의 id. 아직 가입하지 않은 초대 대기 멤버는 null */
-  userId: string | null;
-  name: string;
-  email: string;
-  role: ProjectRole;
-  status: "active" | "invited";
-  /** 초대 수락 링크용 토큰 (초대 대기일 때만) */
-  token?: string;
-  /** 초대 만료 시각 (초대 후 7일) */
-  expiresAt?: string;
-}
-
-export interface Project {
-  id: string;
-  name: string;
-  startDate: string; // YYYY-MM-DD
-  endDate: string;
-  createdBy: string; // 만든 사용자 id (= 첫 프로젝트 관리자)
-  createdAt: string;
-  members: Member[];
-}
-
-export type CandidateKind = "기능" | "비기능";
+/** 요구사항 구분 코드 (공통코드 MMS_REQ_KIND: FUNCTIONAL / NON_FUNCTIONAL / CONSTRAINT). 이름은 서버에서 받는다 */
+export type CandidateKind = string;
 export type Priority = "높음" | "중간" | "낮음";
 
 export interface Candidate {
@@ -64,6 +43,7 @@ export type DocStatus = "empty" | "analyzing" | "ready" | "confirming" | "confir
 export interface RequirementDoc {
   status: DocStatus;
   prompt: string;
+  /** 분석에 쓴 파일 이름 (올린 파일은 서버에 있음) */
   files: string[];
   candidates: Candidate[];
   notes: Note[];
@@ -75,12 +55,6 @@ export interface RequirementDoc {
   confirmedBy: string | null;
   /** 오래 걸리는 작업을 시작한 시각 (새로고침 뒤 이어서 마무리하는 데 쓴다) */
   pendingSince: number | null;
-}
-
-export interface DemoUser {
-  id: string;
-  name: string;
-  email: string;
 }
 
 /** 확정할 때마다 쌓이는 문서 기록. 그 시점의 요구사항을 그대로 담는다 */
