@@ -82,8 +82,8 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 ## 1. 위치 규칙
 
 - 프론트 킷 코드는 `frontend/src/meerkit/`에만 둔다. `src/app/`에는 킷을 연결하는 얇은 파일만 둔다.
-- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
-- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만, `users`는 `storage`도 씀, `social`은 `core`·`users`·`auth`만 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
+- 백엔드 킷 코드는 `backend/app/core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`, `codes`에 둔다. 서비스 코드는 `backend/app/features/`에 둔다.
+- 킷끼리는 한 방향으로만 import 한다: `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`·`codes`는 `core`만, `users`는 `storage`도 씀, `social`은 `core`·`users`·`auth`만 (`tests/test_import_rules.py`의 층 표). 바꿔야 하면 먼저 협의한다.
 
 | 만들 것             | 위치                                                                                     |
 | ------------------- | ---------------------------------------------------------------------------------------- |
@@ -112,6 +112,7 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 - 역할은 `MASTER`, `OWNER`, `VIEWER`, `WRITER` 4종이고 한 사람이 여러 역할을 가질 수 있다. 관리자 검사는 `app.core.principal`의 `require_admin`(`ADMIN_ROLE` = `MASTER`) 하나로만 한다. 권한 검사는 요청마다 auth가 채운 현재 사용자만 읽으므로 어느 킷 모듈이든 `core`만 import 해서 쓸 수 있다.
 - 위 관리자는 서비스 전체 관리자다. 서브 서비스 안 리소스 단위 권한(예: 매무새 프로젝트의 관리자/일반 멤버)은 서비스가 자기 테이블로 정하고 킷 역할로 대신하지 않는다. MASTER는 이런 리소스를 고객 지원용으로 보기만 한다.
 - 역할별 세부 권한은 아직 정하지 않았다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
+- 화면에 보이는 분류값(구분, 우선순위, 문서 종류 등)은 공통코드(`app.codes`)로 관리한다. 킷과 서브 서비스가 테이블 2개를 같이 쓰고 `owner`(`MEERKIT`/`MMS`)로 구분하며, `group_code`는 `owner_`로 시작한다. 서브 서비스는 자기 묶음을 자기 마이그레이션에서만 넣고, 저장 전에 `require_code`로 검사한다. 코드가 흐름을 바꾸는 상태값·권한은 공통코드에 넣지 않고 각 테이블의 `CHECK`로 둔다.
 - 파일은 `app.storage.get_storage()`로만 저장한다. 공개 버킷(`meerkit-public`)에는 공개해도 되는 파일만 두고, 고객 문서는 넣지 않는다.
 - 메일은 `app.mail.send_mail`로만 보낸다. 라우터에서 `BackgroundTasks`로 넘기고, 인증번호·토큰·비밀번호를 로그에 남기지 않는다.
 

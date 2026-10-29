@@ -23,6 +23,7 @@ flowchart TB
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
         mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
         storage["storage<br/>get_storage · S3 호환(Supabase Storage)/memory"]
+        codes["codes<br/>공통코드 (owner: MEERKIT/MMS) · require_code · 조회·관리 API"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
         req["features/requirements<br/>업로드 · 분류 · 확정 · 기능정의서 · Excel"]
@@ -46,14 +47,15 @@ flowchart TB
     mail --> core
     llm --> core
     storage --> core
+    codes --> core
 ```
 
-- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). `social`은 `core`·`users`·`auth`만 쓰고, `social`을 import 하는 킷은 없습니다(`app/api.py`만 라우터 등록). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
+- **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`·`codes`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). `social`은 `core`·`users`·`auth`만 쓰고, `social`을 import 하는 킷은 없습니다(`app/api.py`만 라우터 등록). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
 - `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
 - **권한 검사는 `core`에 있습니다 (`app.core.principal`).** 요청마다 `auth`의 `load_principal`(앱 전체 공통 의존성)이 토큰과 DB를 확인해 현재 사용자(id, 역할)를 `request.state`에 담고, `require_admin`·`require_role(...)`·`require_login`은 그 값만 읽습니다(Spring의 `SecurityContextHolder` + `@PreAuthorize`). 그래서 어느 킷 모듈이든 `core`만 import 해서 권한을 검사할 수 있고, 역할을 매 요청 DB에서 읽으므로 회수·비활성화가 바로 반영됩니다. 등록이 빠지면 401로 닫힙니다.
 
 - 화살표는 "import 한다"는 뜻입니다.
-- **킷(`core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
+- **킷(`core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`, `codes`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
 - `features/` 안의 기능끼리도 서로 import 하지 않습니다. 공통으로 필요해지면 공통 기반으로 올립니다.
 - 각 모듈 안에서는 `router → service → repository` 방향으로만 import 합니다.
 - 프론트엔드도 같습니다: 킷(`src/meerkit`)은 `src/app`(라우트·서비스 화면)을 import 하지 않고, `src/app`은 킷을 `@/meerkit`(공개 API)으로만 씁니다. ESLint가 검사합니다.
@@ -110,6 +112,11 @@ backend/
 │   ├── storage/           # 파일 저장소 (킷, core만 import). 설정 순서는 storage-setup.md
 │   │   ├── config.py      # STORAGE_* 설정 + 운영 검사(memory 금지, localhost 주소 금지)
 │   │   └── backends.py    # get_storage(): s3(Supabase Storage·S3·R2) / memory(테스트), override_storage()
+│   ├── codes/             # 공통코드 (킷, core만 import). 킷·서브 서비스가 같이 쓰고 owner(MEERKIT/MMS)로 구분
+│   │   ├── models.py      # common_code_groups(group_code는 owner_ 로 시작, CHECK), common_codes
+│   │   ├── service.py     # list_codes(), is_valid_code(), require_code()(400 INVALID_CODE), 관리자 추가·수정
+│   │   ├── router.py      # GET /api/codes, /api/codes/{group_code} (로그인, 켜진 값만)
+│   │   └── admin_router.py  # /api/admin/codes (MASTER: 전체 보기·값 추가·이름/순서/켜기·끄기, 삭제 없음)
 │   ├── llm/               # LLM 공통 모듈 (킷, core만 import)
 │   │   ├── config.py      # LLM 설정(LLM_PROVIDER, LLM_MODEL, OPENAI_API_KEY 등) + 운영 검사(fake 금지)
 │   │   ├── client.py      # get_chat_model(): 설정값으로 모델 생성, override_chat_model(): 테스트용 교체
@@ -163,6 +170,7 @@ backend/
 | 탈퇴 | `is_active=false` + `deactivated_at` 기록(관리자 삭제도 같음). 아이디·이메일은 계속 점유 |
 | 개인정보 파기 | 탈퇴 후 `ACCOUNT_RETENTION_DAYS`(365일) 지나면 `uv run python -m app.users.purge`가 아이디·이메일·이름·선택 항목을 지우고 `deleted_at` 기록(행은 남김). 이어서 `uv run python -m app.auth.cleanup`이 탈퇴 회원의 재설정 토큰과 `EMAIL_VERIFICATION_RETENTION_DAYS`(7일) 지난 인증번호 기록을, `uv run python -m app.social.cleanup`이 소셜 연결을 지움. 모두 `--dry-run` 지원, `.github/workflows/account-purge.yml`이 매일 차례로 실행 |
 | 소셜 로그인 | 서버가 시작하고 끝냄: `GET /auth/{provider}/login` → 공급자 → `GET /auth/{provider}/callback`이 리프레시 쿠키를 심고 프론트 `/auth/{provider}/callback`으로 302 (실패는 `?error=코드`). 연결은 `social_accounts`(`provider`+`provider_user_id` 유일). 소셜로만 가입한 계정은 `users.has_password=false`라 아이디 로그인·비밀번호 변경·탈퇴 확인이 막히고, 비밀번호 찾기로 비밀번호를 만들면 풀림. 명세는 [social-oauth-setup.md](social-oauth-setup.md) |
+| 공통코드 | `app.codes`. 킷·서브 서비스가 `common_code_groups`·`common_codes`를 같이 쓰고 `owner`로 구분(`group_code`는 `owner_`로 시작, DB CHECK). 서브 서비스는 자기 묶음을 자기 마이그레이션에서 넣고, 저장 전에 `require_code(db, 묶음, 값)`, 목록은 `list_codes`. 상태값·권한은 넣지 않음 |
 | 메일 | `app.mail.send_mail`만 사용. 서비스 메일 양식은 킷 파일에 넣지 않고 `app.mail.register_template("접두어_이름", 만드는함수)`로 앱 시작 때 등록(같은 이름은 에러). 라우터에서 `BackgroundTasks`로 응답 뒤에 보냄. 로그에 인증번호·링크를 남기지 않음 실제 발송 설정(도메인·DNS·키)은 [mail-setup.md](mail-setup.md) |
 
 ### 인증·회원 API (`/api` 아래)
@@ -188,6 +196,10 @@ backend/
 | `PUT /users/{id}/roles` `{roles: [코드]}` | (MASTER) 역할 변경 (여러 개) |
 | `PATCH /users/{id}/active` `{is_active}` | (MASTER) 활성/비활성, 잠금 해제, 탈퇴 취소 |
 | `DELETE /users/{id}` | (MASTER) 탈퇴 처리 (바로 지우지 않음) |
+| `GET /codes?owner=`, `GET /codes/{group_code}` | (로그인) 공통코드 켜진 묶음·값, `sort_order` 순. 없거나 꺼진 묶음은 404 `CODE_GROUP_NOT_FOUND` |
+| `GET /admin/codes?owner=` | (MASTER) 꺼진 묶음·값까지 |
+| `POST /admin/codes/{group_code}` `{code, label, sort_order}` | (MASTER) 값 추가 → 201 / 409 `CODE_EXISTS`. 묶음 추가·값 삭제는 없음(묶음은 마이그레이션, 값은 끄기) |
+| `PATCH /admin/codes/{group_code}/{code}` `{label?, sort_order?, is_active?}` | (MASTER) 이름·순서·켜기/끄기. `code` 값은 바꿀 수 없음 |
 
 User 응답: `id, user_id, email, name, 선택 항목, email_verified, roles: [{id, name}], is_active, created_at, updated_at, deactivated_at(탈퇴 시각), deleted_at(개인정보 파기 시각)`. `hashed_password`는 절대 포함하지 않습니다.
 
