@@ -191,3 +191,14 @@ class NothingToVersionError(BadRequestError):
 class VersionNotFoundError(NotFoundError):
     def __init__(self):
         super().__init__("VERSION_NOT_FOUND", "버전 기록을 찾을 수 없습니다.")
+
+
+class RefineNeedsRequirementsError(BadRequestError):
+    # 다시 분류는 기존 후보에 반영하는 단계라 후보가 먼저 있어야 함
+    def __init__(self):
+        super().__init__("REFINE_NEEDS_REQUIREMENTS", "후보가 없어요. 먼저 AI 분석을 하거나 후보를 직접 추가해 주세요.")
+
+
+class RefineNothingNewError(BadRequestError):
+    def __init__(self):
+        super().__init__("REFINE_NOTHING_NEW", "반영할 내용이 없어요. 입력을 남기거나 문서를 새로 올린 뒤 다시 분류해 주세요.")

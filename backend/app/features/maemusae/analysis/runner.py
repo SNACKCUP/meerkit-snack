@@ -6,6 +6,7 @@
 4. 문서를 잠그고, 분석 요청이 아직 RUNNING 일 때만 한 트랜잭션으로 저장 (멈춤 정리와 겹치면 저장하지 않음).
    저장할 때 이전 후보·직접 추가·입력을 모두 지우고 REQ-001 부터 다시 매깁니다. 버전 번호는 건드리지 않고
    "이번 분석 이후 버전을 남겼는지" 표시(saved_at)만 비웁니다 (10/29 결정, 계획 17의 2-1)
+다시 분류(run_refine, M3-3)는 아래 "다시 분류" 절에 있습니다.
 어느 단계든 실패하면 반쯤 만든 결과는 저장하지 않고 run FAILED + 오류 코드 (킷 LLM 오류 코드 그대로).
 
 로그에는 id·묶음 수·후보 수·걸린 시간·오류 코드만. 문서 본문·후보 내용·지시문은 남기지 않습니다.
@@ -25,7 +26,7 @@ from app.codes import list_codes
 from app.core.database import SessionLocal
 from app.core.exceptions import AppError
 from app.features.maemusae.analysis import repository
-from app.features.maemusae.analysis.batching import PageRef, locate, tag_of
+from app.features.maemusae.analysis.batching import PageRef, locate, normalize, tag_of
 from app.features.maemusae.analysis.models import (
     RUNNING,
     SUCCEEDED,
@@ -37,12 +38,17 @@ from app.features.maemusae.analysis.schemas import (
     DedupeResult,
     ExtractedRequirement,
     ExtractResult,
+    RefinedRequirement,
+    RefineResult,
 )
 from app.features.maemusae.analysis.service import (
     AnalysisPlan,
+    RefinePlan,
+    RefineTarget,
     choose_plan,
     end_failed,
     load_pages,
+    refine_plan,
 )
 from app.features.maemusae.documents.models import READY
 from app.llm import invoke_structured, load_prompt
@@ -221,35 +227,7 @@ def _save(
 
     now = datetime.now(UTC)
     deleted = repository.delete_requirements(db, document_id)  # 처음 분석이면 지울 것이 없음
-    index = {tag: i for i, tag in enumerate(by_tag, 1)}
-    for seq, c in enumerate(candidates, 1):  # 다시 분석해도 REQ-001 부터
-        requirement = Requirement(
-            document_id=document_id,
-            seq=seq,
-            name=c.name,
-            kind=c.kind,
-            priority=c.priority,
-            description=c.description,
-            ai_question=c.question,
-            kind_defaulted=c.kind_defaulted,
-            priority_defaulted=c.priority_defaulted,
-        )
-        repository.add(db, requirement)
-        sources = []
-        for order, (tag, quote) in enumerate(c.evidence, 1):
-            page = by_tag[tag]
-            found, end_page = locate(quote, page, by_tag.get(tag_of(index[tag] + 1)))
-            sources.append(
-                RequirementSource(
-                    requirement_id=requirement.id,
-                    source_page_id=page.id,
-                    end_source_page_id=end_page.id if end_page else None,
-                    quote=quote,
-                    verified=found,
-                    sort_order=order,
-                )
-            )
-        repository.add_all(db, sources)
+    _insert_candidates(db, document_id, 0, candidates, by_tag)
     repository.mark_sources_analyzed(db, document_id, run_id)
     run.status = SUCCEEDED
     run.done_steps = run.total_steps
@@ -263,6 +241,47 @@ def _save(
     return len(candidates)
 
 
+def _sources(
+    requirement_id: int, evidence: list[tuple[str, str]], by_tag: dict[str, PageRef], start_order: int = 0
+) -> list[RequirementSource]:
+    """근거 문장을 쪽 본문에서 찾아 확인 표시·끝 쪽을 정함"""
+    index = {tag: i for i, tag in enumerate(by_tag, 1)}
+    rows = []
+    for order, (tag, quote) in enumerate(evidence, start_order + 1):
+        page = by_tag[tag]
+        found, end_page = locate(quote, page, by_tag.get(tag_of(index[tag] + 1)))
+        rows.append(
+            RequirementSource(
+                requirement_id=requirement_id,
+                source_page_id=page.id,
+                end_source_page_id=end_page.id if end_page else None,
+                quote=quote,
+                verified=found,
+                sort_order=order,
+            )
+        )
+    return rows
+
+
+def _insert_candidates(
+    db: Session, document_id: int, last_seq: int, candidates: list[Candidate], by_tag: dict[str, PageRef]
+) -> None:
+    for seq, c in enumerate(candidates, last_seq + 1):
+        requirement = Requirement(
+            document_id=document_id,
+            seq=seq,
+            name=c.name,
+            kind=c.kind,
+            priority=c.priority,
+            description=c.description,
+            ai_question=c.question,
+            kind_defaulted=c.kind_defaulted,
+            priority_defaulted=c.priority_defaulted,
+        )
+        repository.add(db, requirement)
+        repository.add_all(db, _sources(requirement.id, c.evidence, by_tag))
+
+
 def _fail(db: Session, run_id: int, document_id: int, code: str) -> None:
     document = repository.lock_document(db, document_id)
     run = repository.get_run(db, run_id)
@@ -271,3 +290,242 @@ def _fail(db: Session, run_id: int, document_id: int, code: str) -> None:
         return
     end_failed(db, run, document, code)
     db.commit()
+
+
+# ---- 다시 분류 (M3-3) ----
+#
+# 1. 반영 안 된 입력이 달린 후보를 묶음마다 prompts/refine.md 로 보내 바꿀 칸을 받음 (입력은 "입력 1, 입력 2", 이름 X)
+# 2. 새 파일이 있으면 처음 분석과 같은 방식으로 후보를 뽑고, 이름이 비슷한 기존 후보와 함께 prompts/dedupe.md 로
+#    같은 후보를 찾음. 기존과 같으면 그 후보에 근거만 더하고, 새 내용이면 다음 번호로 추가
+# 3. 저장할 때 그사이 사람이 고친 후보(version 다름)는 AI 수정을 건너뛰고 그 입력은 다음 분류로 남김 (사람 우선)
+# 후보 번호·id 는 그대로, 버전 번호·saved_at 은 건드리지 않습니다.
+
+MATCH_PER_CANDIDATE = 5  # 새 후보마다 함께 보낼 비슷한 기존 후보 수
+MATCH_MAX_EXISTING = 60
+
+
+def run_refine(run_id: int) -> None:
+    try:
+        with open_session() as db:
+            _run_refine(db, run_id)
+    except Exception as e:  # noqa: BLE001 — run_analysis 와 같은 이유
+        logger.error("AI 다시 분류 실패 처리 못함 run_id=%s error_type=%s", run_id, type(e).__name__)
+
+
+def _run_refine(db: Session, run_id: int) -> None:
+    started = time.monotonic()
+    run = repository.get_run(db, run_id)
+    if run is None or run.status != RUNNING:
+        return
+    document_id = run.document_id
+    try:
+        plan = refine_plan(db, document_id)
+        run.total_steps = plan.total_steps  # 시작 뒤 입력이 늘었을 수 있음
+        db.commit()
+        updates = _ask_refine(db, run, plan.chunks)
+        new_candidates: list[Candidate] = []
+        merges: dict[int, list[tuple[str, str]]] = {}
+        if plan.extract:
+            new_candidates = _extract_all(db, run, plan.extract)
+            new_candidates, merges = _match(repository.list_live_requirements(db, document_id), new_candidates)
+            run.done_steps += 1
+            db.commit()
+        result = _save_refine(db, run_id, document_id, plan, updates, new_candidates, merges)
+    except Exception as e:  # noqa: BLE001 — 어느 단계 오류든 run 을 FAILED 로 남겨야 화면이 멈추지 않음
+        db.rollback()
+        code = e.code if isinstance(e, AppError) else FAILED_CODE
+        _fail(db, run_id, document_id, code)
+        logger.warning(
+            "AI 다시 분류 실패 run_id=%s document_id=%s code=%s error_type=%s ms=%d",
+            run_id, document_id, code, type(e).__name__, (time.monotonic() - started) * 1000,
+        )
+        return
+    if result is not None:
+        changed, skipped, added, merged = result
+        logger.info(
+            "AI 다시 분류 끝 run_id=%s document_id=%s changed=%s skipped=%s added=%s merged=%s ms=%d",
+            run_id, document_id, changed, skipped, added, merged, (time.monotonic() - started) * 1000,
+        )
+
+
+def _ask_refine(db: Session, run: AnalysisRun, chunks: list[list[RefineTarget]]) -> dict[str, RefinedRequirement]:
+    if not chunks:
+        return {}
+    kinds_text, _ = _code_text(db, KIND_GROUP)
+    priorities_text, _ = _code_text(db, PRIORITY_GROUP)
+    prompt = load_prompt(PROMPTS / "refine.md")
+    updates: dict[str, RefinedRequirement] = {}
+    for chunk in chunks:
+        tags = {t.tag for t in chunk}
+        result = invoke_structured(
+            prompt,
+            RefineResult,
+            {
+                "kinds": kinds_text,
+                "priorities": priorities_text,
+                "instructions": run.prompt or NO_INSTRUCTIONS,
+                "targets": "\n\n".join(t.text for t in chunk),
+            },
+        )
+        for update in result.updates:
+            tag = _ref(update.ref)
+            if tag in tags:  # 이 묶음에 없는 번호표는 버림
+                updates[tag] = update
+        run.done_steps += 1
+        db.commit()
+    return updates
+
+
+def _ref(value: str) -> str:
+    value = value.strip().upper().strip("[]")
+    return value if value.startswith("R") else f"R{value}"
+
+
+def _bigrams(value: str) -> set[str]:
+    text = normalize(value).replace(" ", "")
+    return {text[i : i + 2] for i in range(len(text) - 1)}
+
+
+def _related(existing: list[Requirement], candidates: list[Candidate]) -> list[Requirement]:
+    """새 후보마다 이름·설명이 비슷한 기존 후보 몇 개 (글자 두 개씩 겹치는 정도). 전체를 보내지 않으려고"""
+    grams = {r.id: _bigrams(f"{r.name} {r.description[:DEDUPE_DESCRIPTION_CHARS]}") for r in existing}
+    picked: set[int] = set()
+    for c in candidates:
+        mine = _bigrams(f"{c.name} {c.description[:DEDUPE_DESCRIPTION_CHARS]}")
+        scored = sorted(
+            ((len(mine & g) / len(mine | g), rid) for rid, g in grams.items() if mine and g and mine & g), reverse=True
+        )
+        picked.update(rid for _, rid in scored[:MATCH_PER_CANDIDATE])
+    return [r for r in existing if r.id in picked][:MATCH_MAX_EXISTING]
+
+
+def _match(
+    existing: list[Requirement], candidates: list[Candidate]
+) -> tuple[list[Candidate], dict[int, list[tuple[str, str]]]]:
+    """(새로 추가할 후보, 기존 후보 id → 더할 근거). 새 후보끼리 같은 것도 하나로 합침"""
+    if not candidates:
+        return [], {}
+    related = _related(existing, candidates)
+    lines = [
+        f"{i}. (기존 REQ-{r.seq:03d}) {r.name} - {r.description[:DEDUPE_DESCRIPTION_CHARS]}"
+        for i, r in enumerate(related, 1)
+    ]
+    offset = len(related)
+    lines += [
+        f"{offset + i}. {c.name} - {c.description[:DEDUPE_DESCRIPTION_CHARS]}" for i, c in enumerate(candidates, 1)
+    ]
+    text = "\n".join(lines)
+    if len(text) > llm_settings.llm_max_input_chars - DEDUPE_HEADROOM or len(lines) < 2:
+        logger.info("AI 다시 분류 맞춰 보기 건너뜀 candidates=%s existing=%s", len(candidates), len(related))
+        return candidates, {}
+    result = invoke_structured(load_prompt(PROMPTS / "dedupe.md"), DedupeResult, {"candidates": text})
+
+    used: set[int] = set()
+    into_existing: dict[int, int] = {}  # 새 후보 번호(0부터) → 기존 후보 id
+    into_new: dict[int, int] = {}  # 새 후보 번호 → 남길 새 후보 번호
+    for group in result.groups:
+        ids = [i for i in dict.fromkeys(group) if 1 <= i <= len(lines) and i not in used]
+        olds = [i for i in ids if i <= offset]
+        news = [i - offset - 1 for i in ids if i > offset]
+        if not news:
+            continue  # 기존끼리 같은 것은 사람이 정리 (다시 분류가 기존 후보를 지우지 않음)
+        used.update(ids)
+        if olds:
+            for n in news:
+                into_existing[n] = related[olds[0] - 1].id
+        else:
+            for n in news[1:]:
+                into_new[n] = news[0]
+    merges: dict[int, list[tuple[str, str]]] = {}
+    for n, rid in into_existing.items():
+        evidence = merges.setdefault(rid, [])
+        evidence += [ev for ev in candidates[n].evidence if ev not in evidence]
+    for n, target in into_new.items():
+        keep, other = candidates[target], candidates[n]
+        keep.evidence += [ev for ev in other.evidence if ev not in keep.evidence]
+        keep.question = keep.question or other.question
+    kept = [c for i, c in enumerate(candidates) if i not in into_existing and i not in into_new]
+    return kept, merges
+
+
+def _apply_refine(requirement: Requirement, update: RefinedRequirement, kinds: list[str], priorities: list[str]) -> bool:
+    """AI 가 준 칸 반영. 목록에 없는 구분·우선순위는 무시 (처음 분석과 달리 기존 값이 있으므로 기본값을 넣지 않음)"""
+    changes: dict = {}
+    name = (update.name or "").strip()[:NAME_MAX]
+    if name and name != requirement.name:
+        changes["name"] = name
+    if update.description is not None and update.description.strip() != requirement.description:
+        changes["description"] = update.description.strip()
+    if update.kind in kinds and update.kind != requirement.kind:
+        changes.update(kind=update.kind, kind_defaulted=False)
+    if update.priority in priorities and update.priority != requirement.priority:
+        changes.update(priority=update.priority, priority_defaulted=False)
+    question = (update.question or "").strip() or None
+    if update.clear_question and requirement.ai_question and not question:
+        changes["ai_question"] = None
+    if question and question != requirement.ai_question:
+        changes["ai_question"] = question
+    answer = (update.answer or "").strip() or None
+    if answer and answer != requirement.ai_answer:
+        changes["ai_answer"] = answer
+    for key, value in changes.items():
+        setattr(requirement, key, value)
+    return bool(changes)
+
+
+def _save_refine(
+    db: Session,
+    run_id: int,
+    document_id: int,
+    plan: RefinePlan,
+    updates: dict[str, RefinedRequirement],
+    new_candidates: list[Candidate],
+    merges: dict[int, list[tuple[str, str]]],
+) -> tuple[int, int, int, int] | None:
+    """(고친 후보, 건너뛴 후보, 새 후보, 근거를 더한 후보) 수"""
+    document = repository.lock_document(db, document_id)
+    run = repository.get_run(db, run_id)
+    if run is None or run.status != RUNNING:
+        db.rollback()
+        logger.warning("AI 다시 분류 결과 버림 (이미 끝난 요청) run_id=%s", run_id)
+        return None
+
+    _, kinds = _code_text(db, KIND_GROUP)
+    _, priorities = _code_text(db, PRIORITY_GROUP)
+    targets = [t for chunk in plan.chunks for t in chunk]
+    rows = repository.lock_requirements(db, document_id, sorted({t.requirement_id for t in targets} | set(merges)))
+    changed = skipped = 0
+    seen: dict[int, datetime] = {}
+    for target in targets:
+        requirement = rows.get(target.requirement_id)
+        if requirement is None or requirement.deleted_at is not None or requirement.version != target.version:
+            skipped += 1  # 그사이 사람이 고치거나 지움 → 사람 수정 우선, 입력은 다음 분류로
+            continue
+        update = updates.get(target.tag)
+        if update is not None and _apply_refine(requirement, update, kinds, priorities):
+            requirement.version += 1
+            requirement.updated_by = run.requested_by
+            changed += 1
+        seen.update(target.notes)
+    for note in repository.lock_notes(db, list(seen)):
+        if note.applied_run_id is None and note.updated_at == seen[note.id]:  # 그사이 고친 입력은 다음 분류로
+            note.applied_run_id = run.id
+
+    by_tag = plan.extract.by_tag if plan.extract else {}
+    orders = repository.max_sort_orders(db, list(merges))
+    merged = 0
+    for requirement_id, evidence in merges.items():
+        requirement = rows.get(requirement_id)
+        if requirement is None or requirement.deleted_at is not None or not evidence:
+            continue
+        repository.add_all(db, _sources(requirement_id, evidence, by_tag, orders.get(requirement_id, 0)))
+        merged += 1
+    _insert_candidates(db, document_id, repository.max_seq(db, document_id), new_candidates, by_tag)
+    if plan.new_source_ids:
+        repository.mark_sources_analyzed(db, document_id, run_id, source_ids=plan.new_source_ids)
+    run.status = SUCCEEDED
+    run.done_steps = run.total_steps
+    run.finished_at = datetime.now(UTC)
+    document.status = READY
+    db.commit()
+    return changed, skipped, len(new_candidates), merged

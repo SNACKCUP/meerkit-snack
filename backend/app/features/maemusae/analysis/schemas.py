@@ -24,6 +24,21 @@ class ExtractResult(BaseModel):
     requirements: list[ExtractedRequirement] = Field(default_factory=list)
 
 
+class RefinedRequirement(BaseModel):
+    ref: str = Field(description="후보 번호표. [R1 · REQ-002 …] 의 R1")
+    name: str | None = Field(default=None, description="바꿀 이름. 그대로면 null")
+    description: str | None = Field(default=None, description="바꿀 설명. 그대로면 null")
+    kind: str | None = Field(default=None, description="바꿀 구분 코드. 그대로면 null")
+    priority: str | None = Field(default=None, description="바꿀 우선순위 코드. 그대로면 null")
+    question: str | None = Field(default=None, description="새로 남길 질문 (입력끼리 다를 때 등). 없으면 null")
+    clear_question: bool = Field(default=False, description="입력이 기존 AI 질문에 답했으면 true")
+    answer: str | None = Field(default=None, description="질문에 대한 답을 한두 문장으로 정리. 없으면 null")
+
+
+class RefineResult(BaseModel):
+    updates: list[RefinedRequirement] = Field(default_factory=list, description="바꿀 후보만. 바꿀 것이 없는 후보는 빼도 됨")
+
+
 class DedupeResult(BaseModel):
     groups: list[list[int]] = Field(default_factory=list, description="같은 요구사항끼리 묶은 후보 번호 (묶음마다 2개 이상)")
 
@@ -36,7 +51,14 @@ class AnalyzeRequest(BaseModel):
         default=None, max_length=2000, description="AI 에게 덧붙일 지시 (예: 관리자 기능 위주로)", examples=["결제 관련 내용을 꼼꼼히 봐 줘"]
     )
     restart: bool = Field(
-        default=False, description="이미 분석한 문서를 처음부터 다시 분석 (AI 후보를 새로 만들고 직접 추가한 후보는 남김)"
+        default=False,
+        description="후보가 있는 문서를 다시 분석 (후보·직접 추가·입력을 모두 지우고 REQ-001 부터, 10/29 결정)",
+    )
+
+
+class RefineRequest(BaseModel):
+    prompt: str | None = Field(
+        default=None, max_length=2000, description="AI 에게 덧붙일 지시", examples=["보안 요구사항을 더 꼼꼼히 봐 줘"]
     )
 
 
