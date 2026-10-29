@@ -1,6 +1,6 @@
 """프로젝트·멤버 업무 규칙. 권한 검사는 access.py 가 끝낸 뒤에 불립니다.
 
-- 만든 사람이 첫 관리자
+- 만든 사람이 첫 관리자, 요구사항정의서 문서 1행도 같이 만듦
 - 프로젝트에는 관리자가 한 명 이상 남아야 함 (강등·내보내기·나가기 모두). 같은 프로젝트의 멤버 변경이 동시에
   일어나도 어긋나지 않도록 프로젝트 행을 잠근 뒤 셉니다
 - 삭제는 표시만 (deleted_at). 표시된 프로젝트는 모든 API 에서 없는 것으로 봅니다
@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from app.features.maemusae.access import ProjectAccess
+from app.features.maemusae.documents.service import create_initial_documents
 from app.features.maemusae.errors import (
     InvalidPeriodError,
     LastProjectAdminError,
@@ -50,6 +51,7 @@ def create_project(db: Session, actor_id: int, body: ProjectCreate) -> ProjectRe
     project = Project(name=body.name, start_date=body.start_date, end_date=body.end_date, created_by=actor_id)
     repository.add(db, project)
     repository.add(db, ProjectMember(project_id=project.id, user_id=actor_id, role=ADMIN))
+    create_initial_documents(db, project.id)
     db.commit()
     db.refresh(project)
     logger.info("프로젝트 생성 project_id=%s actor_id=%s", project.id, actor_id)
