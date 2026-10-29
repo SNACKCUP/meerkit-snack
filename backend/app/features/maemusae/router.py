@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter
 
+from app.features.maemusae.analysis.router import router as analysis_router
 from app.features.maemusae.documents.router import router as documents_router
 from app.features.maemusae.invitations.router import (
     link_router as invitation_link_router,
@@ -16,3 +17,4 @@ router.include_router(projects_router)
 router.include_router(project_invitations_router)
 router.include_router(invitation_link_router)
 router.include_router(documents_router)
+router.include_router(analysis_router)

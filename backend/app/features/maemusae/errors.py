@@ -16,6 +16,12 @@ class ProjectNotFoundError(NotFoundError):
         super().__init__("PROJECT_NOT_FOUND", "프로젝트를 찾을 수 없습니다.")
 
 
+class ProjectMemberRequiredError(ForbiddenError):
+    # 보기 전용 MASTER 가 쓰기 기능을 누른 경우. MASTER 는 프로젝트가 있는 걸 이미 알기 때문에 404 대신 403 (10/29 결정)
+    def __init__(self):
+        super().__init__("PROJECT_MEMBER_REQUIRED", "프로젝트 멤버만 할 수 있습니다. 관리자는 보기만 할 수 있어요.")
+
+
 class ProjectAdminRequiredError(ForbiddenError):
     def __init__(self):
         super().__init__("PROJECT_ADMIN_REQUIRED", "프로젝트 관리자만 할 수 있습니다.")
@@ -122,3 +128,30 @@ class SourceLimitError(ConflictError):
 class SourceDeleteForbiddenError(ForbiddenError):
     def __init__(self):
         super().__init__("SOURCE_DELETE_FORBIDDEN", "올린 사람이나 프로젝트 관리자만 지울 수 있습니다.")
+
+
+class DocumentConfirmedError(ConflictError):
+    def __init__(self):
+        super().__init__("DOCUMENT_CONFIRMED", "확정된 문서입니다. 확정 뒤 수정을 먼저 눌러 주세요.")
+
+
+class AnalysisNoSourcesError(BadRequestError):
+    def __init__(self):
+        super().__init__("ANALYSIS_NO_SOURCES", "분석할 문서를 먼저 올려 주세요.")
+
+
+class AnalysisRestartRequiredError(ConflictError):
+    # 이미 후보가 있는 문서를 처음부터 다시 분석하면 AI 후보를 지우므로, 화면이 한 번 더 확인하고 restart=true 로 보냄
+    def __init__(self):
+        super().__init__(
+            "ANALYSIS_RESTART_REQUIRED", "이미 분석한 문서입니다. 처음부터 다시 분석하면 AI가 만든 후보가 새로 만들어집니다."
+        )
+
+
+class DocumentTooLargeToAnalyzeError(ValidationError):
+    # 상한은 파일 하나가 아니라 문서에 올린 파일 전체 합계라서, 나눠 올리라는 안내는 하지 않음 (10/29)
+    def __init__(self):
+        super().__init__(
+            "DOCUMENT_TOO_LARGE_TO_ANALYZE",
+            "문서를 다 합친 용량이 너무 커요. 분석에 필요 없는 파일을 빼고 다시 시도해 주세요.",
+        )

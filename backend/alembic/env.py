@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config, pool
 
 import app.auth.models
 import app.codes.models
+import app.features.maemusae.analysis.models
 import app.features.maemusae.documents.models
 import app.features.maemusae.invitations.models
 import app.features.maemusae.projects.models
