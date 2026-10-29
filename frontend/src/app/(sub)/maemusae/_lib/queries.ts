@@ -7,7 +7,7 @@ import { useInfiniteQuery, useMutation, useQueries, useQuery, useQueryClient, ty
 import { useAuth } from "@/meerkit";
 
 import { mmsApi, type ApiRequirement, type ApiRequirementDetail, type ApiRequirementPage, type NoteField, type RequirementChanges, type RequirementFilter } from "./api";
-import type { ConfirmedItem, ProjectRole } from "./types";
+import type { ProjectRole } from "./types";
 
 const keys = {
   projects: ["mms", "projects"] as const,
@@ -26,6 +26,8 @@ const keys = {
   analysis: (id: string, docId: number) => ["mms", "projects", id, "doc", docId, "analysis"] as const,
   versions: (id: string, docId: number) => ["mms", "projects", id, "doc", docId, "versions"] as const,
   version: (id: string, docId: number, versionId: number) => ["mms", "projects", id, "doc", docId, "versions", versionId] as const,
+  categories: (id: string, docId: number) => ["mms", "projects", id, "doc", docId, "categories"] as const,
+  confirmed: (id: string) => ["mms", "projects", id, "confirmed"] as const,
 };
 
 /** 로그인이 끝난 뒤에만 부른다 (세션 복원 전에 부르면 401) */
@@ -182,13 +184,17 @@ export function useSourcePages(id: string, docId: number | undefined, sourceId: 
 
 /** 원본 파일을 받아 브라우저 저장으로 넘긴다 */
 export async function downloadSource(id: string, docId: number, sourceId: number, filename: string) {
-  const blob = await mmsApi.downloadSource(id, docId, sourceId);
+  saveBlob(await mmsApi.downloadSource(id, docId, sourceId), filename);
+}
+
+function saveBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // 저장이 시작된 뒤에 지운다
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ---- 요구사항 후보 ----
@@ -225,8 +231,11 @@ function putRequirement(qc: QueryClient, id: string, docId: number, row: ApiRequ
   qc.setQueryData<ApiRequirementDetail>(keys.requirement(id, docId, row.id), (old) => old && { ...old, ...row });
 }
 
-/** 문서 카드(버전 이후 고침 여부 등)도 바뀌므로 함께 다시 읽는다 */
+/** 문서 카드(버전 이후 고침 여부, 확정 경고 개수 등)도 바뀌므로 함께 다시 읽는다 */
 const refreshDocCard = (qc: QueryClient, id: string) => qc.invalidateQueries({ queryKey: keys.documents(id) });
+
+const CATEGORY_KEYS = ["category_major", "category_middle", "category_minor"] as const;
+const touchesCategory = (changes: RequirementChanges) => CATEGORY_KEYS.some((k) => changes[k] !== undefined);
 
 export function useUpdateRequirement(id: string, docId: number | undefined) {
   const qc = useQueryClient();
@@ -237,7 +246,9 @@ export function useUpdateRequirement(id: string, docId: number | undefined) {
       putRequirement(qc, id, docId!, row);
       // 설명은 목록에 없으니 상세 캐시에만 넣는다. 필터에 걸린 목록은 칸이 바뀌면 빠질 수 있어서 다시 읽는다
       if (changes.description !== undefined) qc.setQueryData<ApiRequirementDetail>(keys.requirement(id, docId!, row.id), (old) => old && { ...old, description: changes.description! });
-      if (changes.kind || changes.priority || changes.is_included !== undefined || changes.name) qc.invalidateQueries({ queryKey: keys.requirements(id, docId!), refetchType: "none" });
+      if (changes.kind || changes.priority || changes.is_included !== undefined || changes.name || touchesCategory(changes))
+        qc.invalidateQueries({ queryKey: keys.requirements(id, docId!), refetchType: "none" });
+      if (touchesCategory(changes)) qc.invalidateQueries({ queryKey: keys.categories(id, docId!) });
       refreshDocCard(qc, id);
     },
   });
@@ -257,7 +268,7 @@ export function useBulkUpdateRequirements(id: string, docId: number | undefined)
 export function useCreateRequirement(id: string, docId: number | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; kind: string; priority: string }) => mmsApi.createRequirement(id, docId!, body),
+    mutationFn: (body: Parameters<typeof mmsApi.createRequirement>[2]) => mmsApi.createRequirement(id, docId!, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.requirements(id, docId!) });
       refreshDocCard(qc, id);
@@ -272,9 +283,15 @@ export function useDeleteRequirement(id: string, docId: number | undefined) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.requirements(id, docId!) });
       qc.invalidateQueries({ queryKey: keys.notes(id, docId!) });
+      qc.invalidateQueries({ queryKey: keys.categories(id, docId!) });
       refreshDocCard(qc, id);
     },
   });
+}
+
+/** 이 문서에서 쓴 대·중·소분류 (대분류 필터, 분류 칸 자동완성) */
+export function useCategories(id: string, docId: number | undefined) {
+  return useQuery({ queryKey: keys.categories(id, docId ?? 0), queryFn: () => mmsApi.listCategories(id, docId!), enabled: useReady() && !!docId });
 }
 
 /** 409 REQUIREMENT_CHANGED 뒤처럼 이 문서의 후보·입력을 모두 새로 읽는다 */
@@ -328,7 +345,7 @@ export function useAfterAnalysis(id: string, docId: number | undefined) {
   const qc = useQueryClient();
   return () => {
     if (!docId) return;
-    for (const k of [keys.requirements, keys.notes]) qc.invalidateQueries({ queryKey: k(id, docId) });
+    for (const k of [keys.requirements, keys.notes, keys.categories]) qc.invalidateQueries({ queryKey: k(id, docId) });
     qc.invalidateQueries({ queryKey: [...keys.doc(id, docId), "requirement"] });
     qc.invalidateQueries({ queryKey: keys.sources(id, docId) });
     refreshDocCard(qc, id);
@@ -365,8 +382,13 @@ export function useVersions(id: string, docId: number | undefined, enabled = tru
   return useQuery({ queryKey: keys.versions(id, docId ?? 0), queryFn: () => mmsApi.listVersions(id, docId!), enabled: useReady() && !!docId && enabled });
 }
 
-export function useVersion(id: string, docId: number | undefined, versionId: number) {
-  return useQuery({ queryKey: keys.version(id, docId ?? 0, versionId), queryFn: () => mmsApi.getVersion(id, docId!, versionId), enabled: useReady() && !!docId, retry: false });
+export function useVersion(id: string, docId: number | undefined, versionId: number | undefined) {
+  return useQuery({
+    queryKey: keys.version(id, docId ?? 0, versionId ?? 0),
+    queryFn: () => mmsApi.getVersion(id, docId!, versionId!),
+    enabled: useReady() && !!docId && !!versionId,
+    retry: false,
+  });
 }
 
 /** overwrite=false 버전 추가(무조건 새 버전), true 버전 저장(이번 분석 이후 마지막 버전을 덮어씀) */
@@ -381,25 +403,55 @@ export function useSaveVersion(id: string, docId: number | undefined) {
   });
 }
 
-/**
- * 확정(M4) 목에 담을 요구사항: 체크된 후보를 모두 받고, 설명·근거는 상세에서 채운다.
- * M4에서 서버 확정 API로 바뀌면 지운다
- */
-export async function loadConfirmItems(id: string, docId: number): Promise<ConfirmedItem[]> {
-  const rows: ApiRequirement[] = [];
-  let cursor: number | undefined;
-  do {
-    const page = await mmsApi.listRequirements(id, docId, { included: true }, cursor);
-    rows.push(...page.items);
-    cursor = page.next_cursor ?? undefined;
-  } while (cursor !== undefined);
-  const items: ConfirmedItem[] = [];
-  for (let i = 0; i < rows.length; i += 8) {
-    const details = await Promise.all(rows.slice(i, i + 8).map((r) => mmsApi.getRequirement(id, docId, r.id)));
-    for (const d of details)
-      items.push({ id: d.id, code: d.code, name: d.name, kind: d.kind, priority: d.priority, description: d.description, quote: d.sources.map((s) => s.quote).join("\n") });
-  }
-  return items;
+// ---- 확정 ----
+
+// [예비 목 저장소] 서버 없이 확정을 흉내 낼 때 store.confirm에 넘길 후보를 모은다 (Workspace의 확정 버튼에서 불렀다).
+// 다시 쓸 때 주석을 풀고 import type { ConfirmedItem } from "./types" 를 넣는다
+// export async function loadConfirmItems(id: string, docId: number): Promise<ConfirmedItem[]> {
+//   const rows: ApiRequirement[] = [];
+//   let cursor: number | undefined;
+//   do {
+//     const page = await mmsApi.listRequirements(id, docId, { included: true }, cursor);
+//     rows.push(...page.items);
+//     cursor = page.next_cursor ?? undefined;
+//   } while (cursor !== undefined);
+//   const items: ConfirmedItem[] = [];
+//   for (let i = 0; i < rows.length; i += 8) {
+//     const details = await Promise.all(rows.slice(i, i + 8).map((r) => mmsApi.getRequirement(id, docId, r.id)));
+//     for (const d of details)
+//       items.push({ id: d.id, code: d.code, name: d.name, kind: d.kind, priority: d.priority, description: d.description, quote: d.sources.map((s) => s.quote).join("\n") });
+//   }
+//   return items;
+// }
+
+/** 확정 뒤에는 문서 상태·확정 목록·버전 기록이 모두 바뀐다 */
+function refreshConfirm(qc: QueryClient, id: string, docId: number) {
+  refreshDocCard(qc, id);
+  qc.invalidateQueries({ queryKey: keys.confirmed(id) });
+  qc.invalidateQueries({ queryKey: keys.versions(id, docId) });
+  qc.invalidateQueries({ queryKey: keys.requirements(id, docId) }); // "AI 값 확인" 표시가 풀린다
+}
+
+export function useConfirm(id: string, docId: number | undefined) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => mmsApi.confirm(id, docId!), onSettled: () => refreshConfirm(qc, id, docId!) });
+}
+
+/** 확정 후 수정: 문서만 다시 고칠 수 있게 열고, 확정 기록은 그대로 둔다 (다음 확정은 번호 + 1) */
+export function useReopen(id: string, docId: number | undefined) {
+  const qc = useQueryClient();
+  return useMutation({ mutationFn: () => mmsApi.reopen(id, docId!), onSettled: () => refreshConfirm(qc, id, docId!) });
+}
+
+/** 확정한 문서 목록 (최신이 앞) */
+export function useConfirmedDocs(id: string) {
+  return useQuery({ queryKey: keys.confirmed(id), queryFn: () => mmsApi.listConfirmed(id), enabled: useReady() });
+}
+
+/** 확정 기록 Excel을 받아 브라우저 저장으로 넘긴다. 서버가 이름을 주지 않으면 fallbackName */
+export async function downloadConfirmedExcel(id: string, docId: number, versionId: number, fallbackName: string) {
+  const { blob, filename } = await mmsApi.downloadExcel(id, docId, versionId);
+  saveBlob(blob, filename ?? fallbackName);
 }
 
 // ---- 공통코드 ----

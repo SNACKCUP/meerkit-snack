@@ -15,7 +15,6 @@ import { PageHead, Pill, card } from "../../../_components/ui";
 import { apiError, type ApiAnalysisRun } from "../../../_lib/api";
 import { DOC_STATUS, docStatus } from "../../../_lib/labels";
 import { useAfterAnalysis, useAnalysis, useAnalyze, useRequirementsDoc, useUploadSource } from "../../../_lib/queries";
-import { useMaemusae } from "../../../_lib/store";
 
 // 분석 실패 이유 (서버 error_code). 그 밖의 코드는 기본 문구
 const FAIL_TEXT: Record<string, string> = {
@@ -29,7 +28,6 @@ const failText = (code: string | null) => `${(code && FAIL_TEXT[code]) || "분�
 
 export default function RequirementsPage() {
   const { id } = useParams<{ id: string }>();
-  const mockConfirmed = useMaemusae((s) => !!s.confirmed[id]);
   const { data: serverDoc } = useRequirementsDoc(id);
   const docId = serverDoc?.id;
   const { data: run } = useAnalysis(id, docId);
@@ -40,7 +38,7 @@ export default function RequirementsPage() {
   const hasSources = (serverDoc?.source_count ?? 0) > 0;
 
   const running = run?.status === "RUNNING" || serverDoc?.status === "ANALYZING";
-  const status = running ? "analyzing" : docStatus(serverDoc?.status, mockConfirmed);
+  const status = running ? "analyzing" : docStatus(serverDoc?.status);
   const st = DOC_STATUS[status];
 
   // 분석이 끝나면 후보·입력·문서를 새로 읽고, 실패했으면 이유를 알린다.
@@ -79,7 +77,7 @@ export default function RequirementsPage() {
         <div className="grid gap-8">
           <PageHead eyebrow={project.name} title="요구사항정의서">
             <Pill tone={st.tone}>{st.label}</Pill>
-            <Link href={`/maemusae/projects/${id}`} className="text-sm underline">프로젝트로</Link>
+            <Link href={`/maemusae/projects/${id}`} className="text-sm underline print:hidden">프로젝트로</Link>
           </PageHead>
 
           {status === "empty" && (
@@ -113,10 +111,12 @@ export default function RequirementsPage() {
             </section>
           )}
 
-          <SourcesPanel projectId={id} docId={docId} canManageAll={isAdmin} readOnly={readOnly} />
+          <div className="print:hidden">
+            <SourcesPanel projectId={id} docId={docId} canManageAll={isAdmin} readOnly={readOnly} />
+          </div>
 
           {status === "ready" && serverDoc && <Workspace projectId={id} doc={serverDoc} isAdmin={isAdmin} readOnly={readOnly} />}
-          {status === "confirmed" && <Viewer project={project} isAdmin={isAdmin} />}
+          {status === "confirmed" && serverDoc && <Viewer project={project} doc={serverDoc} isAdmin={isAdmin} readOnly={readOnly} />}
         </div>
       )}
     </ProjectGuard>

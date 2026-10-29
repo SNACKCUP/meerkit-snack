@@ -10,8 +10,7 @@ import { DocList } from "../../_components/DocList";
 import { ProjectGuard } from "../../_components/ProjectGuard";
 import { Btn, PageHead, Pill, card, fmtRange } from "../../_components/ui";
 import { DOC_STATUS, ROLE_LABEL, docStatus } from "../../_lib/labels";
-import { useMembers, useRequirementsDoc } from "../../_lib/queries";
-import { useMaemusae } from "../../_lib/store";
+import { useConfirmedDocs, useMembers, useRequirementsDoc } from "../../_lib/queries";
 
 const OTHER_FILES = [
   { slug: "spec", title: "기능정의서", desc: "확정한 요구사항으로 기능을 만들어요" },
@@ -22,9 +21,8 @@ const OTHER_FILES = [
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
   const { data: doc } = useRequirementsDoc(id);
-  const confirmed = useMaemusae((s) => !!s.confirmed[id]);
-  const history = useMaemusae((s) => s.history[id]);
-  const st = DOC_STATUS[docStatus(doc?.status, confirmed)];
+  const { data: history } = useConfirmedDocs(id);
+  const st = DOC_STATUS[docStatus(doc?.status)];
 
   return (
     <ProjectGuard projectId={id}>

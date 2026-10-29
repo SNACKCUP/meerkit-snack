@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
-import type { ApiNote, ApiRequirementDetail, NoteField, RequirementChanges } from "../_lib/api";
+import type { ApiCategoryPath, ApiNote, ApiRequirementDetail, CategoryField, NoteField, RequirementChanges } from "../_lib/api";
 import { usePriorities, useReqKinds } from "../_lib/queries";
 import { Btn, Pill, fmtTime } from "./ui";
 
@@ -19,12 +19,15 @@ const FIELD_LABEL: Record<NoteField, string> = { DESCRIPTION: "설명", ANSWER: 
  */
 export function RequirementDetail({
   detail,
+  categories,
   readOnly,
   onSave,
   onNote,
   onDelete,
 }: {
   detail: ApiRequirementDetail;
+  /** 이 문서에서 쓴 분류 (입력 칸 자동완성) */
+  categories: ApiCategoryPath[];
   readOnly: boolean;
   onSave: (changes: RequirementChanges) => void;
   onNote: (field: NoteField, text: string | null) => void;
@@ -79,6 +82,7 @@ export function RequirementDetail({
           </NativeSelect>
         </label>
       </div>
+      <CategoryInputs detail={detail} categories={categories} readOnly={readOnly} onSave={onSave} />
       <div className="grid gap-1">
         <label htmlFor="c-desc" className="text-xs font-extrabold text-[#6c6a62]">설명</label>
         <textarea id="c-desc" rows={4} value={description} disabled={readOnly} maxLength={10_000} onChange={(e) => setDescription(e.target.value)} onBlur={saveDescription} className={area} />
@@ -115,6 +119,54 @@ export function RequirementDetail({
         <p className="rounded-2xl border-[1.5px] border-[#111]/20 px-4 py-3 text-sm"><span className="mb-1 block text-xs font-extrabold text-[#6c6a62]">AI가 정리한 답</span>{detail.ai_answer}</p>
       )}
     </>
+  );
+}
+
+const CATEGORY_LABEL: Record<CategoryField, string> = { category_major: "대분류", category_middle: "중분류", category_minor: "소분류" };
+const CATEGORY_FIELDS = Object.keys(CATEGORY_LABEL) as CategoryField[];
+
+/**
+ * 대·중·소분류 (업무 영역). 공통코드가 아니라 문서마다 AI가 채우고 사람이 고치는 글이라 자유 입력 + 이 문서에서 쓴 이름 자동완성.
+ * 아래 칸 후보는 위 칸에 적은 분류 안에서 고른다. 다른 칸처럼 칸을 벗어날 때 저장하고, 비우면 지운다.
+ */
+function CategoryInputs({ detail, categories, readOnly, onSave }: { detail: ApiRequirementDetail; categories: ApiCategoryPath[]; readOnly: boolean; onSave: (changes: RequirementChanges) => void }) {
+  const [values, setValues] = useState<Record<CategoryField, string>>({
+    category_major: detail.category_major ?? "",
+    category_middle: detail.category_middle ?? "",
+    category_minor: detail.category_minor ?? "",
+  });
+  const unique = (list: (string | null)[]) => [...new Set(list.filter((v): v is string => !!v))];
+  const options: Record<CategoryField, string[]> = {
+    category_major: unique(categories.map((c) => c.major)),
+    category_middle: unique(categories.filter((c) => c.major === values.category_major.trim()).map((c) => c.middle)),
+    category_minor: unique(categories.filter((c) => c.major === values.category_major.trim() && c.middle === values.category_middle.trim()).map((c) => c.minor)),
+  };
+  const save = (field: CategoryField) => {
+    const v = values[field].replace(/\s+/g, " ").trim();
+    if (v !== values[field]) setValues((s) => ({ ...s, [field]: v }));
+    if (v !== (detail[field] ?? "")) onSave({ [field]: v });
+  };
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {CATEGORY_FIELDS.map((field) => (
+        <label key={field} className="grid gap-1 text-xs font-extrabold text-[#6c6a62]">
+          {CATEGORY_LABEL[field]}
+          <Input
+            value={values[field]}
+            disabled={readOnly}
+            maxLength={100}
+            list={`c-${field}-list`}
+            placeholder="업무 영역"
+            onChange={(e) => setValues((s) => ({ ...s, [field]: e.target.value }))}
+            onBlur={() => save(field)}
+            className="h-10 rounded-xl border-[1.5px] border-[#111] bg-white font-normal text-[#111]"
+          />
+          <datalist id={`c-${field}-list`}>
+            {options[field].map((o) => <option key={o} value={o} />)}
+          </datalist>
+        </label>
+      ))}
+    </div>
   );
 }
 
