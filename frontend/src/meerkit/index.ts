@@ -12,6 +12,7 @@ export { ThinkingOrb, ORB_STATES, type OrbState } from "./ai/ThinkingOrb";
 export { generateNickname } from "./auth/nickname";
 export { UserAvatar } from "./auth/components/UserAvatar";
 export { UserMenu } from "./auth/components/UserMenu";
+export { useLogout } from "./auth/mutations";
 export { MemberTable } from "./admin/components/MemberTable";
 export { MemberDirectory } from "./admin/components/MemberDirectory";
 export { RoleAssignDialog } from "./admin/components/RoleAssignDialog";
