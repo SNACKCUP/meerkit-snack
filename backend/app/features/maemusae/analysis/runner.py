@@ -27,6 +27,7 @@ from app.core.database import SessionLocal
 from app.core.exceptions import AppError
 from app.features.maemusae.analysis import repository
 from app.features.maemusae.analysis.batching import PageRef, locate, normalize, tag_of
+from app.features.maemusae.analysis.categories import CategoryBook, CategoryPath
 from app.features.maemusae.analysis.models import (
     RUNNING,
     SUCCEEDED,
@@ -91,6 +92,7 @@ class Candidate:
     evidence: list[tuple[str, str]] = field(default_factory=list)  # (쪽 번호표, 문장)
     kind_defaulted: bool = False  # 목록에 없는 값이라 기본값을 넣음 (화면에 "확인 필요")
     priority_defaulted: bool = False
+    category: CategoryPath = (None, None, None)  # 대·중·소분류 (업무 영역, M4-2)
 
 
 def run_analysis(run_id: int) -> None:
@@ -109,7 +111,7 @@ def _run(db: Session, run_id: int) -> None:
     document_id = run.document_id
     try:
         plan = choose_plan(load_pages(db, document_id))
-        candidates = _extract_all(db, run, plan)
+        candidates = _extract_all(db, run, plan, CategoryBook())  # 다시 분석은 기존 후보를 지우므로 빈 목록에서
         if plan.dedupe and len(candidates) > 1:
             candidates = _dedupe(candidates)
         count = _save(db, run_id, document_id, candidates, plan.by_tag)
@@ -134,7 +136,8 @@ def _code_text(db: Session, group: str) -> tuple[str, list[str]]:
     return ", ".join(f"{c.code}({c.label})" for c in codes), [c.code for c in codes]
 
 
-def _extract_all(db: Session, run: AnalysisRun, plan: AnalysisPlan) -> list[Candidate]:
+def _extract_all(db: Session, run: AnalysisRun, plan: AnalysisPlan, book: CategoryBook) -> list[Candidate]:
+    """묶음마다 후보 뽑기. 앞 묶음에서 쓴 분류 이름을 다음 묶음에 같이 보내고, 같은 이름은 book 이 한 표기로 맞춤"""
     kinds_text, kinds = _code_text(db, KIND_GROUP)
     priorities_text, priorities = _code_text(db, PRIORITY_GROUP)
     prompt = load_prompt(PROMPTS / "extract.md")
@@ -147,10 +150,14 @@ def _extract_all(db: Session, run: AnalysisRun, plan: AnalysisPlan) -> list[Cand
                 "kinds": kinds_text,
                 "priorities": priorities_text,
                 "instructions": run.prompt or NO_INSTRUCTIONS,
+                "categories": book.prompt_text(),
                 "document": batch.text,
             },
         )
-        candidates += [c for item in result.requirements if (c := _candidate(item, set(batch.tags), kinds, priorities))]
+        for item in result.requirements:
+            if c := _candidate(item, set(batch.tags), kinds, priorities):
+                c.category = book.canon((item.category_major, item.category_middle, item.category_minor))
+                candidates.append(c)
         run.done_steps += 1
         db.commit()  # 진행률. updated_at 이 바뀌어 멈춘 분석으로 보지 않음
     return candidates
@@ -212,6 +219,7 @@ def _dedupe(candidates: list[Candidate]) -> list[Candidate]:
         keep, other = candidates[target], candidates[i]
         keep.evidence += [ev for ev in other.evidence if ev not in keep.evidence]
         keep.question = keep.question or other.question
+        keep.category = keep.category if keep.category[0] else other.category
     return kept
 
 
@@ -277,6 +285,9 @@ def _insert_candidates(
             ai_question=c.question,
             kind_defaulted=c.kind_defaulted,
             priority_defaulted=c.priority_defaulted,
+            category_major=c.category[0],
+            category_middle=c.category[1],
+            category_minor=c.category[2],
         )
         repository.add(db, requirement)
         repository.add_all(db, _sources(requirement.id, c.evidence, by_tag))
@@ -322,15 +333,16 @@ def _run_refine(db: Session, run_id: int) -> None:
         plan = refine_plan(db, document_id)
         run.total_steps = plan.total_steps  # 시작 뒤 입력이 늘었을 수 있음
         db.commit()
-        updates = _ask_refine(db, run, plan.chunks)
+        book = CategoryBook(repository.list_category_paths(db, document_id))
+        updates = _ask_refine(db, run, plan.chunks, book)
         new_candidates: list[Candidate] = []
         merges: dict[int, list[tuple[str, str]]] = {}
         if plan.extract:
-            new_candidates = _extract_all(db, run, plan.extract)
+            new_candidates = _extract_all(db, run, plan.extract, book)
             new_candidates, merges = _match(repository.list_live_requirements(db, document_id), new_candidates)
             run.done_steps += 1
             db.commit()
-        result = _save_refine(db, run_id, document_id, plan, updates, new_candidates, merges)
+        result = _save_refine(db, run_id, document_id, plan, updates, new_candidates, merges, book)
     except Exception as e:  # noqa: BLE001 — 어느 단계 오류든 run 을 FAILED 로 남겨야 화면이 멈추지 않음
         db.rollback()
         code = e.code if isinstance(e, AppError) else FAILED_CODE
@@ -348,7 +360,9 @@ def _run_refine(db: Session, run_id: int) -> None:
         )
 
 
-def _ask_refine(db: Session, run: AnalysisRun, chunks: list[list[RefineTarget]]) -> dict[str, RefinedRequirement]:
+def _ask_refine(
+    db: Session, run: AnalysisRun, chunks: list[list[RefineTarget]], book: CategoryBook
+) -> dict[str, RefinedRequirement]:
     if not chunks:
         return {}
     kinds_text, _ = _code_text(db, KIND_GROUP)
@@ -364,6 +378,7 @@ def _ask_refine(db: Session, run: AnalysisRun, chunks: list[list[RefineTarget]])
                 "kinds": kinds_text,
                 "priorities": priorities_text,
                 "instructions": run.prompt or NO_INSTRUCTIONS,
+                "categories": book.prompt_text(),
                 "targets": "\n\n".join(t.text for t in chunk),
             },
         )
@@ -444,13 +459,21 @@ def _match(
         keep, other = candidates[target], candidates[n]
         keep.evidence += [ev for ev in other.evidence if ev not in keep.evidence]
         keep.question = keep.question or other.question
+        keep.category = keep.category if keep.category[0] else other.category
     kept = [c for i, c in enumerate(candidates) if i not in into_existing and i not in into_new]
     return kept, merges
 
 
-def _apply_refine(requirement: Requirement, update: RefinedRequirement, kinds: list[str], priorities: list[str]) -> bool:
-    """AI 가 준 칸 반영. 목록에 없는 구분·우선순위는 무시 (처음 분석과 달리 기존 값이 있으므로 기본값을 넣지 않음)"""
+def _apply_refine(
+    requirement: Requirement, update: RefinedRequirement, kinds: list[str], priorities: list[str], book: CategoryBook
+) -> bool:
+    """AI 가 준 칸 반영. 목록에 없는 구분·우선순위는 무시 (처음 분석과 달리 기존 값이 있으므로 기본값을 넣지 않음).
+    분류는 비어 있는 후보에만 채움: 이미 있는 분류(AI 가 넣었든 사람이 고쳤든)는 바꾸지 않음 (계획 19 1-7)"""
     changes: dict = {}
+    if requirement.category_major is None:
+        major, middle, minor = book.canon((update.category_major, update.category_middle, update.category_minor))
+        if major:
+            changes.update(category_major=major, category_middle=middle, category_minor=minor)
     name = (update.name or "").strip()[:NAME_MAX]
     if name and name != requirement.name:
         changes["name"] = name
@@ -481,6 +504,7 @@ def _save_refine(
     updates: dict[str, RefinedRequirement],
     new_candidates: list[Candidate],
     merges: dict[int, list[tuple[str, str]]],
+    book: CategoryBook,
 ) -> tuple[int, int, int, int] | None:
     """(고친 후보, 건너뛴 후보, 새 후보, 근거를 더한 후보) 수"""
     document = repository.lock_document(db, document_id)
@@ -502,7 +526,7 @@ def _save_refine(
             skipped += 1  # 그사이 사람이 고치거나 지움 → 사람 수정 우선, 입력은 다음 분류로
             continue
         update = updates.get(target.tag)
-        if update is not None and _apply_refine(requirement, update, kinds, priorities):
+        if update is not None and _apply_refine(requirement, update, kinds, priorities, book):
             requirement.version += 1
             requirement.updated_by = run.requested_by
             changed += 1

@@ -7,6 +7,7 @@
 | DELETE /requirements/{id}                         | 멤버 (직접 추가한 후보만)        |
 | PUT·DELETE /requirements/{id}/notes/{field}       | 멤버 (내 입력, 사람마다 한 건)   |
 | GET    /notes                                     | 멤버, 또는 MASTER 보기만        |
+| GET    /categories                                | 멤버, 또는 MASTER 보기만        |
 
 쓰기를 보기 전용 MASTER 가 부르면 403 PROJECT_MEMBER_REQUIRED, 멤버가 아니면 404 (project_viewer 규칙).
 """
@@ -20,6 +21,7 @@ from app.core.database import get_db
 from app.features.maemusae.access import ProjectAccess, project_viewer
 from app.features.maemusae.review import service
 from app.features.maemusae.review.schemas import (
+    CategoryPathRead,
     NoteField,
     NoteRead,
     NoteWrite,
@@ -53,6 +55,7 @@ def list_requirements(
     document_id: int,
     kind: Annotated[str | None, Query(description="구분 코드")] = None,
     priority: Annotated[str | None, Query(description="우선순위 코드")] = None,
+    category_major: Annotated[str | None, Query(max_length=100, description="대분류 (업무 영역) 이름")] = None,
     included: Annotated[bool | None, Query(description="체크된 것만(true) / 해제된 것만(false)")] = None,
     needs_check: Annotated[bool, Query(description="확인 필요만")] = False,
     q: Annotated[str | None, Query(max_length=200, description="번호(REQ-012) 또는 이름")] = None,
@@ -62,9 +65,19 @@ def list_requirements(
     db: Session = Depends(get_db),
 ):
     return service.list_requirements(
-        db, access, document_id, kind=kind, priority=priority, included=included, needs_check=needs_check,
+        db, access, document_id, kind=kind, priority=priority, category_major=category_major, included=included,
+        needs_check=needs_check,
         q=q, cursor=cursor, limit=limit,
     )
+
+
+@router.get(
+    "/categories",
+    response_model=list[CategoryPathRead],
+    summary="이 문서에서 쓰는 대·중·소분류와 후보 수 (멤버, 또는 MASTER 보기만). 입력 자동완성·대분류 필터용",
+)
+def list_categories(document_id: int, access: ProjectAccess = Depends(project_viewer), db: Session = Depends(get_db)):
+    return service.list_categories(db, access, document_id)
 
 
 @router.get(

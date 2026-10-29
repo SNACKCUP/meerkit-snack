@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from sqlalchemy import and_, exists, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from app.features.maemusae.analysis.models import Requirement, RequirementSource
@@ -15,6 +15,7 @@ from app.users.models import User
 class RequirementFilter:
     kind: str | None = None
     priority: str | None = None
+    category_major: str | None = None
     included: bool | None = None
     needs_check: bool = False  # 확인 필요만: 답 없는 AI 질문, 기본값 표시, 위치 확인 필요 근거
     seq: int | None = None  # REQ-012 로 찾기
@@ -52,6 +53,8 @@ def list_requirements(
         stmt = stmt.where(Requirement.kind == f.kind)
     if f.priority:
         stmt = stmt.where(Requirement.priority == f.priority)
+    if f.category_major:
+        stmt = stmt.where(Requirement.category_major == f.category_major)
     if f.included is not None:
         stmt = stmt.where(Requirement.is_included.is_(f.included))
     if f.needs_check:
@@ -68,6 +71,21 @@ def list_requirements(
     if limit is not None:
         stmt = stmt.limit(limit)
     return [(r, bool(a), bool(v)) for r, a, v in db.execute(stmt)]
+
+
+def list_category_paths(db: Session, document_id: int) -> list[tuple[str, str | None, str | None, int]]:
+    """(대, 중, 소, 후보 수) 가나다 순. 분류 없는 후보는 빼고 셈"""
+    rows = db.execute(
+        select(Requirement.category_major, Requirement.category_middle, Requirement.category_minor, func.count())
+        .where(*_live(document_id), Requirement.category_major.is_not(None))
+        .group_by(Requirement.category_major, Requirement.category_middle, Requirement.category_minor)
+        .order_by(
+            Requirement.category_major,
+            Requirement.category_middle.nulls_first(),
+            Requirement.category_minor.nulls_first(),
+        )
+    )
+    return [tuple(row) for row in rows]
 
 
 def _escape(value: str) -> str:
