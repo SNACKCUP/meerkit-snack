@@ -3,7 +3,7 @@
 흐름: 문서 업로드 → AI 분석(요구사항 추출·분류·정제) → 관리자 검토/수정 → 확정
      → 기능정의서 생성 → Excel 다운로드
 
-관리자 전용 표시가 있는 API는 auth 모듈이 준비되면 require_admin 의존성을 붙입니다.
+관리자 전용 표시가 있는 API는 매무새 M1 에서 권한 검사(app.core.principal)를 붙입니다.
 """
 
 from pathlib import Path

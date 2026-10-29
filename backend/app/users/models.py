@@ -100,7 +100,7 @@ class User(TimestampMixin, Base):
         return self.email_verified_at is not None
 
     def has_role(self, code: str) -> bool:
-        """이 역할을 가졌는지. 권한 검사(require_roles)에서 씁니다."""
+        """이 역할을 가졌는지. (API 권한 검사는 app.core.principal 의 require_role 이 요청마다 담긴 역할로 합니다)"""
         return any(role.code == code for role in self.roles)
 
 

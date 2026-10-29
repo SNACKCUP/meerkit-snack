@@ -109,7 +109,7 @@ Claude Code 같은 AI 도구가 이 저장소에서 코드를 만들 때 따르�
 
 - 사용량 관련 코드(`usage_logs`, 이용 이력, 한도, `/history`, `/admin/usage`)는 만들지 않는다. → [향후 확장](docs/future-extensions.md)
 - `llm/`은 사용량 기록과 연결하지 않는다.
-- 역할은 `MASTER`, `OWNER`, `VIEWER`, `WRITER` 4종이고 한 사람이 여러 역할을 가질 수 있다. 관리자 검사는 `permissions/roles.py`의 `ADMIN_ROLE`(`MASTER`) 하나로만 한다 (`require_admin`).
+- 역할은 `MASTER`, `OWNER`, `VIEWER`, `WRITER` 4종이고 한 사람이 여러 역할을 가질 수 있다. 관리자 검사는 `app.core.principal`의 `require_admin`(`ADMIN_ROLE` = `MASTER`) 하나로만 한다. 권한 검사는 요청마다 auth가 채운 현재 사용자만 읽으므로 어느 킷 모듈이든 `core`만 import 해서 쓸 수 있다.
 - 위 관리자는 서비스 전체 관리자다. 서브 서비스 안 리소스 단위 권한(예: 매무새 프로젝트의 관리자/일반 멤버)은 서비스가 자기 테이블로 정하고 킷 역할로 대신하지 않는다. MASTER는 이런 리소스를 고객 지원용으로 보기만 한다.
 - 역할별 세부 권한은 아직 정하지 않았다. `permissions`/`role_permissions` 테이블은 향후 확장이다.
 - 파일은 `app.storage.get_storage()`로만 저장한다. 공개 버킷(`meerkit-public`)에는 공개해도 되는 파일만 두고, 고객 문서는 넣지 않는다.

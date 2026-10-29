@@ -14,10 +14,10 @@
 ```mermaid
 flowchart TB
     subgraph KIT["스타터킷 공통 기반 (재사용)"]
-        core["core<br/>설정 · DB · 보안(해시·JWT)"]
+        core["core<br/>설정 · DB · 보안(해시·JWT) · 권한 검사(require_role · require_admin · ADMIN_ROLE)"]
         users["users<br/>회원 데이터·규칙 · 역할 코드 · 약관 · 탈퇴/파기 (HTTP 없음)"]
-        auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정 · 인증 기록 정리"]
-        perm["permissions<br/>require_roles · require_admin · ADMIN_ROLE"]
+        auth["auth<br/>가입 · 로그인(잠금) · 토큰 · 이메일 인증 · 비밀번호 재설정 · 인증 기록 정리 · 요청마다 현재 사용자 채우기"]
+        perm["permissions<br/>역할 코드 다시 내보내기 (예전 import 경로 호환)"]
         account["account<br/>/api/users/me · /api/users (HTTP 연결 층)"]
         social["social<br/>소셜 로그인 (Google, 이후 Kakao·Naver) · social_accounts"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
@@ -27,13 +27,12 @@ flowchart TB
     subgraph FEAT["서브 서비스 (교체 가능)"]
         req["features/requirements<br/>업로드 · 분류 · 확정 · 기능정의서 · Excel"]
     end
-    req --> perm
+    req --> core
     req --> auth
     req --> llm
-    account --> perm
+    account --> core
     account --> auth
     account --> users
-    perm --> auth
     social --> auth
     social --> users
     perm --> users
@@ -50,7 +49,8 @@ flowchart TB
 ```
 
 - **공통 모듈끼리도 한 방향으로만 의존합니다:** `core ← users ← auth ← permissions ← account`, `mail`·`llm`·`storage`는 `core`만(`users`는 프로필 이미지 때문에 `storage`를 씀). `social`은 `core`·`users`·`auth`만 쓰고, `social`을 import 하는 킷은 없습니다(`app/api.py`만 라우터 등록). 서로 참조(↔)나 역방향 import는 `tests/test_import_rules.py`의 층 표(`ALLOWED_KIT_IMPORTS`)가 막습니다. 표를 바꿔야 하면 팀과 먼저 협의합니다.
-- `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사(permissions)가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
+- `users`에는 HTTP(라우터)를 두지 않습니다. 로그인 확인(auth)과 권한 검사가 함께 필요한 회원 API는 맨 위 `account`가 조합합니다(Spring의 Controller 패키지 역할).
+- **권한 검사는 `core`에 있습니다 (`app.core.principal`).** 요청마다 `auth`의 `load_principal`(앱 전체 공통 의존성)이 토큰과 DB를 확인해 현재 사용자(id, 역할)를 `request.state`에 담고, `require_admin`·`require_role(...)`·`require_login`은 그 값만 읽습니다(Spring의 `SecurityContextHolder` + `@PreAuthorize`). 그래서 어느 킷 모듈이든 `core`만 import 해서 권한을 검사할 수 있고, 역할을 매 요청 DB에서 읽으므로 회수·비활성화가 바로 반영됩니다. 등록이 빠지면 401로 닫힙니다.
 
 - 화살표는 "import 한다"는 뜻입니다.
 - **킷(`core`, `users`, `auth`, `permissions`, `account`, `social`, `llm`, `mail`, `storage`)은 `features/`를 절대 import 하지 않습니다.** `tests/test_import_rules.py`가 검사합니다.
@@ -89,10 +89,10 @@ backend/
 │   │   ├── service.py     # 로그인 잠금, 인증번호, 재설정 토큰, 메일 횟수 제한
 │   │   ├── schemas.py
 │   │   ├── cleanup.py     # 탈퇴 회원의 재설정 토큰·오래된 인증번호 기록 정리 (purge 다음에 매일 실행)
-│   │   └── deps.py        # get_current_user
-│   ├── permissions/       # 권한 검사 (킷)
-│   │   ├── roles.py       # ADMIN_ROLE = MASTER (+ users.roles 역할 코드 다시 내보내기)
-│   │   └── deps.py        # require_roles(), require_admin
+│   │   ├── principal.py   # load_principal: 요청마다 토큰·DB를 확인해 현재 사용자(id, 역할)를 채움 (main.py 공통 의존성)
+│   │   └── deps.py        # get_current_user (회원 정보가 필요할 때)
+│   ├── permissions/       # 예전 import 경로 호환 (킷)
+│   │   └── roles.py       # ADMIN_ROLE, 역할 코드 다시 내보내기
 │   ├── account/           # 회원 API(HTTP) 연결 층 (킷)
 │   │   ├── me_router.py   # /api/users/me: 내 정보 조회·수정, 프로필 이미지 올리기·삭제, 비밀번호 변경, 탈퇴
 │   │   └── admin_router.py  # /api/users: 멤버 검색·역할·활성/비활성·삭제, /api/users/roles
@@ -156,7 +156,7 @@ backend/
 | 항목 | 규칙 |
 |---|---|
 | 역할 | `MASTER`(1) / `OWNER`(2) / `VIEWER`(3) / `WRITER`(4). 한 사람이 여러 역할을 가질 수 있음(`user_roles`). 가입하면 `VIEWER`. 역할별 세부 권한은 아직 없음 |
-| 관리자 | `permissions/roles.py`의 `ADMIN_ROLE = "MASTER"`. 관리자 API는 `require_admin`으로 검사. 서비스 전체 관리자만 뜻하며, 서브 서비스 안 리소스 단위 권한(예: 매무새 프로젝트 관리자/일반)은 서비스가 자기 테이블로 정함. MASTER는 그런 리소스를 보기만 함 |
+| 관리자 | `app.core.principal`의 `ADMIN_ROLE = "MASTER"`. 관리자 API는 `Depends(require_admin)`(같은 파일)으로 검사. 서비스 전체 관리자만 뜻하며, 서브 서비스 안 리소스 단위 권한(예: 매무새 프로젝트 관리자/일반)은 서비스가 자기 테이블로 정함. MASTER는 그런 리소스를 보기만 함 |
 | 가입 | 이메일 인증(`/auth/email/send-code` → `/auth/email/verify-code` → 증표) + 필수 약관(`terms`, `privacy`) 동의. 서비스가 다른 방법(예: 초대 링크 토큰)으로 메일함 소유를 확인했으면 `auth.service.issue_verified_email_proof(db, email)`로 같은 1회용 증표를 받아 가입에 씀(HTTP로는 열지 않음). 동의 기록은 `user_term_agreements`(약관 버전별) |
 | 인증번호 | 6자리, 10분, 5회까지. DB에는 HMAC 해시만. 같은 이메일 60초 간격·하루 10회 |
 | 비밀번호 찾기 | 가입 여부와 관계없이 항상 같은 응답(202). 링크 토큰은 해시 저장, 30분, 한 번만, 새 링크를 보내면 이전 링크 무효 |

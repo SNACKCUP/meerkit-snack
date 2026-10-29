@@ -5,7 +5,7 @@
 
 ## 권한은 서버가 판단한다
 
-- Always: 권한은 서버가 최종 판단한다. 프론트에서 버튼을 숨기는 것은 보호가 아니다. (역할 검사는 `backend/app/permissions/deps.py`, `roles.py`)
+- Always: 권한은 서버가 최종 판단한다. 프론트에서 버튼을 숨기는 것은 보호가 아니다. (역할 검사는 `backend/app/core/principal.py`, 현재 사용자 채우기는 `backend/app/auth/principal.py`)
 - Always: SQL은 `repository`에만 둔다. 흐름은 `router → service → repository`다.
 - Never: 응답에 `hashed_password`를 포함하지 않는다. 비밀번호는 argon2로 해시한다 (`backend/app/core/security.py`).
 - Always: 리프레시 토큰은 httpOnly 쿠키(`meerkit_refresh`)로만 보낸다 (`backend/app/auth/router.py`). 자바스크립트가 읽을 수 없어야 XSS로 탈취되지 않는다.

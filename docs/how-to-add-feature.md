@@ -239,7 +239,7 @@ export default function Page() {
 }
 ```
 
-관리자만 쓰는 화면은 `<RequireRole role="MASTER">`, 백엔드 API는 `Depends(require_admin)`(`app.permissions.deps`, 관리자 역할은 `MASTER`)를 씁니다.
+관리자만 쓰는 화면은 `<RequireRole role="MASTER">`, 백엔드 API는 `Depends(require_admin)`(`app.core.principal`, 관리자 역할은 `MASTER`)를, 로그인만 확인할 때는 `Depends(require_login)`을 씁니다. 회원 정보가 필요하면 `get_current_user`(`app.auth.deps`)를 함께 받습니다.
 
 UI 부품은 `@/components/ui`(shadcn)를, 스타일은 Tailwind utility를 씁니다.
 
