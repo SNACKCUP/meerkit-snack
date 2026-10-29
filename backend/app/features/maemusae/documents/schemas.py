@@ -21,6 +21,10 @@ class DocumentRead(BaseModel):
     last_version_no: int | None = Field(default=None, description="마지막 버전 번호 (화면 '마지막 버전 v2'). 없으면 null")
     changed_since_save: bool = Field(default=False, description="saved_at 뒤에 후보·입력을 또 고쳤으면 true")
     manual_count: int = Field(default=0, description="직접 추가한 후보 수 (다시 분석하면 사라짐)")
+    open_question_count: int = Field(
+        default=0, description="체크된 후보 중 답이 없는 AI 질문 수. 확정 창 경고용 (막지는 않음)"
+    )
+    defaulted_count: int = Field(default=0, description="체크된 후보 중 'AI 값 확인' 표시가 남은 수. 확정 창 경고용")
     confirmed_at: datetime | None = None
     confirmed_by_name: str | None = Field(default=None, examples=["이소영"])
     updated_at: datetime

@@ -89,8 +89,7 @@ meerkit/
 │   │   ├── codes/       # 공통 기반: 공통코드 (킷·서브 서비스 공용, owner 로 구분)
 │   │   ├── llm/         # 공통 기반: LangChain 클라이언트, 프롬프트
 │   │   └── features/    # 서브 서비스 (교체 영역)
-│   │       ├── maemusae/      # 매무새 (/api/mms): 프로젝트·멤버·초대, 문서·파일(쪽 단위 본문), 접근 검사
-│   │       └── requirements/  # 매무새 예전 계약 스텁 (새 API로 바뀌면 삭제)
+│   │       └── maemusae/      # 매무새 (/api/mms): 프로젝트·멤버·초대, 문서·파일(쪽 단위 본문), 분석·검토·버전, 확정·Excel
 │   ├── alembic/         # DB 마이그레이션
 │   └── tests/
 ├── frontend/

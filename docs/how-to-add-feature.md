@@ -7,11 +7,10 @@ MeerKit을 Fork 해서 내 서비스를 만들 때 따라 하는 순서입니다
 
 ```bash
 rm -rf backend/app/features/maemusae backend/tests/features/maemusae
-rm -rf backend/app/features/requirements backend/tests/features/requirements
-rm -rf "frontend/src/app/(service)/requirements"
+rm -rf "frontend/src/app/(sub)/maemusae"
 ```
 
-그리고 아래 두 파일에서 `maemusae`, `requirements` 관련 줄을 지웁니다.
+그리고 아래 두 파일에서 `maemusae` 관련 줄을 지웁니다.
 
 - `backend/app/api.py`
 - `backend/alembic/env.py`
@@ -31,7 +30,7 @@ backend/app/features/meetings/
 └── prompts/       # 프롬프트를 쓴다면
 ```
 
-`requirements` 폴더를 복사해 이름을 바꾸고 내용을 고치는 것이 가장 빠릅니다.
+`maemusae/projects` 폴더(router·service·repository·schemas·models)를 복사해 이름을 바꾸고 내용을 고치는 것이 가장 빠릅니다.
 
 ### router.py 예시
 
