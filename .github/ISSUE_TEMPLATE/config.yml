@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: 협업 규칙 (브랜치, 커밋, PR)
-    url: https://github.com/sensibly00-glitch/meerkit/blob/main/CONTRIBUTING.md
+    url: https://github.com/SNACKCUP/meerkit-snack/blob/main/CONTRIBUTING.md
     about: 이슈를 만들기 전에 브랜치·커밋 규칙을 확인하세요
   - name: 기능 추가 순서
-    url: https://github.com/sensibly00-glitch/meerkit/blob/main/docs/how-to-add-feature.md
+    url: https://github.com/SNACKCUP/meerkit-snack/blob/main/docs/how-to-add-feature.md
     about: 새 기능을 어디에 어떤 순서로 만드는지
