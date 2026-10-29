@@ -49,6 +49,19 @@ export function Shell({ children }: { children: ReactNode }) {
   // 먼저 스타일을 입히면 하이드레이션이 어긋난다
   const ready = useSyncExternalStore(noop, () => true, () => false);
 
+  // [예비 목 저장소] 서버 없이 확정을 흉내 내야 할 때 주석을 풀어 쓴다 (store.ts 맨 위 설명 참고).
+  // 그때는 위 ready 대신 아래처럼 목 데이터를 불러온 뒤에 화면을 그린다. import { useMaemusae } from "../_lib/store" 도 다시 넣는다
+  // const [ready, setReady] = useState(false);
+  // useEffect(() => {
+  //   let cancelled = false;
+  //   Promise.resolve(useMaemusae.persist.rehydrate()).then(() => {
+  //     if (!cancelled) setReady(true);
+  //   });
+  //   return () => {
+  //     cancelled = true;
+  //   };
+  // }, []);
+
   return (
     <div style={THEME_STYLE} className="min-h-screen bg-[#d9d9d6] p-3 text-[#111] antialiased sm:p-6 print:bg-white print:p-0">
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
@@ -74,6 +87,9 @@ export function Shell({ children }: { children: ReactNode }) {
         <main className="mt-12 flex-1 sm:mt-16 print:mt-0">{ready ? <Rise key={path}>{children}</Rise> : <div className="h-[50vh]" aria-busy />}</main>
         <footer className="print:hidden mt-16 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[#111]/15 pt-5 text-[12px] text-[#6c6a62]">
           <span>매무새 — Meerkit 위에 얹은 서브 서비스</span>
+          {/* [예비 목 저장소] 목을 다시 쓸 때만 주석을 푼다
+          <button type="button" className="underline underline-offset-4" onClick={() => { if (window.confirm("이 브라우저에 저장된 확정 목 데이터를 지울까요? 프로젝트, 올린 파일, 요구사항 후보는 서버에 그대로 있어요.")) useMaemusae.getState().reset(); }}>목 데이터 초기화</button>
+          */}
         </footer>
       </div>
     </div>

@@ -405,6 +405,25 @@ export function useSaveVersion(id: string, docId: number | undefined) {
 
 // ---- 확정 ----
 
+// [예비 목 저장소] 서버 없이 확정을 흉내 낼 때 store.confirm에 넘길 후보를 모은다 (Workspace의 확정 버튼에서 불렀다).
+// 다시 쓸 때 주석을 풀고 import type { ConfirmedItem } from "./types" 를 넣는다
+// export async function loadConfirmItems(id: string, docId: number): Promise<ConfirmedItem[]> {
+//   const rows: ApiRequirement[] = [];
+//   let cursor: number | undefined;
+//   do {
+//     const page = await mmsApi.listRequirements(id, docId, { included: true }, cursor);
+//     rows.push(...page.items);
+//     cursor = page.next_cursor ?? undefined;
+//   } while (cursor !== undefined);
+//   const items: ConfirmedItem[] = [];
+//   for (let i = 0; i < rows.length; i += 8) {
+//     const details = await Promise.all(rows.slice(i, i + 8).map((r) => mmsApi.getRequirement(id, docId, r.id)));
+//     for (const d of details)
+//       items.push({ id: d.id, code: d.code, name: d.name, kind: d.kind, priority: d.priority, description: d.description, quote: d.sources.map((s) => s.quote).join("\n") });
+//   }
+//   return items;
+// }
+
 /** 확정 뒤에는 문서 상태·확정 목록·버전 기록이 모두 바뀐다 */
 function refreshConfirm(qc: QueryClient, id: string, docId: number) {
   refreshDocCard(qc, id);
