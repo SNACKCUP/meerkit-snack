@@ -58,7 +58,7 @@ class Document(TimestampMixin, Base):
     kind: Mapped[str] = mapped_column(String(30))  # 공통코드 MMS_DOC_KIND
     status: Mapped[str] = mapped_column(String(20), server_default=EMPTY)
     current_revision: Mapped[int] = mapped_column(Integer, server_default="0")  # 마지막 확정 번호 (M4)
-    saved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # 임시 저장 (M3)
+    saved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # 이번 분석 이후 마지막 버전 추가·저장 (다시 분석하면 비움, 10/29)
     saved_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     confirmed_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"))

@@ -11,6 +11,8 @@ from app.features.maemusae.invitations.router import (
     project_router as project_invitations_router,
 )
 from app.features.maemusae.projects.router import router as projects_router
+from app.features.maemusae.review.router import router as review_router
+from app.features.maemusae.versions.router import router as versions_router
 
 router = APIRouter(prefix="/mms")
 router.include_router(projects_router)
@@ -18,3 +20,5 @@ router.include_router(project_invitations_router)
 router.include_router(invitation_link_router)
 router.include_router(documents_router)
 router.include_router(analysis_router)
+router.include_router(review_router)
+router.include_router(versions_router)

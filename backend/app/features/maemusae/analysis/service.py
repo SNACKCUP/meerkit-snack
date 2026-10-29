@@ -118,7 +118,7 @@ def start_analysis(db: Session, access: ProjectAccess, document_id: int, body: A
         raise DocumentConfirmedError()
     if document.status in BUSY_STATUSES:
         raise DocumentBusyError()
-    if not body.restart and repository.has_ai_requirements(db, document.id):
+    if not body.restart and repository.has_live_requirements(db, document.id):
         raise AnalysisRestartRequiredError()
     pages = load_pages(db, document.id)
     if not pages:

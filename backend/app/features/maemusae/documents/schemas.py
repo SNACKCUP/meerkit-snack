@@ -15,7 +15,12 @@ class DocumentRead(BaseModel):
     status: DocumentStatus = Field(examples=["EMPTY"])
     current_revision: int = Field(description="마지막 확정 번호 (확정 전 0)", examples=[0])
     source_count: int = Field(description="올린 파일·직접 쓴 글 수", examples=[2])
-    saved_at: datetime | None = None
+    saved_at: datetime | None = Field(
+        default=None, description="이번 분석 이후 마지막으로 버전 추가·저장한 시각. 다시 분석하면 null (10/29)"
+    )
+    last_version_no: int | None = Field(default=None, description="마지막 버전 번호 (화면 '마지막 버전 v2'). 없으면 null")
+    changed_since_save: bool = Field(default=False, description="saved_at 뒤에 후보·입력을 또 고쳤으면 true")
+    manual_count: int = Field(default=0, description="직접 추가한 후보 수 (다시 분석하면 사라짐)")
     confirmed_at: datetime | None = None
     confirmed_by_name: str | None = Field(default=None, examples=["이소영"])
     updated_at: datetime

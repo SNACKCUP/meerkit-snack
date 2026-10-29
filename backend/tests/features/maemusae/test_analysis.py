@@ -16,6 +16,7 @@ from app.features.maemusae.analysis.models import (
 from app.features.maemusae.config import mms_settings
 from app.features.maemusae.documents.models import Document, SourceFile, SourcePage
 from app.features.maemusae.projects.models import MEMBER, ProjectMember
+from app.features.maemusae.review.models import RequirementNote
 from app.llm.errors import LLMTimeoutError
 from app.users.models import User
 from tests.features.maemusae import samples
@@ -265,23 +266,40 @@ def test_needs_sources(client, owner, docs_url, fake_llm):
     assert (response.status_code, response.json()["code"]) == (400, "ANALYSIS_NO_SOURCES")
 
 
-def test_restart_required_then_restart_keeps_manual_and_numbers(client, db, owner, docs_url, fake_llm):
+def test_restart_required_then_restart_deletes_all_and_numbers_from_one(client, db, owner, docs_url, fake_llm):
+    """다시 분석하면 후보·직접 추가·입력을 모두 지우고 REQ-001 부터 (10/29 결정). 버전 기록은 그대로, saved_at 은 비움"""
     _add_text(client, docs_url, owner)
     fake_llm.responses = [{"requirements": [_req("회원가입"), _req("결제")]}]
     assert _analyze(client, docs_url, owner).status_code == 202
-    db.add(Requirement(document_id=_doc_id(docs_url), seq=3, name="직접 추가", kind="FUNCTIONAL", priority="LOW", is_manual=True))
-    db.commit()
+    manual = client.post(
+        f"{docs_url}/requirements", json={"name": "직접 추가", "kind": "FUNCTIONAL", "priority": "LOW"}, headers=owner
+    ).json()
+    assert manual["code"] == "REQ-003"
+    client.put(f"{docs_url}/requirements/{manual['id']}/notes/DESCRIPTION", json={"text": "메모"}, headers=owner)
+    saved = client.post(f"{docs_url}/versions", headers=owner).json()
+    assert saved["version_no"] == 1
 
     response = _analyze(client, docs_url, owner)
     assert (response.status_code, response.json()["code"]) == (409, "ANALYSIS_RESTART_REQUIRED")
 
     fake_llm.responses = [{"requirements": [_req("이메일 회원가입")]}]
     assert _analyze(client, docs_url, owner, restart=True).status_code == 202
-    # AI 후보는 새로, 직접 추가한 후보는 남김. 번호는 다시 쓰지 않음 (REQ-004 부터)
-    assert [(r.seq, r.name, r.is_manual) for r in _requirements(db, docs_url)] == [
-        (3, "직접 추가", True),
-        (4, "이메일 회원가입", False),
-    ]
+    rows = db.scalars(select(Requirement).where(Requirement.document_id == _doc_id(docs_url))).all()
+    assert [(r.seq, r.name, r.is_manual) for r in rows] == [(1, "이메일 회원가입", False)]
+    assert db.scalars(select(RequirementNote)).all() == []
+    document = client.get(docs_url, headers=owner).json()
+    assert (document["saved_at"], document["last_version_no"], document["manual_count"]) == (None, 1, 0)
+    # 남긴 버전은 그대로 (REQ-003 직접 추가와 입력 포함)
+    version = client.get(f"{docs_url}/versions/{saved['id']}", headers=owner).json()
+    assert [i["code"] for i in version["items"]] == ["REQ-001", "REQ-002", "REQ-003"]
+    assert version["items"][2]["notes"][0]["text"] == "메모"
+
+
+def test_manual_only_document_also_needs_restart(client, owner, docs_url, fake_llm):
+    _add_text(client, docs_url, owner)
+    client.post(f"{docs_url}/requirements", json={"name": "직접", "kind": "FUNCTIONAL", "priority": "LOW"}, headers=owner)
+    response = _analyze(client, docs_url, owner)
+    assert (response.status_code, response.json()["code"]) == (409, "ANALYSIS_RESTART_REQUIRED")
 
 
 def test_busy_and_confirmed_documents(client, db, owner, docs_url, fake_llm, monkeypatch):

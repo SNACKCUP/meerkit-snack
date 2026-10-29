@@ -141,10 +141,11 @@ class AnalysisNoSourcesError(BadRequestError):
 
 
 class AnalysisRestartRequiredError(ConflictError):
-    # 이미 후보가 있는 문서를 처음부터 다시 분석하면 AI 후보를 지우므로, 화면이 한 번 더 확인하고 restart=true 로 보냄
+    # 후보가 있는 문서를 다시 분석하면 후보·직접 추가·입력을 모두 지우므로, 화면이 알림을 보여 준 뒤 restart=true 로 보냄
     def __init__(self):
         super().__init__(
-            "ANALYSIS_RESTART_REQUIRED", "이미 분석한 문서입니다. 처음부터 다시 분석하면 AI가 만든 후보가 새로 만들어집니다."
+            "ANALYSIS_RESTART_REQUIRED",
+            "이미 후보가 있는 문서입니다. 다시 분석하면 지금 후보와 직접 입력한 내용이 사라지고 REQ-001부터 새로 만들어집니다.",
         )
 
 
@@ -155,3 +156,38 @@ class DocumentTooLargeToAnalyzeError(ValidationError):
             "DOCUMENT_TOO_LARGE_TO_ANALYZE",
             "문서를 다 합친 용량이 너무 커요. 분석에 필요 없는 파일을 빼고 다시 시도해 주세요.",
         )
+
+
+class RequirementNotFoundError(NotFoundError):
+    def __init__(self):
+        super().__init__("REQUIREMENT_NOT_FOUND", "요구사항 후보를 찾을 수 없습니다.")
+
+
+class RequirementChangedError(ConflictError):
+    # 낙관적 잠금: 화면이 보낸 version 이 DB 와 다르면 다른 사람이 먼저 고친 것
+    def __init__(self, codes: list[str]):
+        super().__init__(
+            "REQUIREMENT_CHANGED",
+            f"다른 사람이 먼저 고쳤어요 ({', '.join(codes)}). 새로 불러온 뒤 다시 고쳐 주세요.",
+        )
+
+
+class RequirementNotDeletableError(ConflictError):
+    def __init__(self):
+        super().__init__("REQUIREMENT_NOT_DELETABLE", "AI가 만든 후보는 지울 수 없어요. 체크를 해제하면 확정에서 빠집니다.")
+
+
+class NoteNotFoundError(NotFoundError):
+    def __init__(self):
+        super().__init__("NOTE_NOT_FOUND", "남긴 입력을 찾을 수 없습니다.")
+
+
+class NothingToVersionError(BadRequestError):
+    # 후보가 하나도 없으면 남길 내용이 없음 (빈 버전이 기록에 쌓이지 않게)
+    def __init__(self):
+        super().__init__("NOTHING_TO_VERSION", "남길 후보가 없어요. 분석하거나 후보를 직접 추가한 뒤 눌러 주세요.")
+
+
+class VersionNotFoundError(NotFoundError):
+    def __init__(self):
+        super().__init__("VERSION_NOT_FOUND", "버전 기록을 찾을 수 없습니다.")

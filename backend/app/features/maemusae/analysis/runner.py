@@ -3,7 +3,9 @@
 1. 묶음마다 prompts/extract.md 로 후보를 뽑고 done_steps +1 (commit 해서 화면 진행률·멈춤 판단에 씀)
 2. 묶음이 여럿이면 prompts/dedupe.md 로 같은 후보를 묶어 하나로 (근거는 모두 남김)
 3. 근거 문장을 서버가 쪽 본문에서 찾아 verified·끝 쪽을 정함. 없는 쪽 번호를 댄 근거는 버림
-4. 문서를 잠그고, 분석 요청이 아직 RUNNING 일 때만 한 트랜잭션으로 저장 (멈춤 정리와 겹치면 저장하지 않음)
+4. 문서를 잠그고, 분석 요청이 아직 RUNNING 일 때만 한 트랜잭션으로 저장 (멈춤 정리와 겹치면 저장하지 않음).
+   저장할 때 이전 후보·직접 추가·입력을 모두 지우고 REQ-001 부터 다시 매깁니다. 버전 번호는 건드리지 않고
+   "이번 분석 이후 버전을 남겼는지" 표시(saved_at)만 비웁니다 (10/29 결정, 계획 17의 2-1)
 어느 단계든 실패하면 반쯤 만든 결과는 저장하지 않고 run FAILED + 오류 코드 (킷 LLM 오류 코드 그대로).
 
 로그에는 id·묶음 수·후보 수·걸린 시간·오류 코드만. 문서 본문·후보 내용·지시문은 남기지 않습니다.
@@ -218,11 +220,9 @@ def _save(
         return None
 
     now = datetime.now(UTC)
-    seq = repository.max_seq(db, document_id)  # 지우기 전에 읽어 번호를 다시 쓰지 않음
-    repository.soft_delete_ai_requirements(db, document_id, now)  # 처음 분석이면 지울 것이 없음
+    deleted = repository.delete_requirements(db, document_id)  # 처음 분석이면 지울 것이 없음
     index = {tag: i for i, tag in enumerate(by_tag, 1)}
-    for c in candidates:
-        seq += 1
+    for seq, c in enumerate(candidates, 1):  # 다시 분석해도 REQ-001 부터
         requirement = Requirement(
             document_id=document_id,
             seq=seq,
@@ -255,7 +255,11 @@ def _save(
     run.done_steps = run.total_steps
     run.finished_at = now
     document.status = READY
+    document.saved_at = None  # 새 분석이 시작됐으므로 다음 '버전 저장'은 새 버전을 만듦
+    document.saved_by = None
     db.commit()
+    if deleted:
+        logger.info("AI 분석 이전 후보 지움 run_id=%s document_id=%s deleted=%s", run_id, document_id, deleted)
     return len(candidates)
 
 
