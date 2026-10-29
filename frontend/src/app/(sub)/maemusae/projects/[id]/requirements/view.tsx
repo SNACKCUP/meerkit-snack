@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { AiPromptInput, ThinkingIndicator } from "@/meerkit";
@@ -10,27 +10,54 @@ import { AiPromptInput, ThinkingIndicator } from "@/meerkit";
 import { ProjectGuard } from "../../../_components/ProjectGuard";
 import { SourcesPanel } from "../../../_components/SourcesPanel";
 import { Viewer } from "../../../_components/Viewer";
-import { ANALYZING_LABELS, CONFIRMING_LABELS, Workspace } from "../../../_components/Workspace";
+import { ANALYZING_LABELS, REFINING_LABELS, Workspace } from "../../../_components/Workspace";
 import { PageHead, Pill, card } from "../../../_components/ui";
-import { apiError } from "../../../_lib/api";
-import { DOC_STATUS } from "../../../_lib/labels";
-import { useRequirementsDoc, useUploadSource } from "../../../_lib/queries";
-import { emptyDoc } from "../../../_lib/seed";
+import { apiError, type ApiAnalysisRun } from "../../../_lib/api";
+import { DOC_STATUS, docStatus } from "../../../_lib/labels";
+import { useAfterAnalysis, useAnalysis, useAnalyze, useRequirementsDoc, useUploadSource } from "../../../_lib/queries";
 import { useMaemusae } from "../../../_lib/store";
+
+// 분석 실패 이유 (서버 error_code). 그 밖의 코드는 기본 문구
+const FAIL_TEXT: Record<string, string> = {
+  LLM_TIMEOUT: "AI 응답이 너무 늦어 멈췄어요.",
+  LLM_PROVIDER_ERROR: "AI 서비스에 연결하지 못했어요.",
+  LLM_RATE_LIMITED: "AI 요청이 몰려 멈췄어요.",
+  LLM_BAD_OUTPUT: "AI 답을 읽지 못했어요.",
+  ANALYSIS_INTERRUPTED: "서버가 다시 시작되어 분석이 멈췄어요.",
+};
+const failText = (code: string | null) => `${(code && FAIL_TEXT[code]) || "분석하지 못했어요."} 잠시 후 다시 시도해 주세요.`;
 
 export default function RequirementsPage() {
   const { id } = useParams<{ id: string }>();
-  const stored = useMaemusae((s) => s.docs[id]);
-  const startAnalysis = useMaemusae((s) => s.startAnalysis);
-  const doc = stored ?? emptyDoc();
-  const st = DOC_STATUS[doc.status];
+  const mockConfirmed = useMaemusae((s) => !!s.confirmed[id]);
   const { data: serverDoc } = useRequirementsDoc(id);
-  const upload = useUploadSource(id, serverDoc?.id);
+  const docId = serverDoc?.id;
+  const { data: run } = useAnalysis(id, docId);
+  const afterAnalysis = useAfterAnalysis(id, docId);
+  const analyze = useAnalyze(id, docId);
+  const upload = useUploadSource(id, docId);
   const [uploading, setUploading] = useState(false);
   const hasSources = (serverDoc?.source_count ?? 0) > 0;
 
-  // 붙인 파일을 서버에 올리고(원본 보관 + 글 뽑기), 하나라도 있으면 분류를 시작한다.
-  // 분류(M3)는 아직 목 데이터라 올린 글 대신 예시 후보가 나온다
+  const running = run?.status === "RUNNING" || serverDoc?.status === "ANALYZING";
+  const status = running ? "analyzing" : docStatus(serverDoc?.status, mockConfirmed);
+  const st = DOC_STATUS[status];
+
+  // 분석이 끝나면 후보·입력·문서를 새로 읽고, 실패했으면 이유를 알린다.
+  // 진행 중이던 분석이 끝났을 때와, 작은 문서라 처음 읽었을 때 이미 끝나 있던 새 분석 둘 다 잡는다 (처음 들어올 때 본 지난 분석은 빼고)
+  // (undefined = 아직 못 읽음, null = 분석한 적 없음)
+  const prevRun = useRef<ApiAnalysisRun | null | undefined>(undefined);
+  useEffect(() => {
+    const prev = prevRun.current;
+    prevRun.current = run;
+    if (prev === undefined || !run || run.status === "RUNNING") return;
+    if (prev && prev.run_id === run.run_id && prev.status !== "RUNNING") return;
+    afterAnalysis();
+    if (run.status === "FAILED") toast.error(failText(run.error_code));
+    else toast.success(run.run_type === "REFINE" ? "다시 분류를 마쳤어요. 바뀐 후보를 확인해 주세요." : "분석을 마쳤어요.");
+  }, [run, afterAnalysis]);
+
+  // 붙인 파일을 서버에 올리고(원본 보관 + 글 뽑기), 올린 문서가 하나라도 있으면 분석을 시작한다
   const submit = async (msg: string, files: File[]) => {
     setUploading(true);
     let ok = 0;
@@ -43,7 +70,7 @@ export default function RequirementsPage() {
       }
     }
     setUploading(false);
-    if (ok > 0 || hasSources) startAnalysis(id, msg, files.map((f) => f.name));
+    if (ok > 0 || hasSources) analyze.mutate({ prompt: msg.trim() || undefined }, { onError: (e) => toast.error(apiError(e)) });
   };
 
   return (
@@ -55,33 +82,41 @@ export default function RequirementsPage() {
             <Link href={`/maemusae/projects/${id}`} className="text-sm underline">프로젝트로</Link>
           </PageHead>
 
-          {doc.status === "empty" && (
+          {status === "empty" && (
             <section className={`${card} mx-auto grid w-full max-w-2xl gap-4`} data-rise>
               <h2 className="text-xl font-extrabold tracking-tight">고객 문서를 올리고 요청을 적어 주세요</h2>
               <p className="text-sm text-[#6c6a62]">문서를 한 개 이상 붙이고 보내면 AI가 요구사항 후보를 가려내요. 글은 비워 두어도 괜찮아요. 파일 하나는 10MB까지예요.</p>
-              <AiPromptInput
-                placeholder="예: 쇼핑몰 리뉴얼 요청서예요. 결제와 회원 관련 요구사항 위주로 뽑아 주세요"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.md,.ppt,.pptx"
-                minFiles={hasSources ? 0 : 1}
-                requireText={false}
-                submitLabel={uploading ? "올리는 중…" : "분류 시작"}
-                disabled={uploading || readOnly || !serverDoc}
-                onSubmit={submit}
-              />
+              {serverDoc?.status === "FAILED" && run?.status === "FAILED" && <p role="alert" className="text-sm font-medium text-[#b3261e]">지난 분석이 실패했어요. {failText(run.error_code)}</p>}
+              {readOnly ? (
+                <p className="text-sm text-[#6c6a62]">분석은 프로젝트 멤버만 시작할 수 있어요.</p>
+              ) : (
+                <AiPromptInput
+                  placeholder="예: 쇼핑몰 리뉴얼 요청서예요. 결제와 회원 관련 요구사항 위주로 뽑아 주세요"
+                  accept=".pdf,.docx,.xlsx,.txt,.md,.pptx"
+                  minFiles={hasSources ? 0 : 1}
+                  requireText={false}
+                  submitLabel={uploading ? "올리는 중…" : "분류 시작"}
+                  disabled={uploading || analyze.isPending || !serverDoc}
+                  onSubmit={submit}
+                />
+              )}
             </section>
           )}
 
-          {(doc.status === "analyzing" || doc.status === "confirming") && (
+          {status === "analyzing" && (
             <section className={`${card} mx-auto grid w-full max-w-2xl justify-items-center gap-4 py-16`} role="status" data-rise>
-              <ThinkingIndicator size="lg" labels={doc.status === "analyzing" ? ANALYZING_LABELS : CONFIRMING_LABELS} />
-              <p className="text-sm text-[#6c6a62]">끝날 때까지 이 화면에서 기다려 주세요. 새로고침해도 이어서 마무리돼요.</p>
+              <ThinkingIndicator size="lg" labels={run?.run_type === "REFINE" ? REFINING_LABELS : ANALYZING_LABELS} />
+              {run && run.total_steps > 1 && (
+                <p className="text-sm font-semibold tabular-nums">{Math.min(run.done_steps + 1, run.total_steps)}/{run.total_steps} {run.run_type === "REFINE" ? "다시 분류 중" : "분석 중"}</p>
+              )}
+              <p className="text-sm text-[#6c6a62]">다른 화면에 다녀와도 서버에서 계속 진행돼요.</p>
             </section>
           )}
 
-          <SourcesPanel projectId={id} docId={serverDoc?.id} canManageAll={isAdmin} readOnly={readOnly} />
+          <SourcesPanel projectId={id} docId={docId} canManageAll={isAdmin} readOnly={readOnly} />
 
-          {doc.status === "ready" && <Workspace projectId={id} doc={doc} isAdmin={isAdmin} />}
-          {doc.status === "confirmed" && <Viewer project={project} doc={doc} isAdmin={isAdmin} />}
+          {status === "ready" && serverDoc && <Workspace projectId={id} doc={serverDoc} isAdmin={isAdmin} readOnly={readOnly} />}
+          {status === "confirmed" && <Viewer project={project} isAdmin={isAdmin} />}
         </div>
       )}
     </ProjectGuard>

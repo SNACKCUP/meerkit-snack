@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 
 import { ProjectFormDialog } from "../_components/dialogs";
 import { Btn, PageHead, Pill, card, fmtRange } from "../_components/ui";
-import { DOC_STATUS, ROLE_LABEL } from "../_lib/labels";
+import { DOC_STATUS, ROLE_LABEL, docStatus } from "../_lib/labels";
 import { apiError } from "../_lib/api";
-import { useCreateProject, useProjects } from "../_lib/queries";
+import { useCreateProject, useProjects, useRequirementsDocStatuses } from "../_lib/queries";
 import { useMaemusae } from "../_lib/store";
 import type { DocStatus } from "../_lib/types";
 
@@ -32,7 +32,7 @@ export default function ProjectsPage() {
   const router = useRouter();
   const auth = useAuth();
   const { data, isLoading, error } = useProjects();
-  const docs = useMaemusae((s) => s.docs);
+  const confirmed = useMaemusae((s) => s.confirmed);
   const createProject = useCreateProject();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -40,12 +40,10 @@ export default function ProjectsPage() {
 
   // 서버가 내가 멤버인 프로젝트만 준다 (초대 대기 중인 것은 수락 전이라 빠진다)
   const visible = useMemo(() => data?.items ?? [], [data]);
-  // 카드 상태는 AI 분석 목 데이터(M3 전까지 브라우저에 있음)에서 읽는다
-  const statusOf = (id: number): DocStatus => docs[String(id)]?.status ?? "empty";
-  const mine = useMemo(
-    () => visible.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase())).filter((p) => status === "all" || (docs[String(p.id)]?.status ?? "empty") === status),
-    [visible, docs, q, status],
-  );
+  // 카드 상태는 프로젝트마다 요구사항정의서의 서버 상태. 확정(M4 전까지 브라우저 목)만 목 데이터에서 읽는다
+  const serverStatus = useRequirementsDocStatuses(visible.map((p) => String(p.id)));
+  const statusOf = (id: number): DocStatus => docStatus(serverStatus[String(id)], !!confirmed[String(id)]);
+  const mine = visible.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase())).filter((p) => status === "all" || statusOf(p.id) === status);
   const hasAny = visible.length > 0;
 
   if (auth.isLoading || (auth.isAuthenticated && isLoading)) return <div className="h-[40vh]" aria-busy />;

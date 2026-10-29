@@ -51,9 +51,7 @@ export function Shell({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     Promise.resolve(useMaemusae.persist.rehydrate()).then(() => {
-      if (cancelled) return;
-      useMaemusae.getState().finishPending();
-      setReady(true);
+      if (!cancelled) setReady(true);
     });
     return () => {
       cancelled = true;
@@ -84,8 +82,8 @@ export function Shell({ children }: { children: ReactNode }) {
         </header>
         <main className="mt-12 flex-1 sm:mt-16">{ready ? <Rise key={path}>{children}</Rise> : <div className="h-[50vh]" aria-busy />}</main>
         <footer className="mt-16 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[#111]/15 pt-5 text-[12px] text-[#6c6a62]">
-          <span>매무새 — Meerkit 위에 얹은 서브 서비스 · AI 분석과 확정은 아직 화면용 목 데이터로 동작합니다</span>
-          <button type="button" className="underline underline-offset-4" onClick={() => { if (window.confirm("이 브라우저에 저장된 분석 목 데이터를 지울까요? 프로젝트와 올린 파일은 그대로예요.")) useMaemusae.getState().reset(); }}>목 데이터 초기화</button>
+          <span>매무새 — Meerkit 위에 얹은 서브 서비스 · 확정은 아직 화면용 목 데이터로 동작합니다</span>
+          <button type="button" className="underline underline-offset-4" onClick={() => { if (window.confirm("이 브라우저에 저장된 확정 목 데이터를 지울까요? 프로젝트, 올린 파일, 요구사항 후보는 서버에 그대로 있어요.")) useMaemusae.getState().reset(); }}>목 데이터 초기화</button>
         </footer>
       </div>
     </div>
