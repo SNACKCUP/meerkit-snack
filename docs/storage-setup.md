@@ -1,11 +1,15 @@
-# 파일 저장소 설정 가이드 (프로필 이미지 등)
+# 파일 저장소 설정 가이드 (프로필 이미지, 고객 문서 원본)
 
-프로필 이미지처럼 **누구나 주소로 열 수 있는 파일**을 저장하는 설정입니다.
+버킷은 두 개입니다.
+
+- `meerkit-public`(공개): 프로필 이미지처럼 **누구나 주소로 열 수 있는 파일**. `get_storage()`
+- `meerkit-private`(비공개): 매무새 고객 문서 원본처럼 **멤버만 받아야 하는 파일**. 공개 주소가 없고, 우리 서버가 권한을 확인한 뒤 읽어서 내려줍니다. `get_private_storage()`
+
 코드는 킷의 `app.storage`(S3 호환 방식)에 있고, 이 문서는 바깥 서비스와 `.env`만 다룹니다.
 
 > 우리 설정 (2026-10-27)
 > - 로컬: Supabase CLI(`npm run db:start`)에 들어 있는 Storage
-> - 운영: 운영 DB와 같은 Supabase 프로젝트의 Storage, 버킷 `meerkit-public`(공개 읽기)
+> - 운영: 운영 DB와 같은 Supabase 프로젝트의 Storage, 버킷 `meerkit-public`(공개 읽기)·`meerkit-private`(비공개, 2026-10-29 추가)
 >
 > S3 호환이라 AWS S3, Cloudflare R2, MinIO로 바꿀 때도 `.env`의 `STORAGE_*`만 바꾸면 됩니다.
 
@@ -13,15 +17,17 @@
 
 ```text
 로컬
-1. supabase/config.toml 에 버킷이 이미 적혀 있음 → npm run db:stop && npm run db:start
+1. supabase/config.toml 에 버킷 2개가 이미 적혀 있음 → npm run db:stop && npm run db:start
    (버킷이 안 보이면 npx supabase seed buckets --local)
 2. npx supabase status 로 S3 키 확인 → backend/.env 에 STORAGE_* 넣기
 3. 백엔드 재시작 → 내 정보에서 이미지 올리기
 
 운영 (배포 때 한 번)
-1. Supabase 대시보드에서 버킷 meerkit-public 만들기 (Public 켜기, 2MB, image/webp)
+1. Supabase 대시보드에서 버킷 2개 만들기
+   - meerkit-public (Public 켜기, 2MB, image/webp)
+   - meerkit-private (Public 끄기, 10MB)
 2. Storage 설정에서 S3 접속 정보 확인, S3 액세스 키 만들기
-3. Render 환경변수에 STORAGE_* 7개 넣기 → 재배포
+3. Render 환경변수에 STORAGE_* 8개 넣기 → 재배포
 4. 내 정보에서 이미지 올리고, 받은 주소가 브라우저에서 열리는지 확인
 ```
 
@@ -30,7 +36,9 @@ Spring으로 비유하면, `AmazonS3` 클라이언트로 버킷에 올리고 공
 ## 꼭 알아 둘 것 (보안)
 
 - **공개 버킷에는 공개해도 되는 파일만** 둡니다. 주소를 아는 사람은 누구나 열 수 있습니다. 프로필 이미지는 주소에 추측할 수 없는 무작위 key를 써서 다른 회원 사진을 훑어볼 수 없게 했습니다.
-- 매무새 고객 문서처럼 **비공개 파일은 이 버킷에 넣지 않습니다.** 필요해지면 비공개 버킷 + 짧은 유효기간 주소(서명 URL)를 따로 만듭니다 ([향후 확장](future-extensions.md)).
+- 매무새 고객 문서처럼 **비공개 파일은 공개 버킷에 넣지 않고 `meerkit-private`에 둡니다.** 비공개 버킷은 주소로 열리지 않고, 서버가 멤버인지 확인한 뒤 파일을 읽어 응답으로 보냅니다. 큰 파일이 많아지면 짧은 유효기간 주소(서명 URL)로 바꿀 수 있습니다([향후 확장](future-extensions.md)).
+- 비공개 파일의 key에는 원래 파일 이름을 넣지 않습니다(무작위 값만). 저장소 오류 로그에 key가 남기 때문입니다. 원래 이름은 DB에만 둡니다.
+- 운영에서 `STORAGE_PRIVATE_BUCKET`이 공개 버킷과 같으면 서버가 시작하지 않습니다(고객 파일이 공개 주소로 열리는 것을 막음).
 - S3 액세스 키는 그 프로젝트의 **모든 버킷을 읽고 쓰고 지울 수 있는 키**입니다(Supabase의 RLS 권한 검사를 거치지 않음). 백엔드 `.env`·Render 환경변수에만 넣고, 프론트·채팅·커밋에는 절대 넣지 않습니다.
 - 서버는 올린 이미지를 다시 그려 저장합니다. 사진 속 위치정보(EXIF)가 지워지고, 512px WEBP로 바뀝니다. 2MB 초과·이미지가 아닌 파일·깨진 파일은 저장 전에 거절합니다.
 
@@ -38,13 +46,17 @@ Spring으로 비유하면, `AmazonS3` 클라이언트로 버킷에 올리고 공
 
 ### 1. 버킷 만들기
 
-`supabase/config.toml`에 버킷이 이미 적혀 있습니다.
+`supabase/config.toml`에 버킷 2개가 이미 적혀 있습니다.
 
 ```toml
 [storage.buckets.meerkit-public]
 public = true
 file_size_limit = "2MiB"
 allowed_mime_types = ["image/webp"]
+
+[storage.buckets.meerkit-private]
+public = false
+file_size_limit = "10MiB"
 ```
 
 로컬 Supabase가 켜져 있었다면 한 번 껐다 켭니다. 켤 때 버킷이 만들어집니다.
@@ -54,7 +66,7 @@ npm run db:stop
 npm run db:start
 ```
 
-Studio(<http://127.0.0.1:54323>) → Storage에 `meerkit-public`이 보이면 됩니다.
+Studio(<http://127.0.0.1:54323>) → Storage에 `meerkit-public`과 `meerkit-private`(자물쇠 표시)이 보이면 됩니다.
 
 이미 쓰던 로컬 DB가 있으면 껐다 켜도 버킷이 생기지 않을 수 있습니다(기존 데이터를 그대로 다시 씀). 그때는 아래 명령으로 `config.toml`의 버킷만 만듭니다. DB 데이터는 지워지지 않습니다.
 
@@ -73,6 +85,7 @@ npx supabase status
 ```dotenv
 STORAGE_BACKEND=s3
 STORAGE_BUCKET=meerkit-public
+STORAGE_PRIVATE_BUCKET=meerkit-private
 STORAGE_S3_ENDPOINT_URL=http://127.0.0.1:54321/storage/v1/s3
 STORAGE_S3_REGION=local
 STORAGE_S3_ACCESS_KEY_ID=<S3 Access Key>
@@ -95,7 +108,7 @@ STORAGE_PUBLIC_BASE_URL=http://127.0.0.1:54321/storage/v1/object/public/meerkit-
 
 배포(S3 단계) 때 한 번 합니다. 10분쯤 걸립니다.
 
-### 1. 버킷 만들기
+### 1. 버킷 만들기 (2개)
 
 1. [Supabase 대시보드](https://supabase.com/dashboard) → 운영 프로젝트 → 왼쪽 **Storage**
 2. **New bucket**
@@ -104,6 +117,12 @@ STORAGE_PUBLIC_BASE_URL=http://127.0.0.1:54321/storage/v1/object/public/meerkit-
    - Restrict file upload size: 켜고 `2 MB`
    - Allowed MIME types: `image/webp` (서버가 항상 WEBP로 바꿔 올림)
 3. Save
+4. 한 번 더 **New bucket**
+   - Name: `meerkit-private`
+   - **Public bucket: 끔** (주소로 열 수 없음, 키가 있는 서버만 읽고 씀)
+   - Restrict file upload size: 켜고 `10 MB` (매무새 파일 한도와 같음)
+   - Allowed MIME types: 비워 둠 (PDF·DOCX·XLSX 등 여러 종류, 서버가 먼저 검사)
+5. Save
 
 ### 2. S3 접속 정보와 액세스 키
 
@@ -118,12 +137,13 @@ STORAGE_PUBLIC_BASE_URL=http://127.0.0.1:54321/storage/v1/object/public/meerkit-
 
 ### 3. Render 환경변수
 
-Render → 백엔드 서비스 → **Environment**에 7개를 넣고 저장하면 재배포됩니다.
+Render → 백엔드 서비스 → **Environment**에 8개를 넣고 저장하면 재배포됩니다.
 
 | 이름 | 값 |
 | --- | --- |
 | `STORAGE_BACKEND` | `s3` |
 | `STORAGE_BUCKET` | `meerkit-public` |
+| `STORAGE_PRIVATE_BUCKET` | `meerkit-private` |
 | `STORAGE_S3_ENDPOINT_URL` | 2단계의 Endpoint |
 | `STORAGE_S3_REGION` | 2단계의 Region |
 | `STORAGE_S3_ACCESS_KEY_ID` | 2단계의 Access key ID |
@@ -136,7 +156,8 @@ Render → 백엔드 서비스 → **Environment**에 7개를 넣고 저장하�
 
 1. 운영 사이트에 로그인 → 내 정보 → 이미지 변경
 2. 사진이 바뀌는지 보고, 개발자 도구에서 이미지 주소가 `https://<ref>.supabase.co/storage/v1/object/public/meerkit-public/avatars/...webp`인지 확인
-3. 그 주소를 새 탭(로그인 안 된 창)에서 열어 이미지가 보이면 끝
+3. 그 주소를 새 탭(로그인 안 된 창)에서 열어 이미지가 보이면 공개 버킷은 끝
+4. 비공개 버킷은 매무새에서 파일을 올리고 원본 내려받기가 되는지, 대시보드 `meerkit-private`에 파일이 생기는지 확인합니다
 
 ## 운영 중 할 일
 
@@ -146,7 +167,8 @@ Render → 백엔드 서비스 → **Environment**에 7개를 넣고 저장하�
 | 업로드가 503 `STORAGE_UNAVAILABLE` | Render 로그에서 `저장소 put_object 실패 ... error=` 뒤의 예외 이름 확인. 키 오타, 버킷 이름, 리전, Supabase 장애 순으로 확인 |
 | 용량·전송량 | Supabase 대시보드 → Usage에서 Storage 용량과 전송량 확인 (무료 플랜은 한도가 있음) |
 | 탈퇴 회원 사진 | 보관 기간이 지나 개인정보를 지울 때(`python -m app.users.purge`) 사진 파일도 함께 지워짐 |
-| 백업 | Storage 파일은 DB 백업에 들어가지 않습니다. 프로필 이미지는 사용자가 다시 올릴 수 있어 따로 백업하지 않습니다 |
+| 원본 내려받기가 404 `STORAGE_OBJECT_NOT_FOUND` | DB에는 파일 기록이 있는데 비공개 버킷에 파일이 없음. 버킷을 비웠거나 옮기다 빠뜨렸는지 확인 |
+| 백업 | Storage 파일은 DB 백업에 들어가지 않습니다. 프로필 이미지는 사용자가 다시 올릴 수 있어 따로 백업하지 않습니다. 고객 문서 원본은 변환한 본문이 DB에 있어 서비스는 계속되지만, 원본까지 지켜야 하면 업체 도구로 `meerkit-private`를 주기적으로 복사합니다 |
 
 ## 다른 업체로 옮길 때
 
@@ -170,4 +192,23 @@ storage.delete("maemusae/exports/abc.xlsx")
 
 - key 앞에 서비스 이름을 붙여 폴더를 나눕니다 (`avatars/`는 킷이 씀).
 - 공개 버킷이므로 공개해도 되는 파일만 넣습니다. 고객 문서는 넣지 않습니다.
-- 테스트에서는 `storage` 픽스처(메모리 저장소)를 씁니다. `storage.objects`로 올라간 파일을 확인할 수 있습니다.
+
+고객 문서처럼 비공개로 둘 파일은 `get_private_storage()`를 씁니다. 공개 주소가 없으므로, 권한을 확인한 API가 `get`으로 읽어 응답으로 보냅니다.
+
+```python
+from fastapi import Response
+
+from app.storage import get_private_storage
+
+private = get_private_storage()
+key = f"maemusae/sources/{uuid4().hex}"  # 원래 파일 이름은 key가 아니라 DB에
+private.put(key, data, "application/pdf")
+
+# 내려받기 API (멤버 확인 뒤)
+data = private.get(key)  # 없으면 404 STORAGE_OBJECT_NOT_FOUND
+return Response(data, media_type="application/pdf", headers={"Cache-Control": "private, no-store"})
+
+private.delete(key)
+```
+
+- 테스트에서는 `storage`·`private_storage` 픽스처(메모리 저장소)를 씁니다. `.objects`로 올라간 파일을 확인할 수 있습니다.

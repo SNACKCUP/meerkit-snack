@@ -22,7 +22,7 @@ flowchart TB
         social["social<br/>소셜 로그인 (Google, 이후 Kakao·Naver) · social_accounts"]
         llm["llm<br/>LangChain 클라이언트 · 프롬프트 로더"]
         mail["mail<br/>send_mail · 템플릿 · console/smtp/fake"]
-        storage["storage<br/>get_storage · S3 호환(Supabase Storage)/memory"]
+        storage["storage<br/>get_storage(공개) · get_private_storage(비공개) · S3 호환(Supabase Storage)/memory"]
         codes["codes<br/>공통코드 (owner: MEERKIT/MMS) · require_code · 조회·관리 API"]
     end
     subgraph FEAT["서브 서비스 (교체 가능)"]
@@ -111,8 +111,8 @@ backend/
 │   │   ├── templates.py   # email_code, password_reset (한글 텍스트 + HTML) + register_template(서비스 양식 등록)
 │   │   └── backends.py    # console / smtp / fake (MAIL_BACKEND)
 │   ├── storage/           # 파일 저장소 (킷, core만 import). 설정 순서는 storage-setup.md
-│   │   ├── config.py      # STORAGE_* 설정 + 운영 검사(memory 금지, localhost 주소 금지)
-│   │   └── backends.py    # get_storage(): s3(Supabase Storage·S3·R2) / memory(테스트), override_storage()
+│   │   ├── config.py      # STORAGE_* 설정 + 운영 검사(memory 금지, localhost 주소 금지, 공개·비공개 버킷 같음 금지)
+│   │   └── backends.py    # get_storage()(공개)·get_private_storage()(비공개): s3(Supabase Storage·S3·R2) / memory(테스트), override_*()
 │   ├── codes/             # 공통코드 (킷, core만 import). 킷·서브 서비스가 같이 쓰고 owner(MEERKIT/MMS)로 구분
 │   │   ├── models.py      # common_code_groups(group_code는 owner_ 로 시작, CHECK), common_codes
 │   │   ├── service.py     # list_codes(), is_valid_code(), require_code()(400 INVALID_CODE), 관리자 추가·수정
