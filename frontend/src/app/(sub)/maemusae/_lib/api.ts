@@ -60,7 +60,14 @@ export interface ApiDocument {
   status: ApiDocStatus;
   current_revision: number;
   source_count: number;
+  /** 이번 분석 이후 마지막으로 버전 추가·저장한 시각. 다시 분석하면 null */
   saved_at: string | null;
+  /** 마지막 버전 번호 (화면 "마지막 버전 v2"). 없으면 null */
+  last_version_no: number | null;
+  /** saved_at 뒤에 후보·입력을 또 고쳤는지 */
+  changed_since_save: boolean;
+  /** 직접 추가한 후보 수 (다시 분석하면 사라짐) */
+  manual_count: number;
   confirmed_at: string | null;
   confirmed_by_name: string | null;
   updated_at: string;
@@ -98,7 +105,140 @@ export interface ApiCodeGroup {
   codes: ApiCode[];
 }
 
+export interface ApiRequirement {
+  id: number;
+  code: string; // REQ-012
+  name: string;
+  /** 공통코드 MMS_REQ_KIND */
+  kind: string;
+  /** 공통코드 MMS_PRIORITY */
+  priority: string;
+  /** 체크. 해제하면 확정에서 빠진다 */
+  is_included: boolean;
+  /** 직접 추가한 후보 (이것만 지울 수 있다) */
+  is_manual: boolean;
+  /** AI 질문이 있고 아직 아무도 답을 남기지 않음 */
+  needs_answer: boolean;
+  /** 근거가 있고 모두 문서에서 확인됨 */
+  verified_all: boolean;
+  /** AI 값이 목록에 없어 기본값을 넣음 (확인 필요) */
+  kind_defaulted: boolean;
+  priority_defaulted: boolean;
+  /** 고칠 때 그대로 보낸다. 다르면 409 REQUIREMENT_CHANGED */
+  version: number;
+}
+
+export interface ApiRequirementPage {
+  items: ApiRequirement[];
+  next_cursor: number | null;
+}
+
+export interface ApiEvidence {
+  id: number;
+  source_file_id: number;
+  /** 올린 파일 이름. 직접 쓴 글은 "직접 입력" */
+  filename: string;
+  location_label: string; // 3쪽
+  /** 문장이 다음 쪽으로 넘어가면 끝 쪽 (화면 3~4쪽) */
+  end_location_label: string | null;
+  source_page_id: number;
+  quote: string;
+  /** false면 "위치 확인 필요" */
+  verified: boolean;
+}
+
+export type NoteField = "DESCRIPTION" | "ANSWER";
+
+export interface ApiNote {
+  id: number;
+  requirement_id: number;
+  requirement_code: string;
+  requirement_name: string;
+  field: NoteField;
+  text: string;
+  author_name: string;
+  /** 내가 남긴 입력 (지우기 버튼) */
+  mine: boolean;
+  /** 다시 분류에 반영됨 */
+  applied: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiRequirementDetail extends ApiRequirement {
+  description: string;
+  ai_question: string | null;
+  ai_answer: string | null;
+  sources: ApiEvidence[];
+  notes: ApiNote[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequirementFilter {
+  kind?: string;
+  priority?: string;
+  included?: boolean;
+  needs_check?: boolean;
+  q?: string;
+}
+
+export type RequirementChanges = Partial<Pick<ApiRequirementDetail, "name" | "description" | "kind" | "priority" | "is_included">>;
+
+export interface ApiAnalysisRun {
+  run_id: number;
+  run_type: "ANALYZE" | "REFINE";
+  status: "RUNNING" | "SUCCEEDED" | "FAILED";
+  done_steps: number;
+  total_steps: number;
+  /** 실패 이유 (예: LLM_TIMEOUT, ANALYSIS_INTERRUPTED) */
+  error_code: string | null;
+  started_at: string;
+  finished_at: string | null;
+}
+
+export interface ApiVersionSaved {
+  id: number;
+  version_no: number;
+  saved_at: string;
+  /** 버전 저장이 이번 분석의 마지막 버전을 덮어썼으면 true */
+  overwritten: boolean;
+}
+
+export interface ApiVersionListItem {
+  id: number;
+  kind: "SAVED" | "CONFIRMED";
+  version_no: number | null;
+  revision: number | null;
+  item_count: number;
+  created_by_name: string;
+  created_at: string;
+  updated_by_name: string | null;
+  updated_at: string;
+}
+
+export interface ApiVersionItem {
+  code: string;
+  name: string;
+  kind: string;
+  priority: string;
+  description: string;
+  ai_question: string | null;
+  ai_answer: string | null;
+  is_included: boolean;
+  is_manual: boolean;
+  kind_defaulted: boolean;
+  priority_defaulted: boolean;
+  sources: Omit<ApiEvidence, "id" | "source_file_id" | "source_page_id">[];
+  notes: { field: NoteField; text: string; author_name: string; updated_at: string }[];
+}
+
+export interface ApiVersionDetail extends ApiVersionListItem {
+  items: ApiVersionItem[];
+}
+
 const P = "/mms/projects";
+const D = (id: string, docId: number) => `${P}/${id}/documents/${docId}`;
 const data = <T,>(r: { data: T }) => r.data;
 
 export const mmsApi = {
@@ -134,6 +274,42 @@ export const mmsApi = {
   // 원본은 공개 주소가 없어서 로그인 토큰을 붙여 받아야 한다 (a 태그로 바로 열면 401)
   downloadSource: (id: string, docId: number, sourceId: number) =>
     api.get<Blob>(`${P}/${id}/documents/${docId}/sources/${sourceId}/file`, { responseType: "blob" }).then(data),
+
+  // 요구사항 후보 (목록은 가벼운 칸만, 설명·근거·입력은 상세)
+  listRequirements: (id: string, docId: number, filter: RequirementFilter, cursor?: number) =>
+    api
+      .get<ApiRequirementPage>(`${D(id, docId)}/requirements`, {
+        params: { ...filter, needs_check: filter.needs_check || undefined, q: filter.q?.trim() || undefined, cursor, limit: 200 },
+      })
+      .then(data),
+  getRequirement: (id: string, docId: number, reqId: number) => api.get<ApiRequirementDetail>(`${D(id, docId)}/requirements/${reqId}`).then(data),
+  updateRequirement: (id: string, docId: number, reqId: number, body: RequirementChanges & { version: number }) =>
+    api.patch<ApiRequirement>(`${D(id, docId)}/requirements/${reqId}`, body).then(data),
+  /** 하나라도 실패하면 아무것도 안 바뀐다 (최대 500개) */
+  updateRequirements: (id: string, docId: number, items: (RequirementChanges & { id: number; version: number })[]) =>
+    api.patch<ApiRequirement[]>(`${D(id, docId)}/requirements`, { items }).then(data),
+  createRequirement: (id: string, docId: number, body: { name: string; description?: string; kind: string; priority: string }) =>
+    api.post<ApiRequirement>(`${D(id, docId)}/requirements`, body).then(data),
+  deleteRequirement: (id: string, docId: number, reqId: number) => api.delete(`${D(id, docId)}/requirements/${reqId}`),
+
+  // 입력한 내용 (사람마다 칸마다 한 건)
+  writeNote: (id: string, docId: number, reqId: number, field: NoteField, text: string) =>
+    api.put<ApiNote>(`${D(id, docId)}/requirements/${reqId}/notes/${field}`, { text }).then(data),
+  deleteNote: (id: string, docId: number, reqId: number, field: NoteField) => api.delete(`${D(id, docId)}/requirements/${reqId}/notes/${field}`),
+  listNotes: (id: string, docId: number) => api.get<ApiNote[]>(`${D(id, docId)}/notes`, { params: { limit: 500 } }).then(data),
+
+  // AI 분석·다시 분류 (202로 바로 돌아오고, 진행률은 getAnalysis)
+  analyze: (id: string, docId: number, body: { prompt?: string; restart?: boolean }) =>
+    api.post<{ run_id: number }>(`${D(id, docId)}/analyze`, body).then(data),
+  refine: (id: string, docId: number, body: { prompt?: string }) => api.post<{ run_id: number }>(`${D(id, docId)}/refine`, body).then(data),
+  /** 분석한 적이 없으면 null */
+  getAnalysis: (id: string, docId: number) => api.get<ApiAnalysisRun | null>(`${D(id, docId)}/analysis`).then(data),
+
+  // 버전 (버전 추가 = 무조건 새 버전, 버전 저장 = 이번 분석 이후 마지막 버전을 덮어씀)
+  addVersion: (id: string, docId: number) => api.post<ApiVersionSaved>(`${D(id, docId)}/versions`).then(data),
+  saveVersion: (id: string, docId: number) => api.put<ApiVersionSaved>(`${D(id, docId)}/versions/latest`).then(data),
+  listVersions: (id: string, docId: number) => api.get<ApiVersionListItem[]>(`${D(id, docId)}/versions`).then(data),
+  getVersion: (id: string, docId: number, versionId: number) => api.get<ApiVersionDetail>(`${D(id, docId)}/versions/${versionId}`).then(data),
 
   // 공통코드 (구분 드롭다운 등)
   codeGroup: (groupCode: string) => api.get<ApiCodeGroup>(`/codes/${groupCode}`).then(data),

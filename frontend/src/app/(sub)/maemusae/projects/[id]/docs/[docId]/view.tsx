@@ -4,17 +4,18 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { ProjectGuard } from "../../../../_components/ProjectGuard";
-import { RequirementTable, downloadExcel } from "../../../../_components/Viewer";
+import { RequirementTable, downloadExcel, tableRows } from "../../../../_components/Viewer";
 import { Btn, PageHead, Pill, card, fmtDate } from "../../../../_components/ui";
 import { revisionLabel } from "../../../../_lib/labels";
-import { useReqKinds } from "../../../../_lib/queries";
+import { usePriorities, useReqKinds } from "../../../../_lib/queries";
 import { useMaemusae } from "../../../../_lib/store";
 
 // 확정한 문서를 그 시점 모습 그대로 미리 보는 화면
 export default function DocViewPage() {
   const { id, docId } = useParams<{ id: string; docId: string }>();
   const doc = useMaemusae((s) => s.history[id]?.find((d) => d.id === docId));
-  const { label } = useReqKinds();
+  const kinds = useReqKinds();
+  const priorities = usePriorities();
 
   return (
     <ProjectGuard projectId={id}>
@@ -27,7 +28,7 @@ export default function DocViewPage() {
         ) : (
           <div className="grid gap-6">
             <PageHead eyebrow={project.name} title={doc.title}>
-              <Btn size="sm" onClick={() => downloadExcel(`${project.name}_${doc.title}_v${doc.revision}`, doc.items, label)}>Excel 받기</Btn>
+              <Btn size="sm" onClick={() => downloadExcel(`${project.name}_${doc.title}_v${doc.revision}`, tableRows(doc.items), kinds.label, priorities.label)}>Excel 받기</Btn>
               <Btn size="sm" onClick={() => window.print()}>PDF로 저장</Btn>
             </PageHead>
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm" data-rise>
@@ -37,7 +38,7 @@ export default function DocViewPage() {
               <div className="grid gap-1"><dt className="text-xs font-extrabold text-[#6c6a62]">최종 확정인</dt><dd className="font-semibold">{doc.confirmedBy}</dd></div>
               <div className="grid gap-1"><dt className="text-xs font-extrabold text-[#6c6a62]">요구사항</dt><dd className="font-semibold">{doc.items.length}개</dd></div>
             </dl>
-            <RequirementTable items={doc.items} />
+            <RequirementTable items={tableRows(doc.items)} />
             <Link href={`/maemusae/projects/${id}`} className="text-sm underline">프로젝트로 돌아가기</Link>
           </div>
         )

@@ -9,8 +9,8 @@ import { UserAvatar } from "@/meerkit";
 import { DocList } from "../../_components/DocList";
 import { ProjectGuard } from "../../_components/ProjectGuard";
 import { Btn, PageHead, Pill, card, fmtRange } from "../../_components/ui";
-import { DOC_STATUS, ROLE_LABEL } from "../../_lib/labels";
-import { useMembers } from "../../_lib/queries";
+import { DOC_STATUS, ROLE_LABEL, docStatus } from "../../_lib/labels";
+import { useMembers, useRequirementsDoc } from "../../_lib/queries";
 import { useMaemusae } from "../../_lib/store";
 
 const OTHER_FILES = [
@@ -21,9 +21,10 @@ const OTHER_FILES = [
 
 export default function ProjectPage() {
   const { id } = useParams<{ id: string }>();
-  const doc = useMaemusae((s) => s.docs[id]);
+  const { data: doc } = useRequirementsDoc(id);
+  const confirmed = useMaemusae((s) => !!s.confirmed[id]);
   const history = useMaemusae((s) => s.history[id]);
-  const st = DOC_STATUS[doc?.status ?? "empty"];
+  const st = DOC_STATUS[docStatus(doc?.status, confirmed)];
 
   return (
     <ProjectGuard projectId={id}>
