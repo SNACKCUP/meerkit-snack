@@ -11,9 +11,10 @@ import { AiPromptInput, useAuth } from "@/meerkit";
 import { apiError, apiErrorCode, type ApiDocument, type ApiRequirement, type NoteField, type RequirementChanges, type RequirementFilter } from "../_lib/api";
 import { readLastViewed, writeLastViewed } from "../_lib/lastViewed";
 import {
-  loadConfirmItems,
   useAnalyze,
   useBulkUpdateRequirements,
+  useCategories,
+  useConfirm,
   useCreateRequirement,
   useDeleteRequirement,
   useNotes,
@@ -28,14 +29,13 @@ import {
   useUploadSource,
   useWriteNote,
 } from "../_lib/queries";
-import { useMaemusae } from "../_lib/store";
 import { CandidateList } from "./CandidateList";
 import { ConfirmDialog } from "./dialogs";
 import { FIELD_LABEL, RequirementDetail } from "./RequirementDetail";
 import { Btn, Pill, card, fmtTime } from "./ui";
 import { VersionsDialog } from "./VersionsDialog";
 
-const NO_FILTER = { kind: "all", priority: "all", checked: "all", needsCheck: false, q: "" };
+const NO_FILTER = { kind: "all", priority: "all", major: "all", checked: "all", needsCheck: false, q: "" };
 
 /** 다시 분석 확인 창 문구. 이번 분석 이후 버전을 남겼는지, 그 뒤에 또 고쳤는지로 고른다 */
 function restartWarning(doc: ApiDocument) {
@@ -62,11 +62,12 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
     () => ({
       kind: filter.kind === "all" ? undefined : filter.kind,
       priority: filter.priority === "all" ? undefined : filter.priority,
+      category_major: filter.major === "all" ? undefined : filter.major,
       included: filter.checked === "all" ? undefined : filter.checked === "on",
       needs_check: filter.needsCheck,
       q,
     }),
-    [filter.kind, filter.priority, filter.checked, filter.needsCheck, q],
+    [filter.kind, filter.priority, filter.major, filter.checked, filter.needsCheck, q],
   );
   const filtering = JSON.stringify(filter) !== JSON.stringify(NO_FILTER);
   const list = useRequirementList(projectId, docId, serverFilter);
@@ -101,7 +102,9 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
   const analyze = useAnalyze(projectId, docId);
   const refine = useRefine(projectId, docId);
   const upload = useUploadSource(projectId, docId);
-  const confirmMock = useMaemusae((s) => s.confirm);
+  const confirm = useConfirm(projectId, docId);
+  const categories = useCategories(projectId, docId).data ?? [];
+  const majors = [...new Set(categories.map((c) => c.major))];
 
   // 다른 사람이 먼저 고쳤으면(version 불일치) 최신 내용으로 다시 불러오고 상세 칸도 새로 그린다
   const onWriteError = (e: unknown) => {
@@ -134,7 +137,6 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
 
   const [askRestart, setAskRestart] = useState(false);
   const [askConfirm, setAskConfirm] = useState(false);
-  const [confirming, setConfirming] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
 
   const keepVersion = (overwrite: boolean) =>
@@ -143,17 +145,17 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
       onError: (e) => toast.error(apiError(e)),
     });
 
-  // 확정(M4)은 아직 브라우저 목: 체크된 후보를 지금 모습 그대로 모아 확정 기록에 남긴다
-  const confirm = async () => {
-    setConfirming(true);
-    try {
-      confirmMock(projectId, user?.name ?? "", await loadConfirmItems(projectId, docId));
-    } catch (e) {
-      toast.error(apiError(e, "확정할 후보를 모으지 못했어요."));
-    } finally {
-      setConfirming(false);
-    }
-  };
+  // 확정: 서버가 체크된 후보를 지금 모습 그대로 확정 기록에 남기고 문서를 확정됨으로 바꾼다 (화면은 확정 문서로 넘어감)
+  const submitConfirm = () =>
+    confirm.mutate(undefined, {
+      onSuccess: (r) => toast.success(`${r.revision > 1 ? "수정 후 확정" : "확정"}했어요. 요구사항 ${r.item_count}개가 담겼어요.`),
+      onError: (e) => toast.error(apiError(e, "확정하지 못했어요.")),
+    });
+  // 막지는 않고 확정 창에서 미리 알린다 (체크된 후보 기준)
+  const warnings = [
+    doc.open_question_count > 0 && `AI 질문에 답이 없는 후보 ${doc.open_question_count}개`,
+    doc.defaulted_count > 0 && `AI 값 확인이 남은 후보 ${doc.defaulted_count}개`,
+  ].filter(Boolean);
 
   // 다시 분류: 붙인 파일을 먼저 올린 뒤, 반영 안 된 입력과 새 파일을 기존 후보에 반영한다
   const submitRefine = async (msg: string, files: File[]) => {
@@ -183,7 +185,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
 
   const loadMore = useCallback(() => void list.fetchNextPage(), [list]);
   const shownCount = `${items.length}${list.hasNextPage ? "+" : ""}`;
-  const busy = saveVersion.isPending || confirming;
+  const busy = saveVersion.isPending || confirm.isPending;
 
   return (
     <div className="grid gap-6">
@@ -203,7 +205,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
             </>
           )}
           {isAdmin ? (
-            <Btn size="sm" variant="primary" disabled={busy} onClick={() => setAskConfirm(true)}>{confirming ? "확정 중…" : "요구사항 확정"}</Btn>
+            <Btn size="sm" variant="primary" disabled={busy} onClick={() => setAskConfirm(true)}>{confirm.isPending ? "확정 중…" : "요구사항 확정"}</Btn>
           ) : (
             <span className="inline-flex items-center text-xs text-[#6c6a62]" title="확정은 프로젝트 관리자만 할 수 있어요">확정은 관리자만 할 수 있어요</span>
           )}
@@ -226,6 +228,12 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
                 <option value="all">전체 우선순위</option>
                 {priorities.codes.map((p) => <option key={p.code} value={p.code}>{p.label}</option>)}
               </NativeSelect>
+              {majors.length > 0 && (
+                <NativeSelect aria-label="대분류" value={filter.major} onChange={(e) => setFilter({ ...filter, major: e.target.value })} className="h-9 w-36 rounded-full border-[1.5px] border-[#111] text-sm">
+                  <option value="all">전체 대분류</option>
+                  {majors.map((m) => <option key={m} value={m}>{m}</option>)}
+                </NativeSelect>
+              )}
               <NativeSelect aria-label="체크 여부" value={filter.checked} onChange={(e) => setFilter({ ...filter, checked: e.target.value })} className="h-9 w-32 rounded-full border-[1.5px] border-[#111] text-sm">
                 <option value="all">체크 전체</option><option value="on">체크됨</option><option value="off">체크 안 됨</option>
               </NativeSelect>
@@ -268,6 +276,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
             <RequirementDetail
               key={`${detail.id}:${tick}`}
               detail={detail}
+              categories={categories}
               readOnly={readOnly}
               onSave={(changes) => save(detail, changes)}
               onNote={note}
@@ -338,9 +347,14 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
         open={askConfirm}
         onOpenChange={setAskConfirm}
         title="요구사항을 확정할까요?"
-        body={<>체크한 후보로 요구사항정의서를 만들어요. 확정한 뒤에도 관리자는 다시 열어 고칠 수 있어요.</>}
-        confirmLabel="확정"
-        onConfirm={confirm}
+        body={
+          <>
+            {warnings.length > 0 && <span className="mb-2 block font-semibold text-[#c2410c]">{warnings.join(", ")}가 남아 있어요. 그래도 확정할 수 있어요.</span>}
+            체크한 후보로 요구사항정의서를 만들어요. 확정한 뒤에도 관리자는 다시 열어 고칠 수 있어요.
+          </>
+        }
+        confirmLabel={warnings.length > 0 ? "그래도 확정" : "확정"}
+        onConfirm={submitConfirm}
       />
       <VersionsDialog open={versionsOpen} onOpenChange={setVersionsOpen} projectId={projectId} docId={docId} />
     </div>

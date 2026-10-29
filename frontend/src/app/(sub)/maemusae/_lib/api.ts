@@ -70,6 +70,10 @@ export interface ApiDocument {
   manual_count: number;
   confirmed_at: string | null;
   confirmed_by_name: string | null;
+  /** 확정 창 경고: 체크된 후보 중 AI 질문에 아직 답이 없는 수 */
+  open_question_count: number;
+  /** 확정 창 경고: 체크된 후보 중 "AI 값 확인" 표시가 남은 수 */
+  defaulted_count: number;
   updated_at: string;
 }
 
@@ -113,6 +117,10 @@ export interface ApiRequirement {
   kind: string;
   /** 공통코드 MMS_PRIORITY */
   priority: string;
+  /** 대·중·소분류 (업무 영역). 공통코드가 아니라 문서마다 AI가 채우고 사람이 고치는 글. 없으면 null */
+  category_major: string | null;
+  category_middle: string | null;
+  category_minor: string | null;
   /** 체크. 해제하면 확정에서 빠진다 */
   is_included: boolean;
   /** 직접 추가한 후보 (이것만 지울 수 있다) */
@@ -180,10 +188,24 @@ export interface RequirementFilter {
   priority?: string;
   included?: boolean;
   needs_check?: boolean;
+  category_major?: string;
   q?: string;
 }
 
-export type RequirementChanges = Partial<Pick<ApiRequirementDetail, "name" | "description" | "kind" | "priority" | "is_included">>;
+/** 분류 칸은 빈 글자("")를 보내면 지운다 */
+export type RequirementChanges = Partial<
+  Pick<ApiRequirementDetail, "name" | "description" | "kind" | "priority" | "is_included"> & { category_major: string; category_middle: string; category_minor: string }
+>;
+
+export type CategoryField = "category_major" | "category_middle" | "category_minor";
+
+/** 이 문서에서 쓴 분류 (필터·자동완성용). count = 그 분류의 후보 수 */
+export interface ApiCategoryPath {
+  major: string;
+  middle: string | null;
+  minor: string | null;
+  count: number;
+}
 
 export interface ApiAnalysisRun {
   run_id: number;
@@ -222,6 +244,10 @@ export interface ApiVersionItem {
   name: string;
   kind: string;
   priority: string;
+  /** 분류가 생기기 전(M4-2 전)에 남긴 버전에는 없다 */
+  category_major?: string | null;
+  category_middle?: string | null;
+  category_minor?: string | null;
   description: string;
   ai_question: string | null;
   ai_answer: string | null;
@@ -237,9 +263,42 @@ export interface ApiVersionDetail extends ApiVersionListItem {
   items: ApiVersionItem[];
 }
 
+export interface ApiConfirmResult {
+  version_id: number;
+  /** 1 = 확정, 2부터 = 수정 후 확정 */
+  revision: number;
+  item_count: number;
+  confirmed_at: string;
+}
+
+/** 프로젝트 상세 "확정한 문서" 표 한 줄 (확정할 때마다 한 줄, 최신순) */
+export interface ApiConfirmedDocument {
+  version_id: number;
+  document_id: number;
+  title: string;
+  /** 공통코드 MMS_DOC_KIND */
+  kind: string;
+  kind_label: string;
+  revision: number;
+  item_count: number;
+  confirmed_by_name: string;
+  confirmed_at: string;
+}
+
 const P = "/mms/projects";
 const D = (id: string, docId: number) => `${P}/${id}/documents/${docId}`;
 const data = <T,>(r: { data: T }) => r.data;
+
+/** Content-Disposition의 filename*=UTF-8''… (한글 이름). 없으면 null */
+function filenameOf(header: unknown): string | null {
+  const m = typeof header === "string" ? /filename\*=UTF-8''([^;]+)/i.exec(header) : null;
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]);
+  } catch {
+    return null;
+  }
+}
 
 export const mmsApi = {
   // 프로젝트·멤버
@@ -288,9 +347,10 @@ export const mmsApi = {
   /** 하나라도 실패하면 아무것도 안 바뀐다 (최대 500개) */
   updateRequirements: (id: string, docId: number, items: (RequirementChanges & { id: number; version: number })[]) =>
     api.patch<ApiRequirement[]>(`${D(id, docId)}/requirements`, { items }).then(data),
-  createRequirement: (id: string, docId: number, body: { name: string; description?: string; kind: string; priority: string }) =>
+  createRequirement: (id: string, docId: number, body: { name: string; description?: string; kind: string; priority: string; category_major?: string; category_middle?: string; category_minor?: string }) =>
     api.post<ApiRequirement>(`${D(id, docId)}/requirements`, body).then(data),
   deleteRequirement: (id: string, docId: number, reqId: number) => api.delete(`${D(id, docId)}/requirements/${reqId}`),
+  listCategories: (id: string, docId: number) => api.get<ApiCategoryPath[]>(`${D(id, docId)}/categories`).then(data),
 
   // 입력한 내용 (사람마다 칸마다 한 건)
   writeNote: (id: string, docId: number, reqId: number, field: NoteField, text: string) =>
@@ -310,6 +370,14 @@ export const mmsApi = {
   saveVersion: (id: string, docId: number) => api.put<ApiVersionSaved>(`${D(id, docId)}/versions/latest`).then(data),
   listVersions: (id: string, docId: number) => api.get<ApiVersionListItem[]>(`${D(id, docId)}/versions`).then(data),
   getVersion: (id: string, docId: number, versionId: number) => api.get<ApiVersionDetail>(`${D(id, docId)}/versions/${versionId}`).then(data),
+
+  // 확정 (관리자). 확정 내용은 getVersion으로 읽는다
+  confirm: (id: string, docId: number) => api.post<ApiConfirmResult>(`${D(id, docId)}/confirm`).then(data),
+  reopen: (id: string, docId: number) => api.post(`${D(id, docId)}/reopen`),
+  listConfirmed: (id: string) => api.get<ApiConfirmedDocument[]>(`${P}/${id}/confirmed`).then(data),
+  // 확정 기록 Excel. 로그인 토큰이 필요해서 a 태그 대신 blob으로 받는다 (멤버만, MASTER 403)
+  downloadExcel: (id: string, docId: number, versionId: number) =>
+    api.get<Blob>(`${D(id, docId)}/versions/${versionId}/excel`, { responseType: "blob" }).then((r) => ({ blob: r.data, filename: filenameOf(r.headers["content-disposition"]) })),
 
   // 공통코드 (구분 드롭다운 등)
   codeGroup: (groupCode: string) => api.get<ApiCodeGroup>(`/codes/${groupCode}`).then(data),

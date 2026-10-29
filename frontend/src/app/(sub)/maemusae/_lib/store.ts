@@ -6,11 +6,11 @@ import { persist } from "zustand/middleware";
 import type { ConfirmedDoc, ConfirmedItem } from "./types";
 
 /*
-  매무새 목 데이터 저장소.
-  요구사항 후보·입력·분석·버전은 서버 API(queries.ts)를 쓴다.
-  여기에는 확정(M4) API가 생기기 전까지 "확정됨" 상태와 확정 기록만 브라우저 안에서 흉내 낸다.
+  매무새 예비 목 저장소 (지금 화면은 쓰지 않음).
+  확정(M4)까지 모두 서버 API(queries.ts)로 옮겼다. 이 파일은 네트워크가 느리거나 AI에 문제가 생겨 발표·시연에서
+  서버 없이 확정 흐름을 보여 줘야 할 때 다시 붙여 쓰려고 남겨 둔다 (10/29 SoYoung 결정). 다시 쓰려면 Shell에서
+  rehydrate를 부르고, 화면에서 useMaemusae를 읽는다 (M4-3 이전 커밋 참고).
   - 실제 프로젝트 id를 키로 쓰고, 새로고침해도 남도록 localStorage에 저장한다.
-  - 확정 같은 관리자 검사는 화면이 프로젝트 역할(서버 응답)로 막는다. M4에서 서버가 같은 검사를 한다.
 */
 
 const uid = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Math.random()).slice(2));

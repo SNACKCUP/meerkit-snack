@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { ProjectGuard } from "../../../../../_components/ProjectGuard";
-import { RequirementTable, downloadExcel } from "../../../../../_components/Viewer";
+import { ExcelButton, RequirementTable, downloadCsv, versionRows } from "../../../../../_components/Viewer";
 import { Btn, PageHead, Pill, card, fmtDate, fmtTime } from "../../../../../_components/ui";
 import { apiError } from "../../../../../_lib/api";
 import { usePriorities, useReqKinds, useRequirementsDoc, useVersion } from "../../../../../_lib/queries";
@@ -20,7 +20,7 @@ export default function VersionViewPage() {
 
   return (
     <ProjectGuard projectId={id}>
-      {({ project }) =>
+      {({ project, readOnly }) =>
         !doc || isLoading ? (
           <div className="h-[40vh]" aria-busy />
         ) : error || !version ? (
@@ -32,12 +32,18 @@ export default function VersionViewPage() {
         ) : (
           (() => {
             const tag = version.kind === "CONFIRMED" ? `확정 ${version.revision}` : `v${version.version_no}`;
-            const rows = version.items.map((it) => ({ ...it, key: it.code, code: `${tag} · ${it.code}`, quote: it.sources.map((s) => s.quote).join("\n") }));
+            const rows = versionRows(version.items, tag);
             const included = rows.filter((_, i) => version.items[i].is_included);
+            const baseName = `${project.name}_요구사항정의서_${tag}`;
             return (
               <div className="grid gap-6">
                 <PageHead eyebrow={project.name} title={`요구사항정의서 ${tag}`}>
-                  <Btn size="sm" onClick={() => downloadExcel(`${project.name}_요구사항정의서_${tag}`, included, kinds.label, priorities.label)}>Excel 받기</Btn>
+                  {/* 서버 Excel은 확정 기록에서만 만든다. 버전 기록은 CSV로 받는다 */}
+                  {version.kind === "CONFIRMED" ? (
+                    <ExcelButton projectId={id} docId={doc.id} versionId={version.id} baseName={`${project.name}_요구사항정의서_확정${version.revision}`} rows={versionRows(version.items.filter((it) => it.is_included))} readOnly={readOnly} />
+                  ) : (
+                    <Btn size="sm" className="print:hidden" onClick={() => downloadCsv(baseName, included, kinds.label, priorities.label)}>CSV 받기</Btn>
+                  )}
                 </PageHead>
                 <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm" data-rise>
                   <div className="grid gap-1"><dt className="text-xs font-extrabold text-[#6c6a62]">구분</dt><dd><Pill tone="yellow">{version.kind === "CONFIRMED" ? "확정" : "버전"}</Pill></dd></div>

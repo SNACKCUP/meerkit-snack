@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 
 import { DOC_KINDS, revisionLabel } from "../_lib/labels";
-import type { ConfirmedDoc } from "../_lib/types";
+import type { ApiConfirmedDocument } from "../_lib/api";
 import { Pill, card, fmtDate } from "./ui";
 
-// 확정한 문서 기록. 검색, 최신/오래된순, 종류로 거를 수 있고 행을 누르면 미리보기로 간다.
-export function DocList({ projectId, docs }: { projectId: string; docs: ConfirmedDoc[] }) {
+// 확정한 문서 기록 (확정할 때마다 한 줄). 검색, 최신/오래된순, 종류로 거를 수 있고 행을 누르면 그 확정 기록을 연다.
+export function DocList({ projectId, docs }: { projectId: string; docs: ApiConfirmedDocument[] }) {
   const router = useRouter();
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"new" | "old">("new");
@@ -21,9 +21,9 @@ export function DocList({ projectId, docs }: { projectId: string; docs: Confirme
   const shown = useMemo(
     () =>
       docs
-        .filter((d) => kind === "all" || d.kind === kind)
-        .filter((d) => !q.trim() || `${d.title} ${d.confirmedBy}`.toLowerCase().includes(q.trim().toLowerCase()))
-        .sort((a, b) => (sort === "new" ? b.confirmedAt.localeCompare(a.confirmedAt) : a.confirmedAt.localeCompare(b.confirmedAt))),
+        .filter((d) => kind === "all" || d.kind_label === kind)
+        .filter((d) => !q.trim() || `${d.title} ${d.confirmed_by_name}`.toLowerCase().includes(q.trim().toLowerCase()))
+        .sort((a, b) => (sort === "new" ? b.confirmed_at.localeCompare(a.confirmed_at) : a.confirmed_at.localeCompare(b.confirmed_at))),
     [docs, q, sort, kind],
   );
 
@@ -44,20 +44,21 @@ export function DocList({ projectId, docs }: { projectId: string; docs: Confirme
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr className="border-b-[1.5px] border-[#111] text-xs font-extrabold text-[#6c6a62]">
-              {["문서", "종류", "구분", "확정일", "확정인"].map((h) => <th key={h} scope="col" className="px-5 py-3">{h}</th>)}
+              {["문서", "종류", "구분", "요구사항", "확정일", "확정인"].map((h) => <th key={h} scope="col" className="px-5 py-3">{h}</th>)}
             </tr>
           </thead>
           <tbody>
             {shown.length === 0 ? (
-              <tr><td colSpan={5} className="px-5 py-8 text-center text-[#6c6a62]">조건에 맞는 문서가 없어요.</td></tr>
+              <tr><td colSpan={6} className="px-5 py-8 text-center text-[#6c6a62]">조건에 맞는 문서가 없어요.</td></tr>
             ) : (
               shown.map((d) => (
-                <tr key={d.id} onClick={() => router.push(`/maemusae/projects/${projectId}/docs/${d.id}`)} className="cursor-pointer border-b border-[#111]/10 last:border-0 hover:bg-[#ebeae4]">
-                  <td className="px-5 py-3 font-semibold"><Link href={`/maemusae/projects/${projectId}/docs/${d.id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{d.title}</Link></td>
-                  <td className="px-5 py-3">{d.kind}</td>
+                <tr key={d.version_id} onClick={() => router.push(`/maemusae/projects/${projectId}/docs/${d.version_id}`)} className="cursor-pointer border-b border-[#111]/10 last:border-0 hover:bg-[#ebeae4]">
+                  <td className="px-5 py-3 font-semibold"><Link href={`/maemusae/projects/${projectId}/docs/${d.version_id}`} className="hover:underline" onClick={(e) => e.stopPropagation()}>{d.title}</Link></td>
+                  <td className="px-5 py-3">{d.kind_label}</td>
                   <td className="px-5 py-3"><Pill tone={d.revision > 1 ? "yellow" : "plain"}>{revisionLabel(d.revision)}</Pill></td>
-                  <td className="px-5 py-3 text-[#55534c]">{fmtDate(d.confirmedAt)}</td>
-                  <td className="px-5 py-3 text-[#55534c]">{d.confirmedBy}</td>
+                  <td className="px-5 py-3 tabular-nums text-[#55534c]">{d.item_count}개</td>
+                  <td className="px-5 py-3 text-[#55534c]">{fmtDate(d.confirmed_at)}</td>
+                  <td className="px-5 py-3 text-[#55534c]">{d.confirmed_by_name}</td>
                 </tr>
               ))
             )}

@@ -15,7 +15,6 @@ import { Btn, PageHead, Pill, card, fmtRange } from "../_components/ui";
 import { DOC_STATUS, ROLE_LABEL, docStatus } from "../_lib/labels";
 import { apiError } from "../_lib/api";
 import { useCreateProject, useProjects, useRequirementsDocStatuses } from "../_lib/queries";
-import { useMaemusae } from "../_lib/store";
 import type { DocStatus } from "../_lib/types";
 
 // 카드 윗띠와 상태 필터 버튼이 같은 색을 쓴다
@@ -32,7 +31,6 @@ export default function ProjectsPage() {
   const router = useRouter();
   const auth = useAuth();
   const { data, isLoading, error } = useProjects();
-  const confirmed = useMaemusae((s) => s.confirmed);
   const createProject = useCreateProject();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -40,9 +38,9 @@ export default function ProjectsPage() {
 
   // 서버가 내가 멤버인 프로젝트만 준다 (초대 대기 중인 것은 수락 전이라 빠진다)
   const visible = useMemo(() => data?.items ?? [], [data]);
-  // 카드 상태는 프로젝트마다 요구사항정의서의 서버 상태. 확정(M4 전까지 브라우저 목)만 목 데이터에서 읽는다
+  // 카드 상태는 프로젝트마다 요구사항정의서의 서버 상태
   const serverStatus = useRequirementsDocStatuses(visible.map((p) => String(p.id)));
-  const statusOf = (id: number): DocStatus => docStatus(serverStatus[String(id)], !!confirmed[String(id)]);
+  const statusOf = (id: number): DocStatus => docStatus(serverStatus[String(id)]);
   const mine = visible.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase())).filter((p) => status === "all" || statusOf(p.id) === status);
   const hasAny = visible.length > 0;
 

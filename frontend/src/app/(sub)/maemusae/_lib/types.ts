@@ -1,10 +1,10 @@
 // 매무새 화면이 쓰는 데이터 모양.
-// 프로젝트·멤버·초대·문서·올린 파일·요구사항 후보·입력·버전은 서버 API 모양(api.ts)을 쓴다.
-// 아래 확정 기록만 확정(M4) API가 생기기 전까지 브라우저 목 데이터(store.ts)로 흉내 낸다.
+// 프로젝트·멤버·초대·문서·올린 파일·요구사항 후보·입력·버전·확정은 서버 API 모양(api.ts)을 쓴다.
+// 아래 ConfirmedItem·ConfirmedDoc은 화면이 쓰지 않는 예비 목 저장소(store.ts)만 쓴다.
 
 export type ProjectRole = "ADMIN" | "MEMBER";
 
-/** 화면에 보이는 문서 상태. 서버 상태(ApiDocStatus)에 브라우저 목 확정을 얹어 고른다 (status.ts) */
+/** 화면에 보이는 문서 상태. 서버 상태(ApiDocStatus)에서 고른다 (labels.docStatus) */
 export type DocStatus = "empty" | "analyzing" | "ready" | "confirming" | "confirmed";
 
 /** 확정 문서에 담는 요구사항 하나 (그 순간 그대로) */
