@@ -40,6 +40,7 @@ from app.features.maemusae.errors import (
     DocumentConfirmedError,
     DocumentNotFoundError,
     DocumentTooLargeToAnalyzeError,
+    ProjectMemberRequiredError,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ def choose_plan(pages: list[PageRef]) -> AnalysisPlan:
         pages, limit=mms_settings.mms_batch_chars, overlap=mms_settings.mms_batch_overlap_chars
     )
     if len(batches) > mms_settings.mms_analyze_max_batches:
-        raise DocumentTooLargeToAnalyzeError(mms_settings.mms_analyze_max_batches)
+        raise DocumentTooLargeToAnalyzeError()
     return AnalysisPlan(batches, by_tag, dedupe=len(batches) > 1)
 
 
@@ -107,6 +108,8 @@ def expire_stale(db: Session, document_id: int) -> None:
 
 
 def start_analysis(db: Session, access: ProjectAccess, document_id: int, body: AnalyzeRequest) -> AnalysisStarted:
+    if access.member is None:  # 보기 전용 MASTER
+        raise ProjectMemberRequiredError()
     if documents_repository.get_document(db, access.project.id, document_id) is None:
         raise DocumentNotFoundError()
     expire_stale(db, document_id)

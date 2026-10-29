@@ -16,6 +16,12 @@ class ProjectNotFoundError(NotFoundError):
         super().__init__("PROJECT_NOT_FOUND", "프로젝트를 찾을 수 없습니다.")
 
 
+class ProjectMemberRequiredError(ForbiddenError):
+    # 보기 전용 MASTER 가 쓰기 기능을 누른 경우. MASTER 는 프로젝트가 있는 걸 이미 알기 때문에 404 대신 403 (10/29 결정)
+    def __init__(self):
+        super().__init__("PROJECT_MEMBER_REQUIRED", "프로젝트 멤버만 할 수 있습니다. 관리자는 보기만 할 수 있어요.")
+
+
 class ProjectAdminRequiredError(ForbiddenError):
     def __init__(self):
         super().__init__("PROJECT_ADMIN_REQUIRED", "프로젝트 관리자만 할 수 있습니다.")
@@ -143,8 +149,9 @@ class AnalysisRestartRequiredError(ConflictError):
 
 
 class DocumentTooLargeToAnalyzeError(ValidationError):
-    def __init__(self, max_batches: int):
+    # 상한은 파일 하나가 아니라 문서에 올린 파일 전체 합계라서, 나눠 올리라는 안내는 하지 않음 (10/29)
+    def __init__(self):
         super().__init__(
             "DOCUMENT_TOO_LARGE_TO_ANALYZE",
-            f"한 번에 분석하기에 문서가 너무 많습니다 (묶음 {max_batches}개 초과). 파일을 나눠서 올리거나 일부를 지운 뒤 다시 시도하세요.",
+            "문서를 다 합친 용량이 너무 커요. 분석에 필요 없는 파일을 빼고 다시 시도해 주세요.",
         )

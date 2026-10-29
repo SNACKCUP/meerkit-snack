@@ -214,6 +214,7 @@ def test_too_large_document_is_rejected_before_starting(client, db, owner, docs_
     response = _analyze(client, docs_url, owner)
     assert response.status_code == 422
     assert response.json()["code"] == "DOCUMENT_TOO_LARGE_TO_ANALYZE"
+    assert "필요 없는 파일을 빼고" in response.json()["detail"]
     assert fake_llm.calls == []
     assert db.scalar(select(AnalysisRun)) is None
     assert client.get(docs_url, headers=owner).json()["status"] == "EMPTY"
@@ -354,8 +355,9 @@ def test_member_can_analyze_master_and_outsider_cannot(client, db, headers, owne
     master = headers("master01", admin=True)
     outsider = headers("outsider01")
 
-    # MASTER 는 멤버가 아니면 진행률만 보고, 분석은 못 함 (쓰기 API 는 project_member → 404)
-    assert _analyze(client, docs_url, master).status_code == 404
+    # MASTER 는 멤버가 아니면 진행률만 보고, 분석은 403 (프로젝트를 이미 볼 수 있으니 404 로 숨기지 않음)
+    response = _analyze(client, docs_url, master)
+    assert (response.status_code, response.json()["code"]) == (403, "PROJECT_MEMBER_REQUIRED")
     assert _analyze(client, docs_url, outsider).status_code == 404
     assert client.get(f"{docs_url}/analysis", headers=outsider).status_code == 404
 
