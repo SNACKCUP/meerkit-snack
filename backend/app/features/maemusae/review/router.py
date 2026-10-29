@@ -7,7 +7,6 @@
 | DELETE /requirements/{id}                         | 멤버 (직접 추가한 후보만)        |
 | PUT·DELETE /requirements/{id}/notes/{field}       | 멤버 (내 입력, 사람마다 한 건)   |
 | GET    /notes                                     | 멤버, 또는 MASTER 보기만        |
-| POST   /save                                      | 멤버 (임시 저장 시각)           |
 
 쓰기를 보기 전용 MASTER 가 부르면 403 PROJECT_MEMBER_REQUIRED, 멤버가 아니면 404 (project_viewer 규칙).
 """
@@ -30,7 +29,6 @@ from app.features.maemusae.review.schemas import (
     RequirementListItem,
     RequirementPage,
     RequirementUpdate,
-    SaveRead,
 )
 
 router = APIRouter(prefix="/projects/{project_id}/documents/{document_id}", tags=["mms-requirements"])
@@ -189,7 +187,3 @@ def list_notes(
         db, access, document_id, author_id=author_id, q=q, newest_first=order == "newest", limit=limit
     )
 
-
-@router.post("/save", response_model=SaveRead, summary="임시 저장 (멤버). 화면의 '임시 저장됨' 시각")
-def save_document(document_id: int, access: ProjectAccess = Depends(project_viewer), db: Session = Depends(get_db)):
-    return service.save_document(db, access, document_id)

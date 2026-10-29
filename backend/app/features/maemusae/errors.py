@@ -141,10 +141,11 @@ class AnalysisNoSourcesError(BadRequestError):
 
 
 class AnalysisRestartRequiredError(ConflictError):
-    # 이미 후보가 있는 문서를 처음부터 다시 분석하면 AI 후보를 지우므로, 화면이 한 번 더 확인하고 restart=true 로 보냄
+    # 후보가 있는 문서를 다시 분석하면 후보·직접 추가·입력을 모두 지우므로, 화면이 알림을 보여 준 뒤 restart=true 로 보냄
     def __init__(self):
         super().__init__(
-            "ANALYSIS_RESTART_REQUIRED", "이미 분석한 문서입니다. 처음부터 다시 분석하면 AI가 만든 후보가 새로 만들어집니다."
+            "ANALYSIS_RESTART_REQUIRED",
+            "이미 후보가 있는 문서입니다. 다시 분석하면 지금 후보와 직접 입력한 내용이 사라지고 REQ-001부터 새로 만들어집니다.",
         )
 
 
@@ -179,3 +180,14 @@ class RequirementNotDeletableError(ConflictError):
 class NoteNotFoundError(NotFoundError):
     def __init__(self):
         super().__init__("NOTE_NOT_FOUND", "남긴 입력을 찾을 수 없습니다.")
+
+
+class NothingToVersionError(BadRequestError):
+    # 후보가 하나도 없으면 남길 내용이 없음 (빈 버전이 기록에 쌓이지 않게)
+    def __init__(self):
+        super().__init__("NOTHING_TO_VERSION", "남길 후보가 없어요. 분석하거나 후보를 직접 추가한 뒤 눌러 주세요.")
+
+
+class VersionNotFoundError(NotFoundError):
+    def __init__(self):
+        super().__init__("VERSION_NOT_FOUND", "버전 기록을 찾을 수 없습니다.")

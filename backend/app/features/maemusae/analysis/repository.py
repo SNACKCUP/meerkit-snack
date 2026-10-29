@@ -1,8 +1,7 @@
 """분석 요청·요구사항 후보·근거 테이블 접근. SQL 은 이 파일에만 둡니다. commit 은 service·runner 가 합니다."""
 
-from datetime import datetime
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
 from app.features.maemusae.analysis.models import (
@@ -51,22 +50,16 @@ def has_live_requirements(db: Session, document_id: int) -> bool:
     return db.scalar(select(Requirement.id).where(*_live(document_id)).limit(1)) is not None
 
 
-def has_ai_requirements(db: Session, document_id: int) -> bool:
-    return db.scalar(select(Requirement.id).where(*_live(document_id), Requirement.is_manual.is_(False)).limit(1)) is not None
-
-
 def max_seq(db: Session, document_id: int) -> int:
     """지운 후보까지 포함한 마지막 번호 (번호를 다시 쓰지 않으려고)"""
     return db.scalar(select(func.coalesce(func.max(Requirement.seq), 0)).where(Requirement.document_id == document_id))
 
 
-def soft_delete_ai_requirements(db: Session, document_id: int, now: datetime) -> int:
-    """처음부터 다시 분석할 때 AI 후보만 지움 (직접 추가한 후보는 남김). 행은 남겨 번호·입력 기록을 지킵니다"""
+def delete_requirements(db: Session, document_id: int) -> int:
+    """다시 분석할 때 문서의 후보를 모두 지움 (AI·직접 추가·지운 표시 행 모두). 근거·입력은 FK CASCADE 로 같이 지워짐.
+    남겨야 할 내용은 사람이 버전 추가·저장으로 mms_document_versions 에 남겼습니다 (10/29 결정)"""
     result = db.execute(
-        update(Requirement)
-        .where(*_live(document_id), Requirement.is_manual.is_(False))
-        .values(deleted_at=now)
-        .execution_options(synchronize_session=False)
+        delete(Requirement).where(Requirement.document_id == document_id).execution_options(synchronize_session=False)
     )
     return result.rowcount
 

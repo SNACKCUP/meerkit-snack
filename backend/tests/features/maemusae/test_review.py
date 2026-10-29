@@ -1,5 +1,5 @@
 """매무새 요구사항 후보 검토 API (M3-2): 목록·필터·커서, 상세(근거·입력), 수정(version), 일괄 수정, 직접 추가·삭제,
-입력(사람마다 한 건), 입력 목록, 임시 저장, 문서 상태, 권한, 로그"""
+입력(사람마다 한 건), 입력 목록, 버전 추가·버전 저장(10/29), 문서 상태, 권한, 로그"""
 
 import logging
 
@@ -269,13 +269,94 @@ def test_notes_of_deleted_requirements_are_hidden(client, db, owner, docs_url, s
     assert client.get(f"{docs_url}/notes", headers=owner).json() == []
 
 
-# ---- 임시 저장·문서 상태 ----
+# ---- 버전 추가·버전 저장 (10/29 결정, 계획 17의 2-1) ----
 
 
-def test_save_sets_saved_at(client, owner, docs_url, seeded):
-    response = client.post(f"{docs_url}/save", headers=owner)
-    assert response.status_code == 200
-    assert client.get(docs_url, headers=owner).json()["saved_at"] == response.json()["saved_at"]
+def _document(client, url, hdrs) -> dict:
+    return client.get(url, headers=hdrs).json()
+
+
+def _move_saved_at_back(db, url):
+    # 테스트는 한 트랜잭션이라 now() 가 같음 → 저장 시각을 1분 앞으로 옮겨 '그 뒤에 고침'을 흉내
+    db.execute(
+        update(Document).where(Document.id == _doc_id(url)).values(saved_at=text("saved_at - interval '1 minute'"))
+    )
+    db.commit()
+
+
+def test_add_version_always_makes_new_version_with_everything(client, owner, docs_url, seeded):
+    client.put(f"{docs_url}/requirements/{seeded[2]}/notes/ANSWER", json={"text": "간편결제도요"}, headers=owner)
+    first = client.post(f"{docs_url}/versions", headers=owner)
+    second = client.post(f"{docs_url}/versions", headers=owner)
+    assert (first.status_code, first.json()["version_no"], first.json()["overwritten"]) == (201, 1, False)
+    assert (second.json()["version_no"], second.json()["overwritten"]) == (2, False)
+
+    listed = client.get(f"{docs_url}/versions", headers=owner).json()
+    assert [(v["kind"], v["version_no"], v["item_count"]) for v in listed] == [("SAVED", 2, 3), ("SAVED", 1, 3)]
+    assert listed[0]["created_by_name"] == "owner01 이름"
+    detail = client.get(f"{docs_url}/versions/{first.json()['id']}", headers=owner).json()
+    assert [i["code"] for i in detail["items"]] == ["REQ-001", "REQ-002", "REQ-003"]
+    assert detail["items"][0]["sources"][0]["quote"] == "이메일로 가입한다"
+    assert detail["items"][1]["notes"][0] == {
+        "field": "ANSWER", "text": "간편결제도요", "author_name": "owner01 이름",
+        "updated_at": detail["items"][1]["notes"][0]["updated_at"],
+    }
+    assert detail["items"][2]["priority_defaulted"] is True
+
+    document = _document(client, docs_url, owner)
+    assert (document["last_version_no"], document["saved_at"] is not None, document["changed_since_save"]) == (2, True, False)
+
+
+def test_save_version_overwrites_only_this_rounds_last_version(client, db, owner, docs_url, seeded):
+    first = client.put(f"{docs_url}/versions/latest", headers=owner).json()
+    assert (first["version_no"], first["overwritten"]) == (1, False)  # 버전이 없으면 새로
+
+    client.patch(f"{docs_url}/requirements/{seeded[1]}", json={"version": 1, "name": "이메일 가입"}, headers=owner)
+    again = client.put(f"{docs_url}/versions/latest", headers=owner).json()
+    assert (again["id"], again["version_no"], again["overwritten"]) == (first["id"], 1, True)
+    detail = client.get(f"{docs_url}/versions/{first['id']}", headers=owner).json()
+    assert detail["items"][0]["name"] == "이메일 가입"
+    assert detail["updated_by_name"] == "owner01 이름"
+
+    # 다시 분석하면 runner 가 saved_at 을 비움 → 다음 버전 저장은 옛 분석의 v1 을 덮지 않고 v2 를 만듦
+    db.execute(update(Document).where(Document.id == _doc_id(docs_url)).values(saved_at=None))
+    db.commit()
+    after = client.put(f"{docs_url}/versions/latest", headers=owner).json()
+    assert (after["version_no"], after["overwritten"]) == (2, False)
+    assert len(client.get(f"{docs_url}/versions", headers=owner).json()) == 2
+
+
+def test_changed_since_save_catches_edits_notes_and_note_deletes(client, db, owner, docs_url, seeded):
+    assert _document(client, docs_url, owner)["changed_since_save"] is False  # 버전이 없으면 false
+    client.put(f"{docs_url}/requirements/{seeded[1]}/notes/DESCRIPTION", json={"text": "메모"}, headers=owner)
+    client.post(f"{docs_url}/versions", headers=owner)
+    _move_saved_at_back(db, docs_url)
+    assert _document(client, docs_url, owner)["changed_since_save"] is True  # 저장 시각 뒤에 남긴 입력이 있음
+
+    client.post(f"{docs_url}/versions", headers=owner)
+    _move_saved_at_back(db, docs_url)
+    db.execute(update(Requirement).values(updated_at=text("now() - interval '2 minutes'")))
+    db.execute(update(RequirementNote).values(updated_at=text("now() - interval '2 minutes'")))
+    db.commit()
+    assert _document(client, docs_url, owner)["changed_since_save"] is False
+    client.delete(f"{docs_url}/requirements/{seeded[1]}/notes/DESCRIPTION", headers=owner)
+    assert _document(client, docs_url, owner)["changed_since_save"] is True  # 입력을 지운 것도 고친 것
+
+
+def test_manual_count_and_empty_document_has_nothing_to_version(client, owner, docs_url):
+    response = client.post(f"{docs_url}/versions", headers=owner)
+    assert (response.status_code, response.json()["code"]) == (400, "NOTHING_TO_VERSION")
+    client.post(f"{docs_url}/requirements", json={"name": "직접", "kind": "FUNCTIONAL", "priority": "LOW"}, headers=owner)
+    document = _document(client, docs_url, owner)
+    assert (document["manual_count"], document["last_version_no"], document["saved_at"]) == (1, None, None)
+
+
+def test_version_of_other_document_is_404(client, owner, docs_url, seeded):
+    version = client.post(f"{docs_url}/versions", headers=owner).json()
+    other = client.post(PROJECTS, json=PROJECT, headers=owner).json()
+    [other_doc] = client.get(f"{PROJECTS}/{other['id']}/documents", headers=owner).json()
+    url = f"{PROJECTS}/{other['id']}/documents/{other_doc['id']}/versions/{version['id']}"
+    assert (client.get(url, headers=owner).json()["code"]) == "VERSION_NOT_FOUND"
 
 
 @pytest.mark.parametrize(("status", "code"), [("ANALYZING", "DOCUMENT_BUSY"), ("CONFIRMED", "DOCUMENT_CONFIRMED")])
@@ -287,9 +368,10 @@ def test_busy_or_confirmed_document_cannot_be_edited(client, db, owner, docs_url
         client.patch(f"{url}/{seeded[1]}", json={"version": 1, "is_included": False}, headers=owner),
         client.post(url, json={"name": "x", "kind": "FUNCTIONAL", "priority": "LOW"}, headers=owner),
         client.put(f"{url}/{seeded[1]}/notes/ANSWER", json={"text": "x"}, headers=owner),
-        client.post(f"{docs_url}/save", headers=owner),
+        client.post(f"{docs_url}/versions", headers=owner),
+        client.put(f"{docs_url}/versions/latest", headers=owner),
     ]
-    assert [(c.status_code, c.json()["code"]) for c in calls] == [(409, code)] * 4
+    assert [(c.status_code, c.json()["code"]) for c in calls] == [(409, code)] * 5
     assert _codes(_list(client, docs_url, owner)) == ["REQ-001", "REQ-002", "REQ-003"]  # 읽기는 됨
 
 
@@ -305,9 +387,12 @@ def test_master_reads_only_and_outsider_gets_404(client, headers, owner, docs_ur
 
     response = client.patch(f"{docs_url}/requirements/{seeded[1]}", json={"version": 1, "is_included": False}, headers=master)
     assert (response.status_code, response.json()["code"]) == (403, "PROJECT_MEMBER_REQUIRED")
-    assert client.post(f"{docs_url}/save", headers=master).status_code == 403
+    assert client.post(f"{docs_url}/versions", headers=master).status_code == 403
+    assert client.put(f"{docs_url}/versions/latest", headers=master).status_code == 403
+    assert client.get(f"{docs_url}/versions", headers=master).status_code == 200
 
     assert client.get(f"{docs_url}/requirements", headers=outsider).status_code == 404
+    assert client.get(f"{docs_url}/versions", headers=outsider).status_code == 404
     assert client.patch(f"{docs_url}/requirements/{seeded[1]}", json={"version": 1}, headers=outsider).status_code == 404
 
 

@@ -5,6 +5,7 @@
 - 고칠 때는 version 이 같아야 함 (낙관적 잠금, JPA @Version 과 같은 방식). 다르면 409 REQUIREMENT_CHANGED
 - 구분·우선순위를 사람이 정하면 기본값 표시(kind_defaulted·priority_defaulted)를 풉니다 (10/29 결정 B)
 - 입력은 사람마다 칸마다 한 건 (10/28 결정 5). 고치면 다시 분류 반영 표시를 비움
+- 버전 추가·버전 저장은 versions/ (10/29). 옛 '임시 저장'(/save)은 없어짐
 
 로그에는 id·바꾼 칸 이름만 남기고 내용은 남기지 않습니다.
 """
@@ -13,6 +14,7 @@ import logging
 import re
 from datetime import UTC, datetime
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -51,7 +53,6 @@ from app.features.maemusae.review.schemas import (
     RequirementListItem,
     RequirementPage,
     RequirementUpdate,
-    SaveRead,
 )
 
 logger = logging.getLogger(__name__)
@@ -74,14 +75,14 @@ def _search(q: str | None) -> tuple[int | None, str | None]:
     return (int(match.group(1)), None) if match else (None, q.strip())
 
 
-def _document(db: Session, access: ProjectAccess, document_id: int) -> Document:
+def get_document(db: Session, access: ProjectAccess, document_id: int) -> Document:
     document = documents_repository.get_document(db, access.project.id, document_id)
     if document is None:
         raise DocumentNotFoundError()
     return document
 
 
-def _editable(db: Session, access: ProjectAccess, document_id: int, *, exclusive: bool = False) -> Document:
+def editable_document(db: Session, access: ProjectAccess, document_id: int, *, exclusive: bool = False) -> Document:
     if access.member is None:  # 보기 전용 MASTER
         raise ProjectMemberRequiredError()
     document = repository.lock_document(db, access.project.id, document_id, exclusive=exclusive)
@@ -148,7 +149,7 @@ def list_requirements(
     cursor: int | None,
     limit: int,
 ) -> RequirementPage:
-    document = _document(db, access, document_id)
+    document = get_document(db, access, document_id)
     seq, name = _search(q)
     f = RequirementFilter(kind=kind, priority=priority, included=included, needs_check=needs_check, seq=seq, name=name)
     rows = repository.list_requirements(db, document.id, f, after_seq=cursor, limit=limit + 1)
@@ -158,7 +159,7 @@ def list_requirements(
 
 
 def get_requirement(db: Session, access: ProjectAccess, document_id: int, requirement_id: int) -> RequirementDetail:
-    document = _document(db, access, document_id)
+    document = get_document(db, access, document_id)
     rows = repository.list_requirements(db, document.id, RequirementFilter(ids=(requirement_id,)))
     if not rows:
         raise RequirementNotFoundError()
@@ -203,7 +204,7 @@ def list_document_notes(
     newest_first: bool,
     limit: int,
 ) -> list[NoteRead]:
-    document = _document(db, access, document_id)
+    document = get_document(db, access, document_id)
     seq, name = _search(q)
     actor_id = access.principal.user_id
     rows = repository.list_notes(
@@ -235,7 +236,7 @@ def _apply(db: Session, requirement: Requirement, changes: RequirementUpdate, ac
 def update_requirement(
     db: Session, access: ProjectAccess, document_id: int, requirement_id: int, body: RequirementUpdate
 ) -> RequirementListItem:
-    document = _editable(db, access, document_id)
+    document = editable_document(db, access, document_id)
     requirement = repository.get_requirement(db, document.id, requirement_id, for_update=True)
     if requirement is None:
         raise RequirementNotFoundError()
@@ -254,7 +255,7 @@ def update_requirements(
     db: Session, access: ProjectAccess, document_id: int, body: RequirementBulkUpdate
 ) -> list[RequirementListItem]:
     """일괄 수정. 하나라도 없거나 version 이 다르면 아무것도 바꾸지 않음 (전부 아니면 전무)"""
-    document = _editable(db, access, document_id)
+    document = editable_document(db, access, document_id)
     ids = [item.id for item in body.items]
     rows = {r.id: r for r in repository.lock_requirements(db, document.id, ids)}
     if len(rows) != len(ids):
@@ -277,7 +278,7 @@ def create_requirement(
     db: Session, access: ProjectAccess, document_id: int, body: RequirementCreate
 ) -> RequirementListItem:
     """직접 추가. 번호는 지운 후보까지 포함한 마지막 번호 + 1 (다시 쓰지 않음)"""
-    document = _editable(db, access, document_id, exclusive=True)
+    document = editable_document(db, access, document_id, exclusive=True)
     require_code(db, KIND_GROUP, body.kind)
     require_code(db, PRIORITY_GROUP, body.priority)
     actor_id = access.principal.user_id
@@ -302,7 +303,7 @@ def create_requirement(
 
 def delete_requirement(db: Session, access: ProjectAccess, document_id: int, requirement_id: int) -> None:
     """직접 추가한 후보만. 행은 남기고 deleted_at 만 채워 번호를 다시 쓰지 않음"""
-    document = _editable(db, access, document_id)
+    document = editable_document(db, access, document_id)
     requirement = repository.get_requirement(db, document.id, requirement_id, for_update=True)
     if requirement is None:
         raise RequirementNotFoundError()
@@ -323,7 +324,7 @@ def write_note(
     db: Session, access: ProjectAccess, document_id: int, requirement_id: int, field: str, text: str
 ) -> NoteRead:
     """내 입력 남기기·고치기 (사람마다 칸마다 한 건). 고치면 다시 분류에 새로 반영되도록 반영 표시를 비움"""
-    document = _editable(db, access, document_id)
+    document = editable_document(db, access, document_id)
     requirement = repository.get_requirement(db, document.id, requirement_id)
     if requirement is None:
         raise RequirementNotFoundError()
@@ -335,7 +336,7 @@ def write_note(
             repository.add(db, note)
         except IntegrityError:  # 같은 사람이 동시에 두 번 눌러 먼저 들어간 행이 있음 → 그 행을 고침
             db.rollback()
-            document = _editable(db, access, document_id)
+            document = editable_document(db, access, document_id)
             note = repository.get_my_note(db, requirement.id, field, actor_id)
     note.text = text
     note.applied_run_id = None
@@ -348,7 +349,7 @@ def write_note(
 
 
 def delete_note(db: Session, access: ProjectAccess, document_id: int, requirement_id: int, field: str) -> None:
-    document = _editable(db, access, document_id)
+    document = editable_document(db, access, document_id)
     requirement = repository.get_requirement(db, document.id, requirement_id)
     if requirement is None:
         raise RequirementNotFoundError()
@@ -356,17 +357,10 @@ def delete_note(db: Session, access: ProjectAccess, document_id: int, requiremen
     if note is None:
         raise NoteNotFoundError()
     repository.delete(db, note)
+    requirement.updated_at = func.now()  # 입력을 지운 것도 '버전 남긴 뒤 또 고침'에 잡히게
     db.commit()
     logger.info(
         "요구사항 입력 삭제 document_id=%s requirement_id=%s field=%s actor_id=%s",
         document.id, requirement.id, field, access.principal.user_id,
     )
 
-
-def save_document(db: Session, access: ProjectAccess, document_id: int) -> SaveRead:
-    """임시 저장 시각. 고친 내용은 이미 저장돼 있고, 화면의 '임시 저장됨 16:32' 표시용"""
-    document = _editable(db, access, document_id, exclusive=True)
-    document.saved_at = datetime.now(UTC)
-    document.saved_by = access.principal.user_id
-    db.commit()
-    return SaveRead(saved_at=document.saved_at)

@@ -9,6 +9,7 @@ import app.features.maemusae.documents.models
 import app.features.maemusae.invitations.models
 import app.features.maemusae.projects.models
 import app.features.maemusae.review.models
+import app.features.maemusae.versions.models
 import app.social.models
 import app.users.models  # noqa: F401
 from alembic import context

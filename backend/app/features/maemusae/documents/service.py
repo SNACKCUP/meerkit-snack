@@ -44,6 +44,7 @@ from app.features.maemusae.errors import (
     SourceNotFoundError,
 )
 from app.features.maemusae.projects.models import ADMIN
+from app.features.maemusae.versions import service as versions_service
 from app.storage import PrivateStorage, get_private_storage
 from app.storage.errors import StorageError
 
@@ -71,6 +72,7 @@ def _document_read(db: Session, document: Document, source_count: int, labels: d
         current_revision=document.current_revision,
         source_count=source_count,
         saved_at=document.saved_at,
+        **versions_service.document_state(db, document),
         confirmed_at=document.confirmed_at,
         confirmed_by_name=repository.get_user_name(db, document.confirmed_by),
         updated_at=document.updated_at,

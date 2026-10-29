@@ -122,6 +122,3 @@ class NoteWrite(BaseModel):
             raise ValueError("내용을 입력하세요.")
         return value.strip()
 
-
-class SaveRead(BaseModel):
-    saved_at: datetime
