@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config, pool
 
 import app.auth.models
 import app.codes.models
+import app.features.maemusae.projects.models
 import app.social.models
 import app.users.models  # noqa: F401
 from alembic import context
