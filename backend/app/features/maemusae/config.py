@@ -11,5 +11,11 @@ class MaemusaeSettings(BaseSettings):
     mms_source_max_chars: int = 200_000  # 파일 하나에서 뽑은 본문 글자 수. 넘으면 422 DOCUMENT_TOO_LONG
     mms_page_max_chars: int = 4000  # 쪽 정보가 없는 형식(docx·txt·md·시트)을 글자 수로 나눌 때 한 조각의 크기
 
+    # AI 분석 (M3). 묶음 하나가 AI 호출 1번이라 킷 입력 상한(LLM_MAX_INPUT_CHARS, 기본 20,000자) 안이어야 함
+    mms_batch_chars: int = 12_000  # 묶음 하나에 넣는 본문 글자 수. 전체가 이 안이면 AI 1번(작은 문서)
+    mms_batch_overlap_chars: int = 300  # 묶음이 바뀔 때 앞 쪽 끝을 다음 묶음 앞에 겹쳐 넣는 글자 수
+    mms_analyze_max_batches: int = 40  # 묶음 수 상한. 넘으면 시작 전에 422 DOCUMENT_TOO_LARGE_TO_ANALYZE
+    mms_analyze_stale_minutes: int = 15  # 진행이 이만큼 없으면 멈춘 분석으로 보고 실패 처리 (서버 재시작 등)
+
 
 mms_settings = MaemusaeSettings()

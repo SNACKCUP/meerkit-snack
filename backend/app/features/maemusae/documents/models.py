@@ -6,7 +6,7 @@
 - 문서 종류(kind)는 공통코드 MMS_DOC_KIND, 상태(status)는 코드가 흐름을 바꾸는 값이라 CHECK 입니다.
 - 원본 파일은 비공개 저장소(app.storage.get_private_storage)에 두고 여기에는 storage_key 만 둡니다.
 - 본문은 MarkItDown 으로 바꾼 마크다운을 쪽 그대로 나눠 둡니다. 쪽을 넘어가는 문장은 쓰는 쪽(M3)에서 이어 붙입니다.
-- 분석 요청과 잇는 analysis_run_id 는 M3 에서 추가합니다.
+- analysis_run_id: 어느 분석 요청에 들어갔는지 (M3). 비어 있으면 아직 분석하지 않은 파일 (다시 분류 때 새 파일로 봄)
 """
 
 from datetime import datetime
@@ -96,6 +96,7 @@ class SourceFile(Base):
     page_count: Mapped[int] = mapped_column(Integer, server_default="0")
     parse_status: Mapped[str] = mapped_column(String(20), server_default=PARSED)
     uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    analysis_run_id: Mapped[int | None] = mapped_column(ForeignKey("mms_analysis_runs.id", ondelete="SET NULL", name="fk_mms_source_files_analysis_run_id"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

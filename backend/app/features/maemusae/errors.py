@@ -122,3 +122,29 @@ class SourceLimitError(ConflictError):
 class SourceDeleteForbiddenError(ForbiddenError):
     def __init__(self):
         super().__init__("SOURCE_DELETE_FORBIDDEN", "올린 사람이나 프로젝트 관리자만 지울 수 있습니다.")
+
+
+class DocumentConfirmedError(ConflictError):
+    def __init__(self):
+        super().__init__("DOCUMENT_CONFIRMED", "확정된 문서입니다. 확정 뒤 수정을 먼저 눌러 주세요.")
+
+
+class AnalysisNoSourcesError(BadRequestError):
+    def __init__(self):
+        super().__init__("ANALYSIS_NO_SOURCES", "분석할 문서를 먼저 올려 주세요.")
+
+
+class AnalysisRestartRequiredError(ConflictError):
+    # 이미 후보가 있는 문서를 처음부터 다시 분석하면 AI 후보를 지우므로, 화면이 한 번 더 확인하고 restart=true 로 보냄
+    def __init__(self):
+        super().__init__(
+            "ANALYSIS_RESTART_REQUIRED", "이미 분석한 문서입니다. 처음부터 다시 분석하면 AI가 만든 후보가 새로 만들어집니다."
+        )
+
+
+class DocumentTooLargeToAnalyzeError(ValidationError):
+    def __init__(self, max_batches: int):
+        super().__init__(
+            "DOCUMENT_TOO_LARGE_TO_ANALYZE",
+            f"한 번에 분석하기에 문서가 너무 많습니다 (묶음 {max_batches}개 초과). 파일을 나눠서 올리거나 일부를 지운 뒤 다시 시도하세요.",
+        )
