@@ -45,6 +45,7 @@ from app.features.maemusae.review import repository
 from app.features.maemusae.review.models import RequirementNote
 from app.features.maemusae.review.repository import RequirementFilter
 from app.features.maemusae.review.schemas import (
+    CategoryPathRead,
     EvidenceRead,
     NoteRead,
     RequirementBulkUpdate,
@@ -60,6 +61,7 @@ logger = logging.getLogger(__name__)
 KIND_GROUP = "MMS_REQ_KIND"
 PRIORITY_GROUP = "MMS_PRIORITY"
 TEXT_SOURCE_NAME = "직접 입력"
+CATEGORY_FIELDS = ("category_major", "category_middle", "category_minor")
 _CODE = re.compile(r"^\s*REQ-?(\d+)\s*$", re.IGNORECASE)
 
 
@@ -103,6 +105,9 @@ def _item(row: tuple[Requirement, bool, bool]) -> RequirementListItem:
         name=r.name,
         kind=r.kind,
         priority=r.priority,
+        category_major=r.category_major,
+        category_middle=r.category_middle,
+        category_minor=r.category_minor,
         is_included=r.is_included,
         is_manual=r.is_manual,
         needs_answer=needs_answer,
@@ -143,6 +148,7 @@ def list_requirements(
     *,
     kind: str | None,
     priority: str | None,
+    category_major: str | None,
     included: bool | None,
     needs_check: bool,
     q: str | None,
@@ -151,11 +157,22 @@ def list_requirements(
 ) -> RequirementPage:
     document = get_document(db, access, document_id)
     seq, name = _search(q)
-    f = RequirementFilter(kind=kind, priority=priority, included=included, needs_check=needs_check, seq=seq, name=name)
+    f = RequirementFilter(
+        kind=kind, priority=priority, category_major=category_major, included=included, needs_check=needs_check,
+        seq=seq, name=name,
+    )
     rows = repository.list_requirements(db, document.id, f, after_seq=cursor, limit=limit + 1)
     more = len(rows) > limit
     rows = rows[:limit]
     return RequirementPage(items=[_item(r) for r in rows], next_cursor=rows[-1][0].seq if more else None)
+
+
+def list_categories(db: Session, access: ProjectAccess, document_id: int) -> list[CategoryPathRead]:
+    document = get_document(db, access, document_id)
+    return [
+        CategoryPathRead(major=major, middle=middle, minor=minor, count=count)
+        for major, middle, minor, count in repository.list_category_paths(db, document.id)
+    ]
 
 
 def get_requirement(db: Session, access: ProjectAccess, document_id: int, requirement_id: int) -> RequirementDetail:
@@ -225,6 +242,9 @@ def _apply(db: Session, requirement: Requirement, changes: RequirementUpdate, ac
     if "priority" in values:
         require_code(db, PRIORITY_GROUP, values["priority"])
         requirement.priority_defaulted = False
+    for key in CATEGORY_FIELDS:
+        if key in values and not values[key]:  # 빈 글자 = 분류 지우기
+            values[key] = None
     for key, value in values.items():
         setattr(requirement, key, value)
     if values:
@@ -289,6 +309,9 @@ def create_requirement(
         description=body.description,
         kind=body.kind,
         priority=body.priority,
+        category_major=body.category_major,
+        category_middle=body.category_middle,
+        category_minor=body.category_minor,
         is_manual=True,
         created_by=actor_id,
         updated_by=actor_id,

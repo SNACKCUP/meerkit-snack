@@ -14,6 +14,9 @@ class RequirementListItem(BaseModel):
     name: str = Field(examples=["이메일 회원가입"])
     kind: str = Field(description="공통코드 MMS_REQ_KIND", examples=["FUNCTIONAL"])
     priority: str = Field(description="공통코드 MMS_PRIORITY", examples=["HIGH"])
+    category_major: str | None = Field(default=None, description="대분류 (업무 영역). 없으면 null", examples=["회원 관리"])
+    category_middle: str | None = Field(default=None, description="중분류", examples=["로그인"])
+    category_minor: str | None = Field(default=None, description="소분류", examples=["소셜 로그인"])
     is_included: bool = Field(description="체크. 해제하면 확정에서 빠짐")
     is_manual: bool = Field(description="직접 추가한 후보 (이것만 지울 수 있음)")
     needs_answer: bool = Field(description="AI 질문이 있고 아직 아무도 답을 남기지 않음")
@@ -63,12 +66,28 @@ class RequirementDetail(RequirementListItem):
     updated_at: datetime
 
 
+def _category(value: str | None) -> str | None:
+    """앞뒤·겹친 공백 정리. 빈 글자("")는 그대로 두어 '분류 지우기'로 씀"""
+    return " ".join(value.split()) if value is not None else None
+
+
+CATEGORY_HELP = "업무 영역 (글, 공통코드 아님). 보내지 않으면 그대로, 빈 글자(\"\")면 지움"
+
+
 class _Changes(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, max_length=10_000)
     kind: str | None = Field(default=None, max_length=30)
     priority: str | None = Field(default=None, max_length=30)
+    category_major: str | None = Field(default=None, max_length=100, description=f"대분류. {CATEGORY_HELP}")
+    category_middle: str | None = Field(default=None, max_length=100, description=f"중분류. {CATEGORY_HELP}")
+    category_minor: str | None = Field(default=None, max_length=100, description=f"소분류. {CATEGORY_HELP}")
     is_included: bool | None = None
+
+    @field_validator("category_major", "category_middle", "category_minor")
+    @classmethod
+    def _clean_category(cls, value: str | None) -> str | None:
+        return _category(value)
 
     @field_validator("name")
     @classmethod
@@ -103,6 +122,14 @@ class RequirementCreate(BaseModel):
     description: str = Field(default="", max_length=10_000)
     kind: str = Field(max_length=30, examples=["FUNCTIONAL"])
     priority: str = Field(max_length=30, examples=["MEDIUM"])
+    category_major: str | None = Field(default=None, max_length=100, examples=["회원 관리"])
+    category_middle: str | None = Field(default=None, max_length=100, examples=["로그인"])
+    category_minor: str | None = Field(default=None, max_length=100, examples=[None])
+
+    @field_validator("category_major", "category_middle", "category_minor")
+    @classmethod
+    def _clean_category(cls, value: str | None) -> str | None:
+        return _category(value) or None
 
     @field_validator("name")
     @classmethod
@@ -122,3 +149,12 @@ class NoteWrite(BaseModel):
             raise ValueError("내용을 입력하세요.")
         return value.strip()
 
+
+
+class CategoryPathRead(BaseModel):
+    """이 문서에서 쓰는 분류 하나 (입력 자동완성·대분류 필터용)"""
+
+    major: str = Field(examples=["회원 관리"])
+    middle: str | None = Field(default=None, examples=["로그인"])
+    minor: str | None = Field(default=None, examples=["소셜 로그인"])
+    count: int = Field(description="이 분류의 후보 수", examples=[4])

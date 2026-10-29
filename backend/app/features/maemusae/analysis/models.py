@@ -77,6 +77,11 @@ class Requirement(TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(200))
     kind: Mapped[str] = mapped_column(String(30))  # 공통코드 MMS_REQ_KIND
     priority: Mapped[str] = mapped_column(String(30))  # 공통코드 MMS_PRIORITY
+    # 대·중·소분류 = 업무 영역 (예: 회원 관리 > 로그인 > 소셜 로그인). AI 가 채우고 사람이 고침. 프로젝트마다 다른 글이라
+    # 공통코드가 아님 (10/29 SoYoung 결정 F, 계획 19 M4-2). 비어 있을 수 있음
+    category_major: Mapped[str | None] = mapped_column(String(100))
+    category_middle: Mapped[str | None] = mapped_column(String(100))
+    category_minor: Mapped[str | None] = mapped_column(String(100))
     description: Mapped[str] = mapped_column(Text, server_default="")
     ai_question: Mapped[str | None] = mapped_column(Text)  # 있으면 화면에 "확인 필요"
     ai_answer: Mapped[str | None] = mapped_column(Text)

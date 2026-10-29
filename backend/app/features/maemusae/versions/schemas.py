@@ -26,6 +26,9 @@ class VersionItem(BaseModel):
     name: str
     kind: str
     priority: str
+    category_major: str | None = None  # 대·중·소분류 (M4-2 전 버전에는 없음)
+    category_middle: str | None = None
+    category_minor: str | None = None
     description: str
     ai_question: str | None = None
     ai_answer: str | None = None

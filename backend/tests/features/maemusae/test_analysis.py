@@ -343,8 +343,8 @@ def test_result_is_dropped_when_run_was_cleaned_up_meanwhile(client, db, owner, 
     _add_text(client, docs_url, owner)
     extract = runner._extract_all
 
-    def cleaned_up_during_ai_call(db_, run, plan):
-        candidates = extract(db_, run, plan)
+    def cleaned_up_during_ai_call(db_, run, plan, book):
+        candidates = extract(db_, run, plan, book)
         # AI 를 부르는 동안 진행률 읽기가 멈춘 분석으로 보고 정리한 상황
         db_.execute(update(AnalysisRun).values(status="FAILED", error_code="ANALYSIS_INTERRUPTED"))
         db_.commit()

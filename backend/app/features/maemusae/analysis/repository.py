@@ -111,6 +111,16 @@ def list_live_requirements(db: Session, document_id: int) -> list[Requirement]:
     return list(db.scalars(select(Requirement).where(*_live(document_id)).order_by(Requirement.seq)))
 
 
+def list_category_paths(db: Session, document_id: int) -> list[tuple[str | None, str | None, str | None]]:
+    """이 문서 후보가 쓰는 (대, 중, 소)분류. 번호 순으로 처음 나온 순서 (다시 분류 때 AI 에 같은 이름을 쓰게 함)"""
+    rows = db.execute(
+        select(Requirement.category_major, Requirement.category_middle, Requirement.category_minor)
+        .where(*_live(document_id), Requirement.category_major.is_not(None))
+        .order_by(Requirement.seq)
+    )
+    return list(dict.fromkeys(tuple(row) for row in rows))
+
+
 def lock_requirements(db: Session, document_id: int, ids: list[int]) -> dict[int, Requirement]:
     """id 순으로 잠금 (사람의 일괄 수정과 같은 순서라 교착 없음)"""
     rows = db.scalars(

@@ -126,6 +126,8 @@ NOTE_LABELS = {"DESCRIPTION": "설명 의견", "ANSWER": "질문 답"}
 def _target_text(tag: str, requirement, notes: list) -> str:
     code = f"REQ-{requirement.seq:03d}"
     lines = [f"[{tag} · {code} · {requirement.name} · 구분 {requirement.kind} · 우선순위 {requirement.priority}]"]
+    path = " > ".join(p for p in (requirement.category_major, requirement.category_middle, requirement.category_minor) if p)
+    lines.append(f"분류: {path or '(없음)'}")
     lines.append(f"설명: {requirement.description or '(없음)'}")
     if requirement.ai_question:
         lines.append(f"AI 질문: {requirement.ai_question}")
