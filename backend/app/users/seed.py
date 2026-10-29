@@ -30,7 +30,7 @@ def main() -> int:
             email=settings.seed_admin_email,
             password=settings.seed_admin_password,
             name=settings.seed_admin_name,
-            roles=[roles.MASTER],  # 관리자 역할 (permissions.roles.ADMIN_ROLE 과 같은 값)
+            roles=[roles.MASTER],  # 관리자 역할 (core.principal.ADMIN_ROLE 과 같은 값)
         )
         user.email_verified_at = datetime.now(UTC)
         db.commit()

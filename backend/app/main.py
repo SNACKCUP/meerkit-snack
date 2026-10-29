@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api import api_router
+from app.auth.principal import load_principal
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.exceptions import AppError, register_exception_handlers
@@ -38,6 +39,8 @@ def create_app() -> FastAPI:
         docs_url="/docs" if docs else None,
         redoc_url="/redoc" if docs else None,
         openapi_url="/openapi.json" if docs else None,
+        # 요청마다 현재 사용자를 채웁니다. 권한 검사(app.core.principal.require_*)는 이 값만 읽습니다.
+        dependencies=[Depends(load_principal)],
     )
     register_exception_handlers(app)
     # 나중에 추가한 미들웨어가 바깥을 감쌉니다. CORS 를 가장 바깥에 두어 500 응답에도 CORS 헤더가 붙게 합니다.
