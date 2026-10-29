@@ -10,6 +10,7 @@ import { DocList } from "../../_components/DocList";
 import { ProjectGuard } from "../../_components/ProjectGuard";
 import { Btn, PageHead, Pill, card, fmtRange } from "../../_components/ui";
 import { DOC_STATUS, ROLE_LABEL } from "../../_lib/labels";
+import { useMembers } from "../../_lib/queries";
 import { useMaemusae } from "../../_lib/store";
 
 const OTHER_FILES = [
@@ -28,8 +29,8 @@ export default function ProjectPage() {
     <ProjectGuard projectId={id}>
       {({ project, role, isAdmin }) => (
         <div className="grid gap-8">
-          <PageHead eyebrow={fmtRange(project.startDate, project.endDate)} title={project.name}>
-            <Pill tone={isAdmin ? "yellow" : "plain"}>내 권한 · {ROLE_LABEL[role]}</Pill>
+          <PageHead eyebrow={fmtRange(project.start_date, project.end_date)} title={project.name}>
+            <Pill tone={isAdmin ? "yellow" : "plain"}>{role ? `내 권한 · ${ROLE_LABEL[role]}` : "보기 전용 (서비스 관리자)"}</Pill>
             {isAdmin && <Btn href={`/maemusae/projects/${id}/members`}>멤버 권한 관리</Btn>}
           </PageHead>
 
@@ -45,24 +46,31 @@ export default function ProjectPage() {
 
           {history && history.length > 0 && <DocList projectId={id} docs={history} />}
 
-          <section aria-labelledby="members" className={`${card} grid gap-4`} data-rise>
-            <div className="flex items-center justify-between">
-              <h2 id="members" className="text-xl font-extrabold tracking-tight">멤버 {project.members.filter((m) => m.status === "active").length}명</h2>
-              {isAdmin && <Btn size="sm" href={`/maemusae/projects/${id}/members`}>관리</Btn>}
-            </div>
-            <ul className="flex flex-wrap gap-3">
-              {project.members.map((m) => (
-                <li key={m.id} className="flex items-center gap-2 rounded-full border-[1.5px] border-[#111] py-1 pl-1 pr-4 text-sm">
-                  <UserAvatar user={{ name: m.name, nickname: null, avatar_url: null }} size="sm" />
-                  {m.name}
-                  <span className="text-xs text-[#6c6a62]">{m.status === "invited" ? "초대 대기" : ROLE_LABEL[m.role]}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <MemberChips projectId={id} count={project.member_count} isAdmin={isAdmin} />
         </div>
       )}
     </ProjectGuard>
+  );
+}
+
+function MemberChips({ projectId, count, isAdmin }: { projectId: string; count: number; isAdmin: boolean }) {
+  const { data: members = [] } = useMembers(projectId);
+  return (
+    <section aria-labelledby="members" className={`${card} grid gap-4`} data-rise>
+      <div className="flex items-center justify-between">
+        <h2 id="members" className="text-xl font-extrabold tracking-tight">멤버 {count}명</h2>
+        {isAdmin && <Btn size="sm" href={`/maemusae/projects/${projectId}/members`}>관리</Btn>}
+      </div>
+      <ul className="flex flex-wrap gap-3">
+        {members.map((m) => (
+          <li key={m.id} className="flex items-center gap-2 rounded-full border-[1.5px] border-[#111] py-1 pl-1 pr-4 text-sm">
+            <UserAvatar user={{ name: m.name, nickname: null, avatar_url: null }} size="sm" />
+            {m.name}
+            <span className="text-xs text-[#6c6a62]">{ROLE_LABEL[m.role]}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

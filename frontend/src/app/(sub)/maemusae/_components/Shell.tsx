@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { NativeSelect } from "@/components/ui/native-select";
-import { UserAvatar } from "@/meerkit";
+import { UserMenu, useAuth, useLogout } from "@/meerkit";
 import { cn } from "@/lib/utils";
 
 import { useRise } from "../_lib/motion";
-import { DEMO_USERS } from "../_lib/seed";
-import { useMaemusae, useCurrentUser } from "../_lib/store";
+import { useMaemusae } from "../_lib/store";
 import { THEME_STYLE, THEME_VARS } from "../_lib/theme";
 import { Logo } from "./Logo";
 
@@ -21,12 +20,23 @@ const NAV = [
   { href: "/maemusae/projects", label: "프로젝트" },
 ];
 
-// 매무새 전체의 틀: 전용 색과 글꼴을 한 번만 입히고, 상단 바와 데모 계정 전환을 둔다.
+// 매무새 전체의 틀: 전용 색과 글꼴을 한 번만 입히고, 상단 바에 로그인 상태(킷 계정)를 보여 준다.
 export function Shell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
-  const user = useCurrentUser();
-  const setUser = useMaemusae((s) => s.setCurrentUser);
+  const { user, isLoading } = useAuth();
+  const logout = useLogout();
+  const qc = useQueryClient();
+  const router = useRouter();
   const path = usePathname();
+
+  const onLogout = () =>
+    logout.mutate(undefined, {
+      onSettled: () => {
+        // 다른 계정으로 다시 로그인했을 때 앞 사람의 프로젝트가 잠깐 보이지 않게 지운다
+        qc.removeQueries({ queryKey: ["mms"] });
+        router.push("/maemusae");
+      },
+    });
 
   // 대화상자는 body 아래에 그려지므로, 색을 html에도 입혀 둔다 (떠날 때 되돌린다)
   useEffect(() => {
@@ -63,22 +73,19 @@ export function Shell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="flex flex-wrap items-center gap-2 lg:justify-self-end">
-            <label className="flex items-center gap-2 rounded-full border-2 border-dashed border-[#111] bg-[#f2f69a] py-0.5 pl-3 pr-0.5 text-[11px] font-bold">
-              데모 계정
-              <NativeSelect aria-label="데모 계정 바꾸기" value={user.id} onChange={(e) => setUser(e.target.value)} className="h-8 rounded-full border-2 border-[#111] bg-white text-[12px] font-semibold text-[#111]">
-                {DEMO_USERS.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </NativeSelect>
-            </label>
-            <span className="hidden items-center gap-1 text-[12px] font-semibold md:flex"><Link href="/maemusae/login" className="rounded-full px-3 py-1.5 hover:bg-[#ebeae4]">로그인</Link><Link href="/maemusae/signup" className="rounded-full border-2 border-[#111] bg-[#ff5a14] px-3.5 py-1 text-white shadow-[2px_2px_0_#111] transition-[transform,box-shadow] hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111]">회원가입</Link></span>
-            <span className="flex items-center gap-2 rounded-full bg-[#ebeae4] py-1 pl-1 pr-3 text-[13px] font-semibold"><UserAvatar user={{ name: user.name, nickname: null, avatar_url: null }} size="sm" />{user.name}</span>
+            {isLoading ? (
+              <span className="h-9 w-24 rounded-full bg-[#ebeae4]" aria-busy />
+            ) : user ? (
+              <UserMenu user={user} onLogout={onLogout} />
+            ) : (
+              <span className="flex items-center gap-1 text-[12px] font-semibold"><Link href="/maemusae/login" className="rounded-full px-3 py-1.5 hover:bg-[#ebeae4]">로그인</Link><Link href="/maemusae/signup" className="rounded-full border-2 border-[#111] bg-[#ff5a14] px-3.5 py-1 text-white shadow-[2px_2px_0_#111] transition-[transform,box-shadow] hover:-translate-x-px hover:-translate-y-px hover:shadow-[3px_3px_0_#111]">회원가입</Link></span>
+            )}
           </div>
         </header>
         <main className="mt-12 flex-1 sm:mt-16">{ready ? <Rise key={path}>{children}</Rise> : <div className="h-[50vh]" aria-busy />}</main>
         <footer className="mt-16 flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[#111]/15 pt-5 text-[12px] text-[#6c6a62]">
-          <span>매무새 — Meerkit 위에 얹은 서브 프로젝트 · 지금은 화면용 목 데이터로 동작합니다</span>
-          <button type="button" className="underline underline-offset-4" onClick={() => { if (window.confirm("목 데이터를 처음 상태로 되돌릴까요?")) useMaemusae.getState().reset(); }}>데이터 초기화</button>
+          <span>매무새 — Meerkit 위에 얹은 서브 서비스 · AI 분석과 확정은 아직 화면용 목 데이터로 동작합니다</span>
+          <button type="button" className="underline underline-offset-4" onClick={() => { if (window.confirm("이 브라우저에 저장된 분석 목 데이터를 지울까요? 프로젝트와 올린 파일은 그대로예요.")) useMaemusae.getState().reset(); }}>목 데이터 초기화</button>
         </footer>
       </div>
     </div>

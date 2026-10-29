@@ -47,8 +47,9 @@ export function EmailChips({ value, onChange, id }: { value: string[]; onChange:
   );
 }
 
-export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (v: boolean) => void; onCreate: (v: { name: string; startDate: string; endDate: string; inviteEmails: string[] }) => void }) {
+export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: boolean; onOpenChange: (v: boolean) => void; onCreate: (v: { name: string; startDate: string; endDate: string; inviteEmails: string[] }) => Promise<string | null> }) {
   const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
   const [startDate, setStart] = useState("");
   const [endDate, setEnd] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
@@ -57,12 +58,17 @@ export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: bool
   function reset() {
     setName(""); setStart(""); setEnd(""); setEmails([]); setError("");
   }
-  function submit(e: FormEvent) {
+  // onCreate는 서버에 저장하고, 실패하면 보여 줄 문구를 돌려준다
+  async function submit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     if (!name.trim()) return setError("프로젝트명을 입력해 주세요.");
     if (!startDate || !endDate) return setError("프로젝트 기간을 골라 주세요.");
     if (endDate < startDate) return setError("종료일은 시작일 이후여야 해요.");
-    onCreate({ name: name.trim(), startDate, endDate, inviteEmails: emails });
+    setBusy(true);
+    const err = await onCreate({ name: name.trim(), startDate, endDate, inviteEmails: emails });
+    setBusy(false);
+    if (err) return setError(err);
     reset();
     onOpenChange(false);
   }
@@ -83,7 +89,7 @@ export function ProjectFormDialog({ open, onOpenChange, onCreate }: { open: bool
           {error && <p role="alert" className="text-sm font-medium text-[#b3261e]">{error}</p>}
           <div className="flex justify-end gap-2">
             <Btn onClick={() => { reset(); onOpenChange(false); }}>취소</Btn>
-            <Btn variant="primary" type="submit">등록</Btn>
+            <Btn variant="primary" type="submit" disabled={busy}>{busy ? "등록 중…" : "등록"}</Btn>
           </div>
         </form>
       </DialogContent>
@@ -100,12 +106,17 @@ function Field({ label, htmlFor, children }: { label: string; htmlFor: string; c
   );
 }
 
-export function InviteDialog({ open, onOpenChange, onInvite }: { open: boolean; onOpenChange: (v: boolean) => void; onInvite: (email: string) => string | null }) {
+export function InviteDialog({ open, onOpenChange, onInvite }: { open: boolean; onOpenChange: (v: boolean) => void; onInvite: (email: string) => Promise<string | null> }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  function submit(e: FormEvent) {
+  const [busy, setBusy] = useState(false);
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    const err = onInvite(email);
+    if (busy) return;
+    if (!emailOk(email.trim())) return setError("이메일 형식이 올바르지 않아요.");
+    setBusy(true);
+    const err = await onInvite(email.trim());
+    setBusy(false);
     if (err) return setError(err);
     setEmail("");
     setError("");
@@ -123,7 +134,7 @@ export function InviteDialog({ open, onOpenChange, onInvite }: { open: boolean; 
           {error && <p role="alert" className="text-sm font-medium text-[#b3261e]">{error}</p>}
           <div className="flex justify-end gap-2">
             <Btn onClick={() => onOpenChange(false)}>취소</Btn>
-            <Btn variant="primary" type="submit">초대장 보내기</Btn>
+            <Btn variant="primary" type="submit" disabled={busy}>{busy ? "보내는 중…" : "초대장 보내기"}</Btn>
           </div>
         </form>
       </DialogContent>

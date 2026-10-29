@@ -7,13 +7,15 @@ import { Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
-import { UserAvatar } from "@/meerkit";
+import { useAuth } from "@/meerkit";
 import { cn } from "@/lib/utils";
 
 import { ProjectFormDialog } from "../_components/dialogs";
 import { Btn, PageHead, Pill, card, fmtRange } from "../_components/ui";
 import { DOC_STATUS, ROLE_LABEL } from "../_lib/labels";
-import { roleOf, useCurrentUser, useMaemusae } from "../_lib/store";
+import { apiError } from "../_lib/api";
+import { useCreateProject, useProjects } from "../_lib/queries";
+import { useMaemusae } from "../_lib/store";
 import type { DocStatus } from "../_lib/types";
 
 // 카드 윗띠와 상태 필터 버튼이 같은 색을 쓴다
@@ -28,22 +30,34 @@ const STATUS_ORDER: DocStatus[] = ["empty", "analyzing", "ready", "confirming", 
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const user = useCurrentUser();
-  const projects = useMaemusae((s) => s.projects);
+  const auth = useAuth();
+  const { data, isLoading, error } = useProjects();
   const docs = useMaemusae((s) => s.docs);
-  const createProject = useMaemusae((s) => s.createProject);
+  const createProject = useCreateProject();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<DocStatus | "all">("all");
 
-  // 내가 멤버로 들어 있는 프로젝트만 보인다 (초대 대기 중인 것은 수락 전이라 제외)
-  const visible = useMemo(() => projects.filter((p) => roleOf(p, user.id)), [projects, user.id]);
-  const statusOf = (id: string): DocStatus => docs[id]?.status ?? "empty";
+  // 서버가 내가 멤버인 프로젝트만 준다 (초대 대기 중인 것은 수락 전이라 빠진다)
+  const visible = useMemo(() => data?.items ?? [], [data]);
+  // 카드 상태는 AI 분석 목 데이터(M3 전까지 브라우저에 있음)에서 읽는다
+  const statusOf = (id: number): DocStatus => docs[String(id)]?.status ?? "empty";
   const mine = useMemo(
-    () => visible.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase())).filter((p) => status === "all" || (docs[p.id]?.status ?? "empty") === status),
+    () => visible.filter((p) => p.name.toLowerCase().includes(q.trim().toLowerCase())).filter((p) => status === "all" || (docs[String(p.id)]?.status ?? "empty") === status),
     [visible, docs, q, status],
   );
   const hasAny = visible.length > 0;
+
+  if (auth.isLoading || (auth.isAuthenticated && isLoading)) return <div className="h-[40vh]" aria-busy />;
+  if (!auth.isAuthenticated)
+    return (
+      <div className={`${card} mx-auto grid max-w-lg justify-items-center gap-4 py-12 text-center`}>
+        <h2 className="text-2xl font-extrabold tracking-tight">로그인하고 프로젝트를 시작하세요</h2>
+        <p className="text-sm text-[#6c6a62]">프로젝트는 로그인한 멤버만 볼 수 있어요.</p>
+        <div className="flex gap-2"><Btn href="/maemusae/login" variant="dark">로그인</Btn><Btn href="/maemusae/signup">회원가입</Btn></div>
+      </div>
+    );
+  if (error) return <p role="alert" className="py-10 text-center text-sm text-[#b3261e]">{apiError(error, "프로젝트 목록을 불러오지 못했어요.")}</p>;
 
   return (
     <div className="grid gap-8">
@@ -94,30 +108,22 @@ export default function ProjectsPage() {
       ) : (
         <ul className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" data-rise>
           {mine.map((p) => {
-            const role = roleOf(p, user.id)!;
+            const role = p.my_role;
             const sk = statusOf(p.id);
             const st = DOC_STATUS[sk];
-            const active = p.members.filter((m) => m.status === "active");
             return (
               <li key={p.id}>
                 <Link href={`/maemusae/projects/${p.id}`} className="group flex h-full flex-col overflow-hidden rounded-[24px] border-2 border-[#111] bg-white shadow-[6px_6px_0_#111] transition-[transform,box-shadow] duration-150 hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[10px_10px_0_#111]">
                   <div className={cn("flex items-center justify-between gap-2 border-b-2 border-[#111] px-5 py-3", STATUS_BAND[sk])}>
                     <Pill tone={sk === "confirmed" ? "plain" : "dark"}>{st.label}</Pill>
-                    <Pill tone={role === "ADMIN" ? "orange" : "plain"}>{ROLE_LABEL[role]}</Pill>
+                    <Pill tone={role === "ADMIN" ? "orange" : "plain"}>{role ? ROLE_LABEL[role] : "보기 전용"}</Pill>
                   </div>
                   <div className="grid flex-1 content-between gap-10 px-5 py-6">
                     <h2 className="text-[26px] font-extrabold leading-[1.15] tracking-[-0.04em]">{p.name}</h2>
-                    <p className="w-fit rounded-full bg-[#ebeae4] px-3 py-1 text-xs font-semibold tabular-nums text-[#55534c]">{fmtRange(p.startDate, p.endDate)}</p>
+                    <p className="w-fit rounded-full bg-[#ebeae4] px-3 py-1 text-xs font-semibold tabular-nums text-[#55534c]">{fmtRange(p.start_date, p.end_date)}</p>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t-2 border-dashed border-[#111] px-5 py-4">
-                    <span className="flex items-center gap-3">
-                      <span className="flex -space-x-2">
-                        {active.slice(0, 4).map((m) => (
-                          <UserAvatar key={m.id} user={{ name: m.name, nickname: null, avatar_url: null }} size="sm" className="ring-2 ring-white" />
-                        ))}
-                      </span>
-                      <span className="text-xs font-semibold text-[#55534c]">멤버 {active.length}명</span>
-                    </span>
+                    <span className="text-xs font-semibold text-[#55534c]">멤버 {p.member_count}명</span>
                     <span aria-hidden className="grid size-9 place-items-center rounded-full border-2 border-[#111] bg-white text-base font-bold transition-colors group-hover:bg-[#ff5a14] group-hover:text-white">→</span>
                   </div>
                 </Link>
@@ -137,10 +143,16 @@ export default function ProjectsPage() {
       <ProjectFormDialog
         open={open}
         onOpenChange={setOpen}
-        onCreate={(v) => {
-          const id = createProject(v);
-          toast.success(v.inviteEmails.length ? `프로젝트를 만들고 ${v.inviteEmails.length}명에게 초대장을 보냈어요.` : "프로젝트를 만들었어요.");
-          router.push(`/maemusae/projects/${id}`);
+        onCreate={async (v) => {
+          try {
+            const { project, invited, failed } = await createProject.mutateAsync(v);
+            if (failed.length) toast.warning(`프로젝트를 만들었어요. ${failed.join(", ")}에는 초대장을 보내지 못했어요. 멤버 화면에서 다시 초대해 주세요.`);
+            else toast.success(invited ? `프로젝트를 만들고 ${invited}명에게 초대장을 보냈어요.` : "프로젝트를 만들었어요.");
+            router.push(`/maemusae/projects/${project.id}`);
+            return null;
+          } catch (e) {
+            return apiError(e, "프로젝트를 만들지 못했어요.");
+          }
         }}
       />
     </div>

@@ -7,12 +7,14 @@ import { ProjectGuard } from "../../../../_components/ProjectGuard";
 import { RequirementTable, downloadExcel } from "../../../../_components/Viewer";
 import { Btn, PageHead, Pill, card, fmtDate } from "../../../../_components/ui";
 import { revisionLabel } from "../../../../_lib/labels";
+import { useReqKinds } from "../../../../_lib/queries";
 import { useMaemusae } from "../../../../_lib/store";
 
 // 확정한 문서를 그 시점 모습 그대로 미리 보는 화면
 export default function DocViewPage() {
   const { id, docId } = useParams<{ id: string; docId: string }>();
   const doc = useMaemusae((s) => s.history[id]?.find((d) => d.id === docId));
+  const { label } = useReqKinds();
 
   return (
     <ProjectGuard projectId={id}>
@@ -25,7 +27,7 @@ export default function DocViewPage() {
         ) : (
           <div className="grid gap-6">
             <PageHead eyebrow={project.name} title={doc.title}>
-              <Btn size="sm" onClick={() => downloadExcel(`${project.name}_${doc.title}_v${doc.revision}`, doc.items)}>Excel 받기</Btn>
+              <Btn size="sm" onClick={() => downloadExcel(`${project.name}_${doc.title}_v${doc.revision}`, doc.items, label)}>Excel 받기</Btn>
               <Btn size="sm" onClick={() => window.print()}>PDF로 저장</Btn>
             </PageHead>
             <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm" data-rise>

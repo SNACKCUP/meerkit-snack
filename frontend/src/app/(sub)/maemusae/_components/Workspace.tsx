@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { AiPromptInput } from "@/meerkit";
+import { AiPromptInput, useAuth } from "@/meerkit";
 
+import { useReqKinds } from "../_lib/queries";
 import { useMaemusae } from "../_lib/store";
 import type { Candidate, CandidateKind, NoteField, Priority, RequirementDoc } from "../_lib/types";
 import { ConfirmDialog, ProDialog } from "./dialogs";
@@ -26,6 +27,9 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
   const saveDraft = useMaemusae((x) => x.saveDraft);
   const refine = useMaemusae((x) => x.refine);
   const confirm = useMaemusae((x) => x.confirm);
+  const { user } = useAuth();
+  const myName = user?.name ?? "";
+  const kinds = useReqKinds();
 
   const [selectedId, setSelectedId] = useState<string | null>(doc.lastViewedId ?? doc.candidates[0]?.id ?? null);
   const [askConfirm, setAskConfirm] = useState(false);
@@ -92,7 +96,7 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
   // 입력창을 벗어날 때: 임시저장하고, 내용이 바뀌었으면 "입력한 내용"에 그 칸의 내용으로 남긴다
   const blurField = (field: NoteField, value: string) => {
     saveDraft(projectId);
-    if (selected && value.trim() && value !== focusText.current) addNote(projectId, selected.id, field, value.trim());
+    if (selected && value.trim() && value !== focusText.current) addNote(projectId, selected.id, field, value.trim(), myName);
   };
 
   return (
@@ -122,7 +126,8 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
           <div className="grid gap-2 px-1">
             <div className="flex flex-wrap gap-2">
               <NativeSelect aria-label="구분" value={filter.kind} onChange={(e) => setFilter({ ...filter, kind: e.target.value })} className="h-9 w-28 rounded-full border-[1.5px] border-[#111] text-sm">
-                <option value="all">전체 구분</option><option>기능</option><option>비기능</option>
+                <option value="all">전체 구분</option>
+                {kinds.codes.map((k) => <option key={k.code} value={k.code}>{k.label}</option>)}
               </NativeSelect>
               <NativeSelect aria-label="우선순위" value={filter.priority} onChange={(e) => setFilter({ ...filter, priority: e.target.value })} className="h-9 w-32 rounded-full border-[1.5px] border-[#111] text-sm">
                 <option value="all">전체 우선순위</option><option>높음</option><option>중간</option><option>낮음</option>
@@ -149,7 +154,7 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
                     <span className="text-xs text-[#6c6a62]">{c.code}</span>{c.name}
                   </span>
                   <span className="flex flex-wrap gap-1.5">
-                    <Pill>{c.kind}</Pill><Pill>{c.priority}</Pill>
+                    <Pill>{kinds.label(c.kind)}</Pill><Pill>{c.priority}</Pill>
                     {c.question && <Pill tone="orange">확인 필요</Pill>}
                   </span>
                 </button>
@@ -173,7 +178,8 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1 text-xs font-extrabold text-[#6c6a62]">구분
                   <NativeSelect value={selected.kind} onChange={(e) => patch({ kind: e.target.value as CandidateKind })} onBlur={() => saveDraft(projectId)} className="rounded-xl border-[1.5px] border-[#111] font-normal text-[#111]">
-                    <option>기능</option><option>비기능</option>
+                    {kinds.codes.map((k) => <option key={k.code} value={k.code}>{k.label}</option>)}
+                    {!kinds.codes.some((k) => k.code === selected.kind) && <option value={selected.kind}>{kinds.label(selected.kind)}</option>}
                   </NativeSelect>
                 </label>
                 <label className="grid gap-1 text-xs font-extrabold text-[#6c6a62]">우선순위
@@ -247,7 +253,7 @@ export function Workspace({ projectId, doc, isAdmin }: { projectId: string; doc:
         title="요구사항을 확정할까요?"
         body={<>선택한 {included.length}개로 요구사항정의서를 만들어요. 확정한 뒤에도 관리자는 다시 열어 고칠 수 있어요.{openQuestions > 0 && <> 아직 답하지 않은 질문이 {openQuestions}개 있어요.</>}</>}
         confirmLabel="확정"
-        onConfirm={() => { const r = confirm(projectId); if (!r.ok) toast.error(r.error); setAskConfirm(false); }}
+        onConfirm={() => { confirm(projectId, myName); setAskConfirm(false); }}
       />
       <ProDialog open={pro} onOpenChange={setPro} />
     </div>
