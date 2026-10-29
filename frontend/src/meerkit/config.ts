@@ -2,7 +2,7 @@ import userConfig from "../../meerkit.config";
 
 const githubUrl =
   process.env.NEXT_PUBLIC_GITHUB_URL ??
-  "https://github.com/sensibly00-glitch/meerkit";
+  "https://github.com/SNACKCUP/meerkit-snack";
 
 export const meerkitConfig = {
   apiBaseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api",
