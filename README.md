@@ -86,6 +86,7 @@ meerkit/
 │   │   ├── users/       # 공통 기반: 회원, 역할, 멤버 관리
 │   │   ├── auth/        # 공통 기반: 가입, 로그인, 토큰 갱신
 │   │   ├── permissions/ # 공통 기반: 역할 코드 다시 내보내기 (권한 검사는 core/principal.py)
+│   │   ├── codes/       # 공통 기반: 공통코드 (킷·서브 서비스 공용, owner 로 구분)
 │   │   ├── llm/         # 공통 기반: LangChain 클라이언트, 프롬프트
 │   │   └── features/    # 서브 서비스 (교체 영역)
 │   │       └── requirements/
