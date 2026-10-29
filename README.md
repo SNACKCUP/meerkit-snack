@@ -29,8 +29,8 @@ FastAPI + PostgreSQL + React + LangChain으로 AI 서비스를 빠르게 시작�
 ### 1. 클론
 
 ```bash
-git clone https://github.com/sensibly00-glitch/meerkit.git
-cd meerkit
+git clone https://github.com/SNACKCUP/meerkit-snack.git
+cd meerkit-snack
 ```
 
 ### 2. DB 실행 (루트 폴더)
