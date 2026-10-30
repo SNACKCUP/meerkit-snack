@@ -54,7 +54,7 @@ Settings → Environments → **New environment** `production`:
 | Secret | `RENDER_DEPLOY_HOOK_URL` | 3단계에서 복사 |
 | Variable | `PROD_API_URL` | `https://api.meerkit.dev` |
 
-탈퇴 계정 정리(`account-purge`, 매일 03:00)는 저장소 Secret `DATABASE_URL`에 같은 주소를 넣으면 시작됩니다.
+탈퇴 계정 정리(`account-purge`, 매일 03:00)는 저장소 Secret `DATABASE_URL`에 같은 주소를 넣으면 시작됩니다. 같은 워크플로가 매무새에서 지운 지 180일(`MMS_PROJECT_RETENTION_DAYS`)이 지난 프로젝트도 정리하며, 비공개 버킷의 원본을 지우려면 Secret `STORAGE_S3_ACCESS_KEY_ID`·`STORAGE_S3_SECRET_ACCESS_KEY`와 Variable `STORAGE_S3_ENDPOINT_URL`·`STORAGE_S3_REGION`을 Render와 같은 값으로 넣습니다 (없으면 건수만 셈).
 
 비밀 값이 없으면 `deploy`는 아무것도 하지 않고 끝납니다. 준비 전에 병합해도 안전합니다.
 

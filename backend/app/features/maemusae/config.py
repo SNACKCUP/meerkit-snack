@@ -17,5 +17,8 @@ class MaemusaeSettings(BaseSettings):
     mms_analyze_max_batches: int = 40  # 묶음 수 상한. 넘으면 시작 전에 422 DOCUMENT_TOO_LARGE_TO_ANALYZE
     mms_analyze_stale_minutes: int = 15  # 진행이 이만큼 없으면 멈춘 분석으로 보고 실패 처리 (서버 재시작 등)
 
+    # 지운 프로젝트 보관 기간. 지나면 정리 명령(app.features.maemusae.retention)이 원본 파일과 행을 실제로 지움
+    mms_project_retention_days: int = 180
+
 
 mms_settings = MaemusaeSettings()
