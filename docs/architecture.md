@@ -164,6 +164,30 @@ backend/
 | 로그아웃 | 이 기기의 리프레시 토큰을 서버에서도 폐기(복사해 둔 토큰도 못 씀). 다른 기기는 그대로. 비밀번호 변경·재설정은 모든 기기 토큰 폐기 |
 | 로그인 잠금 | 연속 5회 실패 → 5분 잠금 (`LOGIN_LOCK_*`). 잠긴 동안 `429` + `Retry-After`(초) |
 
+#### 로그인 뒤 내 정보·권한 흐름
+
+로그인 응답에는 액세스 토큰만 옵니다. 역할은 `GET /users/me`의 `roles`로 받습니다. 로그인 코드가 직접 부르지 않고, 토큰이 생기면 `useMe()`(`enabled: !!accessToken`)가 자동으로 부릅니다. 화면은 역할로 버튼을 숨기기만 하고, 실제 권한은 서버가 요청마다 DB에서 역할을 읽어 확인합니다.
+
+```mermaid
+flowchart TD
+  A["로그인 POST /auth/login"] --> B["응답: 액세스 토큰<br/>+ 리프레시 쿠키(httpOnly)"]
+  R["새로고침"] --> R2["POST /auth/refresh<br/>(쿠키로 토큰 다시 받기)"] --> C
+  B --> C["액세스 토큰을 메모리(Zustand)에"]
+  C --> D{"토큰 있음?<br/>useMe enabled"}
+  D -- 예 --> E["GET /users/me 자동 호출<br/>(TanStack Query, 1분 캐시)"]
+  E --> F["내 정보 + roles<br/>useAuth().isAdmin, hasRole()"]
+  F --> G["화면: 권한 없는 버튼·페이지 숨김<br/>RequireRole, 매무새 ProjectGuard(my_role)<br/>※ 보여 주기용"]
+  G --> H["API 요청 (Authorization: Bearer)"]
+  H --> I
+  subgraph 서버["서버: 실제로 막는 곳"]
+    I["load_principal: 토큰 확인 후<br/>DB에서 사용자·역할 읽어 요청에 담음"]
+    I --> J{"require_admin / require_role<br/>매무새 access.py (프로젝트 역할)"}
+    J -- 권한 있음 --> K["처리"]
+    J -- 없음 --> L["403 (예: PROJECT_ADMIN_REQUIRED)"]
+  end
+  O["로그아웃"] --> P["토큰·내 정보 캐시 지움"]
+```
+
 ### 계정 규칙
 
 | 항목 | 규칙 |
