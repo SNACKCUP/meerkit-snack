@@ -25,12 +25,13 @@ import {
   useRequirement,
   useRequirementList,
   useSaveVersion,
+  useSources,
   useUpdateRequirement,
   useUploadSource,
   useWriteNote,
 } from "../_lib/queries";
 import { CandidateList } from "./CandidateList";
-import { ConfirmDialog } from "./dialogs";
+import { ConfirmDialog, RestartDialog } from "./dialogs";
 import { FIELD_LABEL, RequirementDetail } from "./RequirementDetail";
 import { Btn, Pill, card, fmtTime } from "./ui";
 import { VersionsDialog } from "./VersionsDialog";
@@ -39,9 +40,10 @@ const NO_FILTER = { kind: "all", priority: "all", major: "all", checked: "all", 
 
 /** 다시 분석 확인 창 문구. 이번 분석 이후 버전을 남겼는지, 그 뒤에 또 고쳤는지로 고른다 */
 function restartWarning(doc: ApiDocument) {
-  if (!doc.saved_at) return "다시 분석하시면 직접 입력값은 사라집니다. 버전 저장하시면 히스토리로 관리됩니다.";
-  if (doc.changed_since_save) return `마지막 버전 저장(${fmtTime(doc.saved_at)}) 이후 고친 내용은 히스토리에 남지 않습니다. 남기려면 버전 저장을 한 번 더 눌러 주세요.`;
-  return "다시 분석하시면 직접 입력사항은 사라집니다. 직접 입력값은 히스토리 관리에서 확인하실 수 있습니다.";
+  const last = doc.last_version_no ? `v${doc.last_version_no}` : "마지막 버전";
+  if (!doc.saved_at) return "다시 분석하면 지금 후보와 직접 입력한 내용이 모두 지워져요. 지금 결과를 남기려면 창을 닫고 먼저 버전 추가를 눌러 주세요.";
+  if (doc.changed_since_save) return `마지막 버전(${last}, ${fmtTime(doc.saved_at)}) 이후 고친 내용은 지워져요. 남기려면 먼저 버전 저장(덮어쓰기)이나 버전 추가를 눌러 주세요.`;
+  return `지금 결과는 ${last}로 남아 있어서 버전 기록에서 다시 볼 수 있어요.`;
 }
 
 // 후보 목록 + 상세 편집 + 입력한 내용 리스트 + 다시 분류. 확정 전까지 팀이 함께 쓰는 작업대.
@@ -49,6 +51,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
   const docId = doc.id;
   const { user } = useAuth();
   const kinds = useReqKinds();
+  const { data: sources = [] } = useSources(projectId, docId);
   const priorities = usePriorities();
 
   // 필터는 서버로 보낸다. 검색어는 0.3초 쉬었다가 보낸다
@@ -335,14 +338,12 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
         )}
       </section>
 
-      <ConfirmDialog
+      <RestartDialog
         open={askRestart}
         onOpenChange={setAskRestart}
-        title="처음부터 다시 분석할까요?"
-        body={<>{restartWarning(doc)} 후보는 REQ-001부터 다시 매겨져요.</>}
-        confirmLabel="다시 분석"
-        danger
-        onConfirm={() => analyze.mutate({ restart: true }, { onError: (e) => toast.error(apiError(e)) })}
+        warning={<>{restartWarning(doc)} 후보는 REQ-001부터 다시 매겨져요.</>}
+        sources={sources}
+        onConfirm={(prompt) => analyze.mutate({ restart: true, prompt: prompt || undefined }, { onError: (e) => toast.error(apiError(e)) })}
       />
       {/* 버전 저장 = 이번 분석 뒤 남긴 마지막 버전 덮어쓰기. 덮어쓸 버전이 없으면(saved_at 없음) 버전 추가로 안내한다 */}
       {doc.saved_at && doc.last_version_no ? (

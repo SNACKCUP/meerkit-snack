@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DateRangePicker } from "@/meerkit";
 
+import type { ApiSource } from "../_lib/api";
 import { Btn, Pill } from "./ui";
 
 const emailOk = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
@@ -176,6 +177,56 @@ export function ProDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         <div className="flex justify-end gap-2">
           <Btn onClick={() => onOpenChange(false)}>닫기</Btn>
           <Btn variant="primary" onClick={() => onOpenChange(false)}>Pro로 업그레이드</Btn>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const RESTART_PROMPT_MAX = 2000; // 서버 AnalyzeRequest.prompt 상한과 같게
+
+/** 다시 분석 창: 경고 + 분석할 문서 목록 + 이번에 바랄 점(선택). 적은 글은 AI 지시로 함께 보낸다 */
+export function RestartDialog({ open, onOpenChange, warning, sources, onConfirm }: { open: boolean; onOpenChange: (v: boolean) => void; warning: ReactNode; sources: ApiSource[]; onConfirm: (prompt: string) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const close = (v: boolean) => {
+    if (!v) setPrompt("");
+    onOpenChange(v);
+  };
+  return (
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent className="max-w-lg rounded-[28px] border-[1.5px] border-[#111]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-extrabold tracking-tight">처음부터 다시 분석할까요?</DialogTitle>
+          <DialogDescription asChild><div className="text-sm text-[#6c6a62]">{warning}</div></DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2">
+          <p className="text-sm font-bold">분석할 문서 {sources.length}개</p>
+          <ul className="grid max-h-40 gap-1 overflow-y-auto rounded-2xl bg-[#f6f6f3] px-4 py-3 text-sm">
+            {sources.map((s) => (
+              <li key={s.id} className="flex min-w-0 justify-between gap-3">
+                <span className="truncate font-semibold">{s.filename ?? "직접 입력한 내용"}</span>
+                <span className="shrink-0 text-xs text-[#6c6a62]">{s.page_count}쪽 · {s.uploaded_by_name}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-[#6c6a62]">문서를 더하거나 빼려면 창을 닫고 아래 &quot;올린 문서&quot;에서 바꿔 주세요.</p>
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor="restart-prompt" className="text-sm font-bold">이번 분석에 바라는 점 (선택)</Label>
+          <textarea
+            id="restart-prompt"
+            rows={4}
+            maxLength={RESTART_PROMPT_MAX}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="지난 결과에서 아쉬운 점이나 이번에 더 신경 쓸 방향을 적어 주세요. 예: 기능 요구사항이 너무 잘게 쪼개졌어요. 화면 단위로 묶어 주세요."
+            className="w-full rounded-2xl border-[1.5px] border-[#111] bg-white px-4 py-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-[#ff5a14]/40"
+          />
+          <p className="text-right text-xs tabular-nums text-[#6c6a62]">{prompt.length} / {RESTART_PROMPT_MAX}</p>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Btn onClick={() => close(false)}>취소</Btn>
+          <Btn variant="dark" onClick={() => { onConfirm(prompt.trim()); close(false); }}>다시 분석</Btn>
         </div>
       </DialogContent>
     </Dialog>
