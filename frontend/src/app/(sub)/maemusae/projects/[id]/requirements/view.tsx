@@ -24,7 +24,14 @@ const FAIL_TEXT: Record<string, string> = {
   LLM_BAD_OUTPUT: "AI 답을 읽지 못했어요.",
   ANALYSIS_INTERRUPTED: "서버가 다시 시작되어 분석이 멈췄어요.",
 };
-const failText = (code: string | null) => `${(code && FAIL_TEXT[code]) || "분석하지 못했어요."} 잠시 후 다시 시도해 주세요.`;
+// 다시 시도해도 같은 결과인 설정 문제 (서버 운영자가 고쳐야 함). "잠시 후 다시 시도" 를 붙이지 않는다
+const SETUP_FAIL_TEXT: Record<string, string> = {
+  LLM_NOT_CONFIGURED: "AI 키가 설정되지 않아 분석할 수 없어요. 관리자에게 문의해 주세요.",
+  LLM_AUTH_FAILED: "AI 키가 올바르지 않아 분석할 수 없어요. 관리자에게 문의해 주세요.",
+  LLM_QUOTA_EXCEEDED: "AI 사용 한도를 모두 써서 분석할 수 없어요. 관리자에게 문의해 주세요.",
+};
+const failText = (code: string | null) =>
+  (code && SETUP_FAIL_TEXT[code]) || `${(code && FAIL_TEXT[code]) || "분석하지 못했어요."} 잠시 후 다시 시도해 주세요.`;
 
 export default function RequirementsPage() {
   const { id } = useParams<{ id: string }>();
