@@ -136,6 +136,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
     );
 
   const [askRestart, setAskRestart] = useState(false);
+  const [askSave, setAskSave] = useState(false);
   const [askConfirm, setAskConfirm] = useState(false);
   const [versionsOpen, setVersionsOpen] = useState(false);
 
@@ -200,7 +201,7 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
           {!readOnly && (
             <>
               <Btn size="sm" disabled={busy} onClick={() => keepVersion(false)}>버전 추가</Btn>
-              <Btn size="sm" disabled={busy} onClick={() => keepVersion(true)}>버전 저장</Btn>
+              <Btn size="sm" disabled={busy} onClick={() => setAskSave(true)}>버전 저장</Btn>
               <Btn size="sm" disabled={analyze.isPending} onClick={() => setAskRestart(true)}>다시 분석</Btn>
             </>
           )}
@@ -343,6 +344,27 @@ export function Workspace({ projectId, doc, isAdmin, readOnly }: { projectId: st
         danger
         onConfirm={() => analyze.mutate({ restart: true }, { onError: (e) => toast.error(apiError(e)) })}
       />
+      {/* 버전 저장 = 이번 분석 뒤 남긴 마지막 버전 덮어쓰기. 덮어쓸 버전이 없으면(saved_at 없음) 버전 추가로 안내한다 */}
+      {doc.saved_at && doc.last_version_no ? (
+        <ConfirmDialog
+          open={askSave}
+          onOpenChange={setAskSave}
+          title={`v${doc.last_version_no} 버전을 덮어쓸까요?`}
+          body={<>v{doc.last_version_no} 버전을 지금 내용으로 바꿔요. 새 버전은 만들지 않아요. 새 버전으로 남기려면 버전 추가를 눌러 주세요.</>}
+          confirmLabel="바꾸기"
+          onConfirm={() => keepVersion(true)}
+        />
+      ) : (
+        <ConfirmDialog
+          open={askSave}
+          onOpenChange={setAskSave}
+          title="먼저 버전 추가를 해 주세요"
+          body={<>버전 저장은 새 버전을 만들지 않고 마지막 버전을 지금 내용으로 바꿔요. {doc.last_version_no ? "다시 분석한 뒤로 남긴 버전이 없어서" : "아직 남긴 버전이 없어서"} 바꿀 버전이 없어요.</>}
+          confirmLabel="버전 추가하기"
+          cancelLabel="닫기"
+          onConfirm={() => keepVersion(false)}
+        />
+      )}
       <ConfirmDialog
         open={askConfirm}
         onOpenChange={setAskConfirm}

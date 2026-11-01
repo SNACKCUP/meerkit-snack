@@ -142,7 +142,7 @@ export function InviteDialog({ open, onOpenChange, onInvite }: { open: boolean; 
   );
 }
 
-export function ConfirmDialog({ open, onOpenChange, title, body, confirmLabel, danger, onConfirm }: { open: boolean; onOpenChange: (v: boolean) => void; title: string; body: ReactNode; confirmLabel: string; danger?: boolean; onConfirm: () => void }) {
+export function ConfirmDialog({ open, onOpenChange, title, body, confirmLabel, cancelLabel = "취소", danger, onConfirm }: { open: boolean; onOpenChange: (v: boolean) => void; title: string; body: ReactNode; confirmLabel: string; cancelLabel?: string; danger?: boolean; onConfirm: () => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md rounded-[28px] border-[1.5px] border-[#111]">
@@ -151,7 +151,7 @@ export function ConfirmDialog({ open, onOpenChange, title, body, confirmLabel, d
           <DialogDescription asChild><div className="text-sm text-[#6c6a62]">{body}</div></DialogDescription>
         </DialogHeader>
         <div className="flex justify-end gap-2">
-          <Btn onClick={() => onOpenChange(false)}>취소</Btn>
+          <Btn onClick={() => onOpenChange(false)}>{cancelLabel}</Btn>
           <Btn variant={danger ? "dark" : "primary"} onClick={() => { onConfirm(); onOpenChange(false); }}>{confirmLabel}</Btn>
         </div>
       </DialogContent>
