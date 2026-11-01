@@ -11,7 +11,7 @@ import { ProjectGuard } from "../../../_components/ProjectGuard";
 import { SourcesPanel } from "../../../_components/SourcesPanel";
 import { Viewer } from "../../../_components/Viewer";
 import { ANALYZING_LABELS, REFINING_LABELS, Workspace } from "../../../_components/Workspace";
-import { PageHead, Pill, card } from "../../../_components/ui";
+import { Btn, PageHead, Pill, card } from "../../../_components/ui";
 import { apiError, type ApiAnalysisRun } from "../../../_lib/api";
 import { DOC_STATUS, docStatus } from "../../../_lib/labels";
 import { useAfterAnalysis, useAnalysis, useAnalyze, useRequirementsDoc, useUploadSource } from "../../../_lib/queries";
@@ -104,6 +104,15 @@ export default function RequirementsPage() {
                   disabled={uploading || analyze.isPending || !serverDoc}
                   onSubmit={submit}
                 />
+              )}
+              {!readOnly && hasSources && (
+                // 입력창은 글이나 새 파일이 있어야 보내기가 켜진다. 이미 올린 문서만으로 시작하는 길을 따로 둔다
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#f6f6f3] px-4 py-3">
+                  <p className="text-sm text-[#6c6a62]">올린 문서 {serverDoc?.source_count}개로 요청 글 없이 바로 시작할 수 있어요.</p>
+                  <Btn size="sm" variant="primary" disabled={uploading || analyze.isPending} onClick={() => submit("", [])}>
+                    {analyze.isPending ? "시작하는 중…" : "올린 문서로 분석 시작"}
+                  </Btn>
+                </div>
               )}
             </section>
           )}
