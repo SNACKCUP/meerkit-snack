@@ -1,0 +1,147 @@
+From 2b45e2a5fc5f2ca0fe491d7131b4ca30f3adbe95 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 08:15:06 +0000
+Subject: [PATCH 1/2] =?UTF-8?q?fix(auth):=20=EB=A1=9C=EA=B7=B8=EC=95=84?=
+ =?UTF-8?q?=EC=9B=83=20=EB=92=A4=2010=EC=B4=88=20=EC=9C=A0=EC=98=88?=
+ =?UTF-8?q?=EB=A1=9C=20=EC=98=9B=20=EC=BF=A0=ED=82=A4=EA=B0=80=20=EB=8B=A4?=
+ =?UTF-8?q?=EC=8B=9C=20=ED=86=B5=ED=95=98=EB=8D=98=20=ED=8B=88=20=EB=A7=89?=
+ =?UTF-8?q?=EA=B8=B0=20(#55)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- 회전된 옛 토큰의 유예(REFRESH_REUSE_GRACE_SECONDS)는 바뀐 새 토큰이 아직 살아 있을 때만 줍니다
+- 로그아웃은 같은 로그인(family)의 토큰을 모두 폐기해, 옛 쿠키로 로그아웃해도 새 토큰까지 막힙니다
+- 테스트 2개 추가 (고치기 전에는 둘 다 실패)
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01K1rsi2nfwunSUkETonVAGS
+---
+ backend/app/auth/repository.py           |  7 ++++++-
+ backend/app/auth/service.py              | 13 ++++++++++---
+ backend/tests/kit/test_refresh_revoke.py | 24 ++++++++++++++++++++++++
+ 3 files changed, 40 insertions(+), 4 deletions(-)
+
+diff --git a/backend/app/auth/repository.py b/backend/app/auth/repository.py
+index b904c6f..ca149b9 100644
+--- a/backend/app/auth/repository.py
++++ b/backend/app/auth/repository.py
+@@ -116,8 +116,13 @@ def get_refresh_token_by_hash(db: Session, token_hash: str) -> RefreshToken | No
+     return db.scalar(select(RefreshToken).where(RefreshToken.token_hash == token_hash).with_for_update())
+ 
+ 
++def get_refresh_token(db: Session, token_id: int) -> RefreshToken | None:
++    """id로 발급 기록 1건 (회전으로 바뀐 새 토큰이 아직 살아 있는지 볼 때)"""
++    return db.get(RefreshToken, token_id)
++
++
+ def revoke_refresh_family(db: Session, family_id: str, now: datetime) -> int:
+-    """한 로그인에서 이어진 토큰을 모두 폐기 (이미 바뀐 토큰이 다시 왔을 때)"""
++    """한 로그인에서 이어진 토큰을 모두 폐기 (로그아웃, 이미 바뀐 토큰이 다시 왔을 때)"""
+     result = db.execute(
+         update(RefreshToken)
+         .where(RefreshToken.family_id == family_id, RefreshToken.revoked_at.is_(None))
+diff --git a/backend/app/auth/service.py b/backend/app/auth/service.py
+index d437d49..2c96acc 100644
+--- a/backend/app/auth/service.py
++++ b/backend/app/auth/service.py
+@@ -154,6 +154,10 @@ def refresh_tokens(db: Session, token: str) -> tuple[str, str | None] | None:
+         if row.replaced_by_id is None:  # 로그아웃·전체 폐기한 토큰
+             return None
+         if now - row.revoked_at <= timedelta(seconds=REFRESH_REUSE_GRACE_SECONDS):
++            # 유예는 바뀐 새 토큰이 아직 살아 있을 때만 줍니다. 그 사이 로그아웃했으면 옛 쿠키로 다시 들어오지 못합니다
++            replacement = auth_repository.get_refresh_token(db, row.replaced_by_id)
++            if replacement is None or replacement.revoked_at is not None:
++                return None
+             return create_token(user.id, "access"), None
+         revoked = auth_repository.revoke_refresh_family(db, row.family_id, now)
+         db.commit()
+@@ -167,10 +171,13 @@ def refresh_tokens(db: Session, token: str) -> tuple[str, str | None] | None:
+ 
+ 
+ def revoke_refresh_token(db: Session, token: str) -> None:
+-    """로그아웃: 이 기기의 리프레시 토큰만 폐기 (다른 기기는 그대로)"""
++    """로그아웃: 이 기기(같은 로그인 family)의 리프레시 토큰을 모두 폐기 (다른 기기는 그대로).
++
++    방금 회전돼 옛 토큰이 된 쿠키로 로그아웃해도 새 토큰까지 함께 막히도록 family 단위로 폐기합니다.
++    """
+     row = auth_repository.get_refresh_token_by_hash(db, hash_secret(token))
+-    if row is not None and row.revoked_at is None:
+-        row.revoked_at = _now()
++    if row is not None:
++        auth_repository.revoke_refresh_family(db, row.family_id, _now())
+         db.commit()
+ 
+ 
+diff --git a/backend/tests/kit/test_refresh_revoke.py b/backend/tests/kit/test_refresh_revoke.py
+index f44bc26..aae6b64 100644
+--- a/backend/tests/kit/test_refresh_revoke.py
++++ b/backend/tests/kit/test_refresh_revoke.py
+@@ -83,6 +83,30 @@ def test_logout_revokes_only_this_device(client, make_user):  # client: DB 를 
+         assert _refresh_with(phone, phone_token).status_code == 200  # 휴대폰은 그대로
+ 
+ 
++def test_logout_closes_reuse_grace_for_old_cookie(client, make_user):
++    # 갱신으로 바뀐 옛 쿠키는 다른 탭 때문에 10초 유예가 있지만, 그 사이 로그아웃했으면 다시 들어오지 못함
++    make_user("user01")
++    old = _login(client)
++    new = _refresh_with(client, old).cookies[COOKIE]
++    client.cookies.clear()
++    client.cookies.set(COOKIE, new, path="/api/auth")
++    assert client.post("/api/auth/logout").status_code == 204
++    assert _refresh_with(client, old).status_code == 401  # 유예 시간 안이어도 거절
++    assert _refresh_with(client, new).status_code == 401
++
++
++def test_logout_with_rotated_cookie_also_revokes_new_token(client, make_user):
++    # 옛 쿠키로 로그아웃해도 같은 로그인의 새 토큰까지 함께 폐기
++    make_user("user01")
++    old = _login(client)
++    new = _refresh_with(client, old).cookies[COOKIE]
++    client.cookies.clear()
++    client.cookies.set(COOKIE, old, path="/api/auth")
++    assert client.post("/api/auth/logout").status_code == 204
++    assert _refresh_with(client, new).status_code == 401
++    assert _refresh_with(client, old).status_code == 401
++
++
+ def test_password_change_logs_out_other_devices(client, make_user):
+     make_user("user01")
+     with TestClient(app) as other, TestClient(app) as me:
+-- 
+2.43.0
+
+
+From f87b0a25b1caefcbfc1b59ac8efefa255a19a5cd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 2 Nov 2026 08:18:15 +0000
+Subject: [PATCH 2/2] =?UTF-8?q?docs:=20=EB=A1=9C=EA=B7=B8=EC=95=84?=
+ =?UTF-8?q?=EC=9B=83=20=EA=B7=9C=EC=B9=99=EC=97=90=20family=20=ED=8F=90?=
+ =?UTF-8?q?=EA=B8=B0=EC=99=80=20=EC=9C=A0=EC=98=88=20=EC=A1=B0=EA=B1=B4=20?=
+ =?UTF-8?q?=EB=B0=98=EC=98=81=20(#55)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01K1rsi2nfwunSUkETonVAGS
+---
+ docs/architecture.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/architecture.md b/docs/architecture.md
+index a0f2e5c..824eed0 100644
+--- a/docs/architecture.md
++++ b/docs/architecture.md
+@@ -148,7 +148,7 @@ backend/
+ | 역할 확인 | 토큰에는 사용자 id만 넣고, 역할은 요청마다 DB에서 읽음 → 역할 변경이 바로 반영 |
+ | 비활성·탈퇴 계정 | 로그인, 토큰 사용, 갱신 모두 거부 |
+ | 비밀번호 변경 | 변경 시각(`password_changed_at`) 이전에 발급된 토큰은 거부 → 다른 기기 로그인이 풀림 |
+-| 로그아웃 | 이 기기의 리프레시 토큰을 서버에서도 폐기(복사해 둔 토큰도 못 씀). 다른 기기는 그대로. 비밀번호 변경·재설정은 모든 기기 토큰 폐기 |
++| 로그아웃 | 이 기기(같은 로그인에서 이어진 토큰 전부)의 리프레시 토큰을 서버에서도 폐기(복사해 둔 토큰도 못 씀). 회전 직후 10초 유예도 새 토큰이 살아 있을 때만 주므로 로그아웃 뒤 옛 쿠키로 다시 들어오지 못함. 다른 기기는 그대로. 비밀번호 변경·재설정은 모든 기기 토큰 폐기 |
+ | 로그인 잠금 | 연속 5회 실패 → 5분 잠금 (`LOGIN_LOCK_*`). 잠긴 동안 `429` + `Retry-After`(초) |
+ 
+ ### 계정 규칙
+-- 
+2.43.0
+
