@@ -46,7 +46,30 @@ npm run db:status          # DB URL, Studio 주소 확인
 - DB: `127.0.0.1:54322` (계정 `postgres`/`postgres`, **로컬 전용**)
 - Studio(DB 관리 화면): http://127.0.0.1:54323
 - 끄기: `npm run db:stop` (데이터는 유지됩니다). `npx supabase stop --no-backup`은 **데이터를 지우니** 주의하세요.
-- 대체용: Supabase를 쓸 수 없으면 `docker compose up -d db`로 PostgreSQL 16을 띄우고, `backend/.env`의 `DATABASE_URL`을 `.env.example`에 주석으로 있는 대체용 주소로 바꿉니다.
+- 대체용: Supabase를 쓸 수 없으면 `docker compose up -d db`로 PostgreSQL 17을 띄우고, `backend/.env`의 `DATABASE_URL`을 `.env.example`에 주석으로 있는 대체용 주소로 바꿉니다.
+
+<details>
+<summary>대체용 DB를 16에서 17로 옮기기 (예전에 docker compose DB를 만든 적이 있을 때)</summary>
+
+대체용 DB 이미지가 `postgres:16`에서 `postgres:17`로 바뀌었습니다. 16으로 만든 볼륨은 17에서 열리지 않아서 DB 컨테이너가 바로 꺼지고(`container ... exited (1)`), `docker compose logs db`에 `database files are incompatible with server`가 보입니다.
+
+- **데이터가 필요 없을 때 (보통 이쪽)**: `docker compose down -v` 후 `docker compose up -d --wait db`, 그다음 `cd backend && uv run alembic upgrade head && uv run python -m app.users.seed`.
+- **데이터를 옮겨야 할 때**: 아직 16일 때 덤프를 받고, 볼륨을 지운 뒤 17에서 되살립니다.
+
+  ```bash
+  # 1) 16으로 켜서 덤프 (이미 17로 바꿨다면 docker-compose.yml의 image를 잠시 postgres:16으로 되돌리고 실행)
+  docker compose up -d --wait db
+  docker compose exec -T db pg_dump -U starter -d starter --no-owner > meerkit-pg16.sql
+  # 2) 볼륨 삭제 후 17로 새로 켜기 (image: postgres:17)
+  docker compose down -v
+  docker compose up -d --wait db
+  # 3) 되살리기 (alembic upgrade head는 하지 않습니다. 덤프에 alembic_version까지 들어 있습니다)
+  docker compose exec -T db psql -U starter -d starter -v ON_ERROR_STOP=1 < meerkit-pg16.sql
+  ```
+
+  덤프 파일에는 회원 정보가 들어 있으니 저장소에 넣지 말고 다 쓰면 지우세요.
+
+</details>
 
 ### 3. 백엔드 실행 (터미널 1)
 

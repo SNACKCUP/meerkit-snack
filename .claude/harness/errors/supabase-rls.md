@@ -1,6 +1,6 @@
 # DB 접근 · 권한 규칙 (Supabase 미사용)
 
-> 이 프로젝트는 Supabase를 쓰지 않는다. 스택은 **FastAPI + SQLAlchemy + PostgreSQL 16 + Alembic**이라 RLS(행 수준 보안)가 없다.
+> 이 프로젝트는 Supabase를 쓰지 않는다. 스택은 **FastAPI + SQLAlchemy + PostgreSQL 17 + Alembic**이라 RLS(행 수준 보안)가 없다.
 > Supabase를 도입하면 이 문서에 RLS 규칙(정책이 같은 테이블을 다시 조회해 무한 재귀가 생기는 문제, 외래키가 걸린 마이그레이션 순서)을 추가한다.
 
 ## 권한은 서버가 판단한다
